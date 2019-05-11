@@ -1,0 +1,10 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir=@includedir@
+
+Name: Osmocom E1 Daemon Protocol Library
+Description: C Utility Library
+Version: @VERSION@
+Libs: -L${libdir} -losmo-e1d
+Cflags: -I${includedir}/
