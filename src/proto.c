@@ -131,7 +131,7 @@ osmo_e1dp_send(struct osmo_fd *ofd, struct msgb *msgb, int fd)
 		cmsg->cmsg_type = SCM_RIGHTS;
 		cmsg->cmsg_len = CMSG_LEN(sizeof(int));
 
-		*(int*) CMSG_DATA(cmsg) = fd;
+		memmove(CMSG_DATA(cmsg), &fd, sizeof(int));
 	}
 
 	rc = sendmsg(ofd->fd, &msg, 0);
