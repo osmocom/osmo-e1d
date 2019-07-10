@@ -44,5 +44,6 @@ autoreconf --install --force
 $MAKE $PARALLEL_MAKE
 $MAKE check || cat-testlogs.sh
 DISTCHECK_CONFIGURE_FLAGS="$CONFIG" $MAKE distcheck || cat-testlogs.sh
+$MAKE maintainer-clean
 
 osmo-clean-workspace.sh
