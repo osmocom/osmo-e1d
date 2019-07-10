@@ -354,7 +354,7 @@ e1uf_create(struct e1_line *line, xfer_cb_t cb,
 	return flow;
 }
 
-static void
+static void __attribute__((unused))
 e1uf_destroy(struct e1_usb_flow *flow)
 {
 	if (!flow)
