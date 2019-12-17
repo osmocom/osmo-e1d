@@ -30,6 +30,7 @@
 
 #include <osmocom/core/isdnhdlc.h>
 #include <osmocom/core/utils.h>
+#include <osmocom/usb/libusb.h>
 
 #include <libusb.h>
 
@@ -572,7 +573,7 @@ e1_usb_probe(struct e1_daemon *e1d)
 	int i, ret;
 
 	if (!g_usb) {
-		ret = libusb_init(&g_usb);
+		ret = osmo_libusb_init(&g_usb);
 		if (ret) {
 			LOGP(DE1D, LOGL_ERROR, "Failed to initialize libusb\n");
 			return -EIO;
@@ -599,18 +600,6 @@ e1_usb_probe(struct e1_daemon *e1d)
 	}
 
 	libusb_free_device_list(dev_list, 1);
-
-	return 0;
-}
-
-int
-e1_usb_poll(void)
-{
-	int rv;
-
-	rv = libusb_handle_events(g_usb);
-	if (rv != LIBUSB_SUCCESS)
-		return -EIO;
 
 	return 0;
 }

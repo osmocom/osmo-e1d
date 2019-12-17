@@ -42,7 +42,6 @@
 
 extern struct osmo_e1dp_server_handler e1d_ctl_handlers[];
 extern int e1_usb_probe(struct e1_daemon *e1d);
-extern int e1_usb_poll(void);
 
 
 
@@ -122,8 +121,7 @@ int main(int argc, char *argv[])
 
 	/* main loop */
 	while (!g_shutdown) {
-		osmo_select_main(1);
-		e1_usb_poll();
+		osmo_select_main(0);
 	}
 
 	/* cleanup */
