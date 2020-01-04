@@ -1,0 +1,36 @@
+e1-prbs-test - Utility to test for bit errors on E1 lines using DAHDI
+======================================================================
+
+e1-prbs-test can be used to test for bit errors in E1 transmission
+lines. It consists of a sender and a receiver, which should be used
+on either end of the E1 line.
+
+Transmitter and receiver can be on the same machine, or on different
+machines.
+
+The code currently works directly on DAHDI, so only DAHDI-supported E1
+cards are supported at this point.
+
+The test works by sending timeslot-specific PRBS sequences of 512 bit
+(64byte) length on the transmit side, and by correlating to those PRBS
+sequences on the receiver side.
+
+The use is relatively simple:
+
+For the A-side, assuming you would want to use DAHDI span 1:
+  e1-prbs-test /dev/dahdi/chan/001
+
+For the B-side, assuming you would want to use DAHDI span 2:
+  e1-prbs-test /dev/dahdi/chan/002
+
+The test will run indefinitely.
+
+If you'd like to get an interim report, send a SIGHUP to
+e1-prbs-test.
+
+If you'd like to stop, simply press Ctrl+C.
+There is a two-stage shut-down process.  When you press Ctrl+C for
+the first time, the report is printed, but transmission continues. At
+the second Ctrl+C, the process terminates.   You must press Ctrl+C for
+the first time on both A and B side, before pressing it the second time
+on the A-side in order to get correct results.
