@@ -4,7 +4,7 @@
 #include <osmocom/core/prbs.h>
 #include <osmocom/core/select.h>
 
-#define MAX_NR_TS	31
+#define MAX_NR_TS	32
 #define PRBS_LEN	2048
 
 /* prbs.c */
