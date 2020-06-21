@@ -80,3 +80,15 @@ struct e1_daemon {
 	void *ctx;
 	struct llist_head interfaces;
 };
+
+struct e1_intf *
+e1_intf_new(struct e1_daemon *e1d, void *drv_data);
+
+struct e1_line *
+e1_line_new(struct e1_intf *intf, void *drv_data);
+
+int
+e1_line_mux_out(struct e1_line *line, uint8_t *buf, int fts);
+
+int
+e1_line_demux_in(struct e1_line *line, const uint8_t *buf, int size);

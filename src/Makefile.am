@@ -30,6 +30,7 @@ bin_PROGRAMS = \
 
 osmo_e1d_SOURCES = \
 	ctl.c \
+	intf_line.c \
 	log.c \
 	osmo-e1d.c \
 	usb.c \
