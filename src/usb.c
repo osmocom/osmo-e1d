@@ -118,7 +118,7 @@ e1_usb_xfer_out(struct e1_usb_flow *flow, uint8_t *buf, int size)
 	int fts;
 
 	if (size <= 0) {
-		printf("OUT ERROR: %d\n", size);
+		LOGP(DXFR, LOGL_ERROR, "OUT ERROR: %d\n", size);
 		return -1;
 	}
 

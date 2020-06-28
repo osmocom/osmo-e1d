@@ -28,6 +28,7 @@
 
 enum {
 	DE1D,
+	DXFR,
 };
 
 extern const struct log_info log_info;

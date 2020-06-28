@@ -33,6 +33,11 @@ static const struct log_info_cat default_categories[] = {
 		.loglevel = LOGL_DEBUG,
 		.enabled = 1,
 	},
+	[DXFR] = {
+		.name = "DXFR",
+		.loglevel = LOGL_DEBUG,
+		.enabled = 1,
+	},
 };
 
 const struct log_info log_info = {
