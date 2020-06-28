@@ -37,6 +37,22 @@
 
 #include "log.h"
 
+const struct value_string osmo_e1dp_msg_type_names[] = {
+	{ E1DP_CMD_INTF_QUERY,	"CMD_INTF_QUERY" },
+	{ E1DP_CMD_LINE_QUERY,	"CMD_LINE_QUERY" },
+	{ E1DP_CMD_TS_QUERY,	"CMD_TS_QUERY" },
+	{ E1DP_CMD_TS_OPEN,	"CMD_TS_OPEN" },
+	{ E1DP_EVT_TYPE,	"EVT_TYPE" },
+	{ E1DP_RESP_TYPE,	"RESP_TYPE" },
+	{ E1DP_ERR_TYPE,	"ERR_TYPE" },
+	{ 0, NULL }
+};
+const struct value_string osmo_e1dp_ts_mode_names[] = {
+	{ E1DP_TSMODE_OFF,	"OFF" },
+	{ E1DP_TSMODE_RAW,	"RAW" },
+	{ E1DP_TSMODE_HDLCFCS,	"HDLC-FCS" },
+	{ 0, NULL }
+};
 
 struct msgb *
 osmo_e1dp_recv(struct osmo_fd *ofd, int *fd)

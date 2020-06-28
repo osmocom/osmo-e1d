@@ -27,6 +27,7 @@
 #include <stdint.h>
 
 #include <osmocom/core/select.h>
+#include <osmocom/core/utils.h>
 
 
 /*	E1DP_CMD_INTF_QUERY
@@ -107,3 +108,6 @@ struct osmo_e1dp_ts_info {
 
 struct msgb *osmo_e1dp_recv(struct osmo_fd *ofd, int *fd);
 int osmo_e1dp_send(struct osmo_fd *ofd, struct msgb *msgb, int fd);
+
+extern const struct value_string osmo_e1dp_msg_type_names[];
+extern const struct value_string osmo_e1dp_ts_mode_names[];
