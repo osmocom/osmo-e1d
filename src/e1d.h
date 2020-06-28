@@ -65,12 +65,19 @@ struct e1_line {
 	struct e1_ts ts[32];
 };
 
+enum e1_driver {
+	E1_DRIVER_USB,
+};
+
+extern const struct value_string e1_driver_names[];
+
 struct e1_intf {
 	struct llist_head list;
 
 	struct e1_daemon *e1d;
 	uint8_t id;
 
+	enum e1_driver drv;
 	void *drv_data;
 
 	struct llist_head lines;

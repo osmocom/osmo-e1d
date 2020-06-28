@@ -300,6 +300,7 @@ _e1_usb_open_device(struct e1_daemon *e1d, struct libusb_device *dev)
 	intf_data->devh = devh;
 
 	intf = e1_intf_new(e1d, intf_data);
+	intf->drv = E1_DRIVER_USB;
 
 	ret = libusb_get_active_config_descriptor(dev, &cd);
 	if (ret) {

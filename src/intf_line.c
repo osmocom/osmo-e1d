@@ -34,6 +34,10 @@
 #include "e1d.h"
 #include "log.h"
 
+const struct value_string e1_driver_names[] = {
+	{ E1_DRIVER_USB, "usb" },
+	{ 0, NULL }
+};
 
 // ---------------------------------------------------------------------------
 // e1d structures
