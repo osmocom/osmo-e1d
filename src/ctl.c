@@ -96,7 +96,7 @@ _e1d_ts_stop(struct e1_ts *ts)
 {
 	ts->mode = E1_TS_MODE_OFF;
 
-	if (ts->fd > 0) {
+	if (ts->fd >= 0) {
 		close(ts->fd);
 		ts->fd = -1;
 	}
