@@ -36,6 +36,7 @@
 
 const struct value_string e1_driver_names[] = {
 	{ E1_DRIVER_USB, "usb" },
+	{ E1_DRIVER_VPAIR, "vpair" },
 	{ 0, NULL }
 };
 

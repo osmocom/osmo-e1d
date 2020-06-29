@@ -35,6 +35,7 @@ osmo_e1d_SOURCES = \
 	log.c \
 	osmo-e1d.c \
 	usb.c \
+	vpair.c \
 	vty.c \
 	$(NULL)
 

@@ -67,6 +67,7 @@ struct e1_line {
 
 enum e1_driver {
 	E1_DRIVER_USB,
+	E1_DRIVER_VPAIR,
 };
 
 extern const struct value_string e1_driver_names[];
@@ -97,6 +98,10 @@ e1d_find_intf(struct e1_daemon *e1d, uint8_t id);
 void
 e1_intf_destroy(struct e1_intf *intf);
 
+
+struct e1_line *
+e1_intf_find_line(struct e1_intf *intf, uint8_t id);
+
 struct e1_line *
 e1_line_new(struct e1_intf *intf, void *drv_data);
 
@@ -115,3 +120,5 @@ e1_ts_stop(struct e1_ts *ts);
 void
 e1d_vty_init(struct e1_daemon *e1d);
 
+int
+e1d_vpair_create(struct e1_daemon *e1d, unsigned int num_lines);

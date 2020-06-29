@@ -3,16 +3,16 @@
  * All Rights Reserved
  *
  * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation; either version 3 of the License, or
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
+ * GNU General Public License for more details.
  *
- * You should have received a copy of the GNU Affero General Public License
+ * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
@@ -131,9 +131,27 @@ DEFUN(show_line, show_line_cmd, "show line [<0-255>]",
 	return CMD_SUCCESS;
 }
 
+DEFUN(cfg_vpair, cfg_vpair_cmd, "virtual-e1-pair <1-255>",
+	"Create a virtual E1 interface pair\n"
+	"Number of E1 lines in virtual E1 interface pair\n")
+{
+	int num_lines = atoi(argv[0]);
+	int rc;
+
+	rc = e1d_vpair_create(vty_e1d, num_lines);
+	if (rc < 0) {
+		vty_out(vty, "%% Error creating virtual-e1-pair: %d%s", rc, VTY_NEWLINE);
+		return CMD_WARNING;
+	}
+
+	return CMD_SUCCESS;
+}
+
 void e1d_vty_init(struct e1_daemon *e1d)
 {
 	vty_e1d = e1d;
 	install_element_ve(&show_intf_cmd);
 	install_element_ve(&show_line_cmd);
+
+	install_element(CONFIG_NODE, &cfg_vpair_cmd);
 }

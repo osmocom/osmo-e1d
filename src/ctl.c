@@ -52,8 +52,8 @@ e1d_find_intf(struct e1_daemon *e1d, uint8_t id)
 	return NULL;
 }
 
-static struct e1_line *
-_e1d_find_line(struct e1_intf *intf, uint8_t id)
+struct e1_line *
+e1_intf_find_line(struct e1_intf *intf, uint8_t id)
 {
 	struct e1_line *line;
 
@@ -185,7 +185,7 @@ _e1d_ctl_line_query(void *data, struct msgb *msgb, struct msgb *rmsgb, int *rfd)
 		return 0;
 
 	if (hdr->line != E1DP_INVALID) {
-		line = _e1d_find_line(intf, hdr->line);
+		line = e1_intf_find_line(intf, hdr->line);
 		n = line ? 1 : 0;
 	} else{
 		n = llist_count(&intf->lines);
@@ -226,7 +226,7 @@ _e1d_ctl_ts_query(void *data, struct msgb *msgb, struct msgb *rmsgb, int *rfd)
 	if (!intf)
 		return 0;
 
-	line = _e1d_find_line(intf, hdr->line);
+	line = e1_intf_find_line(intf, hdr->line);
 	if (!line)
 		return 0;
 
@@ -272,7 +272,7 @@ _e1d_ctl_ts_open(void *data, struct msgb *msgb, struct msgb *rmsgb, int *rfd)
 	if (!intf)
 		return 0;
 
-	line = _e1d_find_line(intf, hdr->line);
+	line = e1_intf_find_line(intf, hdr->line);
 	if (!line)
 		return 0;
 
