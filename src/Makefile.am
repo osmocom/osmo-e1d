@@ -27,6 +27,7 @@ noinst_HEADERS = \
 
 bin_PROGRAMS = \
 	osmo-e1d \
+	osmo-e1d-pipe \
 	$(NULL)
 
 osmo_e1d_SOURCES = \
@@ -41,3 +42,9 @@ osmo_e1d_SOURCES = \
 
 osmo_e1d_LDADD = $(LIBOSMOCORE_LIBS) $(LIBOSMOVTY_LIBS) \
 		 $(LIBOSMOUSB_LIBS) $(LIBUSB_LIBS) libosmo-e1d.la
+
+osmo_e1d_pipe_SOURCES = \
+	e1d-ts-pipe.c \
+	$(NULL)
+
+osmo_e1d_pipe_LDADD = $(LIBOSMOCORE_LIBS) libosmo-e1d.la
