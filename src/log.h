@@ -31,4 +31,13 @@ enum {
 	DXFR,
 };
 
+#define LOGPIF(itf, ss, lvl, fmt, args...) \
+	LOGP(ss, lvl, "(I%u) " fmt, (itf)->id, ## args)
+
+#define LOGPLI(li, ss, lvl, fmt, args...) \
+	LOGP(ss, lvl, "(I%u:L%u) " fmt, (li)->intf->id, (li)->id, ## args)
+
+#define LOGPTS(ts, ss, lvl, fmt, args...) \
+	LOGP(ss, lvl, "(I%u:L%u:T%u) " fmt, (ts)->line->intf->id, (ts)->line->id, (ts)->id, ## args)
+
 extern const struct log_info log_info;

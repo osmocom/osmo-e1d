@@ -118,7 +118,7 @@ e1_usb_xfer_out(struct e1_usb_flow *flow, uint8_t *buf, int size)
 	int fts;
 
 	if (size <= 0) {
-		LOGP(DXFR, LOGL_ERROR, "OUT ERROR: %d\n", size);
+		LOGPLI(line, DXFR, LOGL_ERROR, "OUT ERROR: %d\n", size);
 		return -1;
 	}
 
@@ -144,10 +144,10 @@ e1_usb_xfer_fb(struct e1_usb_flow *flow, uint8_t *buf, int size)
 	struct e1_usb_line_data *ld = (struct e1_usb_line_data *) flow->line->drv_data;
 
 	if (size < 0) {
-		LOGP(DE1D, LOGL_ERROR, "Feedback transfer error\n");
+		LOGPLI(flow->line, DE1D, LOGL_ERROR, "Feedback transfer error\n");
 		return 0;
 	} else if (size != 3) {
-		LOGP(DE1D, LOGL_ERROR, "Feedback packet invalid size (%d)\n", size);
+		LOGPLI(flow->line, DE1D, LOGL_ERROR, "Feedback packet invalid size (%d)\n", size);
 		return 0;
 	}
 
@@ -193,7 +193,7 @@ _e1uf_xfr(struct libusb_transfer *xfr)
 
 	rv = libusb_submit_transfer(xfr);
 	if (rv)
-		LOGP(DE1D, LOGL_ERROR, "Failed to resubmit buffer for transfer\n");
+		LOGPLI(flow->line, DE1D, LOGL_ERROR, "Failed to resubmit buffer for transfer\n");
 }
 
 static struct e1_usb_flow *

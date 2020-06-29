@@ -143,13 +143,13 @@ _e1_rx_hdlcfs(struct e1_ts *ts, uint8_t *buf, int len)
 
 		if (rv > 0) {
 			int bytes_to_write = rv;
-			LOGP(DXFR, LOGL_DEBUG, "RX Message: %d %d [ %s]\n",
-				ts->id, rv, osmo_hexdump(ts->rx_buf, rv));
+			LOGPTS(ts, DXFR, LOGL_DEBUG, "RX Message: %d [ %s]\n",
+				rv, osmo_hexdump(ts->rx_buf, rv));
 			rv = write(ts->fd, ts->rx_buf, bytes_to_write);
 			if (rv < 0)
 				return rv;
 		} else  if (rv < 0 && ts->id == 4) {
-			LOGP(DXFR, LOGL_ERROR, "ERR RX: %d %d %d [ %s]\n",
+			LOGPTS(ts, DXFR, LOGL_ERROR, "ERR RX: %d %d %d [ %s]\n",
 				rv,oi,cl, osmo_hexdump(buf, len));
 		}
 
@@ -171,8 +171,8 @@ _e1_tx_hdlcfs(struct e1_ts *ts, uint8_t *buf, int len)
 		if (!ts->tx_len) {
 			rv = read(ts->fd, ts->tx_buf, sizeof(ts->tx_buf));
 			if (rv > 0) {
-				LOGP(DXFR, LOGL_DEBUG, "TX Message: %d %d [ %s]\n",
-					ts->id, rv, osmo_hexdump(ts->tx_buf, rv));
+				LOGPTS(ts, DXFR, LOGL_DEBUG, "TX Message: %d [ %s]\n",
+					rv, osmo_hexdump(ts->tx_buf, rv));
 				ts->tx_len = rv; 
 				ts->tx_ofs = 0;
 			} else if (rv < 0)
@@ -186,10 +186,10 @@ _e1_tx_hdlcfs(struct e1_ts *ts, uint8_t *buf, int len)
 		);
 
 		if (rv < 0)
-			LOGP(DXFR, LOGL_ERROR, "ERR TX: %d\n", rv);
+			LOGPTS(ts, DXFR, LOGL_ERROR, "ERR TX: %d\n", rv);
 
 		if (ts->tx_ofs < ts->tx_len) {
-			LOGP(DXFR, LOGL_DEBUG, "TX chunk %d/%d %d [ %s]\n",
+			LOGPTS(ts, DXFR, LOGL_DEBUG, "TX chunk %d/%d %d [ %s]\n",
 				ts->tx_ofs, ts->tx_len, cl, osmo_hexdump(&buf[ts->tx_ofs], rv));
 		}
 
@@ -269,7 +269,7 @@ e1_line_demux_in(struct e1_line *line, const uint8_t *buf, int size)
 	int ftr;
 
 	if (size <= 0) {
-		LOGP(DXFR, LOGL_ERROR, "IN ERROR: %d\n", size);
+		LOGPLI(line, DXFR, LOGL_ERROR, "IN ERROR: %d\n", size);
 		return -1;
 	}
 
