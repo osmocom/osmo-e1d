@@ -142,9 +142,12 @@ _e1_rx_hdlcfs(struct e1_ts *ts, uint8_t *buf, int len)
 		);
 
 		if (rv > 0) {
+			int bytes_to_write = rv;
 			LOGP(DXFR, LOGL_DEBUG, "RX Message: %d %d [ %s]\n",
 				ts->id, rv, osmo_hexdump(ts->rx_buf, rv));
-			write(ts->fd, ts->rx_buf, rv);
+			rv = write(ts->fd, ts->rx_buf, bytes_to_write);
+			if (rv < 0)
+				return rv;
 		} else  if (rv < 0 && ts->id == 4) {
 			LOGP(DXFR, LOGL_ERROR, "ERR RX: %d %d %d [ %s]\n",
 				rv,oi,cl, osmo_hexdump(buf, len));
@@ -172,7 +175,8 @@ _e1_tx_hdlcfs(struct e1_ts *ts, uint8_t *buf, int len)
 					ts->id, rv, osmo_hexdump(ts->tx_buf, rv));
 				ts->tx_len = rv; 
 				ts->tx_ofs = 0;
-			}
+			} else if (rv < 0)
+				return rv;
 		}
 
 		/* */
@@ -234,7 +238,14 @@ e1_line_mux_out(struct e1_line *line, uint8_t *buf, int fts)
 			l = _e1_tx_hdlcfs(ts, buf_ts, fts);
 			break;
 		default:
+			OSMO_ASSERT(0);
 			continue;
+		}
+
+		if (l < 0 && errno != EAGAIN) {
+			LOGP(DE1D, LOGL_ERROR, "dead socket during read: %s\n",
+				strerror(errno));
+			e1_ts_stop(ts);
 		}
 
 		if (l <= 0)
@@ -269,6 +280,7 @@ e1_line_demux_in(struct e1_line *line, const uint8_t *buf, int size)
 	{
 		struct e1_ts *ts = &line->ts[tsn];
 		uint8_t buf_ts[ftr];
+		int rv;
 
 		if (ts->mode == E1_TS_MODE_OFF)
 			continue;
@@ -278,14 +290,21 @@ e1_line_demux_in(struct e1_line *line, const uint8_t *buf, int size)
 
 		switch (ts->mode) {
 		case E1_TS_MODE_RAW:
-			write(ts->fd, buf_ts, ftr);
+			rv = write(ts->fd, buf_ts, ftr);
 			break;
 		case E1_TS_MODE_HDLCFCS:
-			_e1_rx_hdlcfs(ts, buf_ts, ftr);
+			rv = _e1_rx_hdlcfs(ts, buf_ts, ftr);
 			break;
 		default:
+			OSMO_ASSERT(0);
 			continue;
 		}
+		if (rv < 0 && errno != EAGAIN) {
+			LOGP(DE1D, LOGL_ERROR, "dead socket during write: %s\n",
+				strerror(errno));
+			e1_ts_stop(ts);
+		}
+
 	}
 
 	return 0;
