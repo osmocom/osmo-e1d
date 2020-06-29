@@ -64,6 +64,8 @@ e1_intf_new(struct e1_daemon *e1d, void *drv_data)
 
 	llist_add_tail(&intf->list, &e1d->interfaces);
 
+	LOGPIF(intf, DE1D, LOGL_NOTICE, "Created\n");
+
 	return intf;
 }
 
@@ -71,6 +73,8 @@ void
 e1_intf_destroy(struct e1_intf *intf)
 {
 	struct e1_line *line, *line2;
+
+	LOGPIF(intf, DE1D, LOGL_NOTICE, "Destroying\n");
 
 	/* destroy all lines */
 	llist_for_each_entry_safe(line, line2, &intf->lines, list)
@@ -107,12 +111,16 @@ e1_line_new(struct e1_intf *intf, void *drv_data)
 
 	llist_add_tail(&line->list, &intf->lines);
 
+	LOGPLI(line, DE1D, LOGL_NOTICE, "Created\n");
+
 	return line;
 }
 
 void
 e1_line_destroy(struct e1_line *line)
 {
+	LOGPLI(line, DE1D, LOGL_NOTICE, "Destroying\n");
+
 	/* close all [peer] file descriptors */
 	for (int i=0; i<32; i++)
 		e1_ts_stop(&line->ts[i]);
@@ -243,7 +251,7 @@ e1_line_mux_out(struct e1_line *line, uint8_t *buf, int fts)
 		}
 
 		if (l < 0 && errno != EAGAIN) {
-			LOGP(DE1D, LOGL_ERROR, "dead socket during read: %s\n",
+			LOGPTS(ts, DE1D, LOGL_ERROR, "dead socket during read: %s\n",
 				strerror(errno));
 			e1_ts_stop(ts);
 		}
@@ -300,7 +308,7 @@ e1_line_demux_in(struct e1_line *line, const uint8_t *buf, int size)
 			continue;
 		}
 		if (rv < 0 && errno != EAGAIN) {
-			LOGP(DE1D, LOGL_ERROR, "dead socket during write: %s\n",
+			LOGPTS(ts, DE1D, LOGL_ERROR, "dead socket during write: %s\n",
 				strerror(errno));
 			e1_ts_stop(ts);
 		}

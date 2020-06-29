@@ -31,11 +31,13 @@
 
 #include <osmocom/core/isdnhdlc.h>
 #include <osmocom/core/msgb.h>
+#include <osmocom/core/logging.h>
 
 #include <osmocom/e1d/proto.h>
 #include <osmocom/e1d/proto_srv.h>
 
 #include "e1d.h"
+#include "log.h"
 
 
 struct e1_intf *
@@ -94,6 +96,8 @@ _e1d_fill_ts_info(struct osmo_e1dp_ts_info *ti, struct e1_ts *ts)
 void
 e1_ts_stop(struct e1_ts *ts)
 {
+	LOGPTS(ts, DE1D, LOGL_INFO, "Stopping\n");
+
 	ts->mode = E1_TS_MODE_OFF;
 
 	if (ts->fd >= 0) {
@@ -106,6 +110,8 @@ static int
 _e1d_ts_start(struct e1_ts *ts, enum e1_ts_mode mode)
 {
 	int ret, sd[2];
+
+	LOGPTS(ts, DE1D, LOGL_INFO, "Starting in mode %u\n", mode);
 
 	ret = socketpair(AF_UNIX, SOCK_SEQPACKET, 0, sd);
 	if (ret < 0)
