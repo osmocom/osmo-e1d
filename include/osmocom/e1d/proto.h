@@ -73,6 +73,7 @@ enum osmo_e1dp_ts_mode {
 #define E1DP_MAGIC	0x00e1
 #define E1DP_MAX_LEN	4096
 #define E1DP_INVALID	0xff
+#define E1DP_DEFAULT_SOCKET "/tmp/osmo-e1d.ctl"
 
 
 struct osmo_e1dp_msg_hdr {

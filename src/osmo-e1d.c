@@ -39,6 +39,7 @@
 #include <osmocom/vty/telnet_interface.h>
 
 #include <osmocom/e1d/proto_srv.h>
+#include <osmocom/e1d/proto.h>
 
 #include "e1d.h"
 #include "log.h"
@@ -196,7 +197,7 @@ int main(int argc, char *argv[])
 	}
 
 	/* server init */
-	srv = osmo_e1dp_server_create(g_e1d_ctx, "/tmp/osmo-e1d.ctl", e1d_ctl_handlers, e1d);
+	srv = osmo_e1dp_server_create(g_e1d_ctx, E1DP_DEFAULT_SOCKET, e1d_ctl_handlers, e1d);
 	OSMO_ASSERT(srv);
 
 	/* main loop */
