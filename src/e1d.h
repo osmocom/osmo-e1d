@@ -104,4 +104,8 @@ int
 e1_line_demux_in(struct e1_line *line, const uint8_t *buf, int size);
 
 void
+e1_ts_stop(struct e1_ts *ts);
+
+void
 e1d_vty_init(struct e1_daemon *e1d);
+

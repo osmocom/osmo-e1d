@@ -91,8 +91,8 @@ _e1d_fill_ts_info(struct osmo_e1dp_ts_info *ti, struct e1_ts *ts)
 }
 
 
-static void
-_e1d_ts_stop(struct e1_ts *ts)
+void
+e1_ts_stop(struct e1_ts *ts)
 {
 	ts->mode = E1_TS_MODE_OFF;
 
@@ -287,7 +287,7 @@ _e1d_ctl_ts_open(void *data, struct msgb *msgb, struct msgb *rmsgb, int *rfd)
 	}
 
 	/* If already open, close previous */
-	_e1d_ts_stop(ts);
+	e1_ts_stop(ts);
 
 	/* Init */
 	ret = _e1d_ts_start(ts, mode);
