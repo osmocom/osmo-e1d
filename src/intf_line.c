@@ -98,6 +98,7 @@ e1_line_new(struct e1_intf *intf, void *drv_data)
 	line->drv_data = drv_data;
 
 	for (int i=0; i<32; i++) {
+		line->ts[i].line = line;
 		line->ts[i].id = i;
 		line->ts[i].fd = -1;
 	}
