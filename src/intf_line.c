@@ -54,11 +54,11 @@ e1_intf_new(struct e1_daemon *e1d, void *drv_data)
 	INIT_LLIST_HEAD(&intf->lines);
 
 	if (!llist_empty(&e1d->interfaces)) {
-		struct e1_intf *f = llist_first_entry(&e1d->interfaces, struct e1_intf, list);
+		struct e1_intf *f = llist_last_entry(&e1d->interfaces, struct e1_intf, list);
 		intf->id = f->id + 1;
 	}
 
-	llist_add(&intf->list, &e1d->interfaces);
+	llist_add_tail(&intf->list, &e1d->interfaces);
 
 	return intf;
 }
@@ -80,11 +80,11 @@ e1_line_new(struct e1_intf *intf, void *drv_data)
 	INIT_LLIST_HEAD(&line->list);
 
 	if (!llist_empty(&intf->lines)) {
-		struct e1_line *l = llist_first_entry(&intf->lines, struct e1_line, list);
+		struct e1_line *l = llist_last_entry(&intf->lines, struct e1_line, list);
 		line->id = l->id + 1;
 	}
 
-	llist_add(&line->list, &intf->lines);
+	llist_add_tail(&line->list, &intf->lines);
 
 	return line;
 }
