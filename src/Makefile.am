@@ -4,7 +4,8 @@
 LIBVERSION=0:0:0
 
 AM_CPPFLAGS = $(all_includes) -I$(top_srcdir)/include -I$(top_builddir)
-AM_CFLAGS=-Wall -Wno-unused-result $(LIBOSMOCORE_CFLAGS) $(LIBOSMOUSB_LIBS) $(LIBUSB_CFLAGS)
+AM_CFLAGS=-Wall -Wno-unused-result $(LIBOSMOCORE_CFLAGS) \
+	  $(LIBOSMOVTY_LIBS) $(LIBOSMOUSB_LIBS) $(LIBUSB_CFLAGS)
 
 lib_LTLIBRARIES = libosmo-e1d.la
 
@@ -34,6 +35,8 @@ osmo_e1d_SOURCES = \
 	log.c \
 	osmo-e1d.c \
 	usb.c \
+	vty.c \
 	$(NULL)
 
-osmo_e1d_LDADD = $(LIBOSMOCORE_LIBS) $(LIBOSMOUSB_LIBS) $(LIBUSB_LIBS) libosmo-e1d.la
+osmo_e1d_LDADD = $(LIBOSMOCORE_LIBS) $(LIBOSMOVTY_LIBS) \
+		 $(LIBOSMOUSB_LIBS) $(LIBUSB_LIBS) libosmo-e1d.la

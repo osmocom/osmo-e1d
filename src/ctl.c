@@ -38,8 +38,8 @@
 #include "e1d.h"
 
 
-static struct e1_intf *
-_e1d_find_intf(struct e1_daemon *e1d, uint8_t id)
+struct e1_intf *
+e1d_find_intf(struct e1_daemon *e1d, uint8_t id)
 {
 	struct e1_intf *intf;
 
@@ -137,7 +137,7 @@ _e1d_ctl_intf_query(void *data, struct msgb *msgb, struct msgb *rmsgb, int *rfd)
 
 	/* Process query and find interface */
 	if (hdr->intf != E1DP_INVALID) {
-		intf = _e1d_find_intf(e1d, hdr->intf);
+		intf = e1d_find_intf(e1d, hdr->intf);
 		n = intf ? 1 : 0;
 	} else {
 		n = llist_count(&e1d->interfaces);
@@ -174,7 +174,7 @@ _e1d_ctl_line_query(void *data, struct msgb *msgb, struct msgb *rmsgb, int *rfd)
 	int n;
 	
 	/* Process query and find line */
-	intf = _e1d_find_intf(e1d, hdr->intf);
+	intf = e1d_find_intf(e1d, hdr->intf);
 	if (!intf)
 		return 0;
 
@@ -216,7 +216,7 @@ _e1d_ctl_ts_query(void *data, struct msgb *msgb, struct msgb *rmsgb, int *rfd)
 	int n;
 
 	/* Process query and find timeslot */
-	intf = _e1d_find_intf(e1d, hdr->intf);
+	intf = e1d_find_intf(e1d, hdr->intf);
 	if (!intf)
 		return 0;
 
@@ -262,7 +262,7 @@ _e1d_ctl_ts_open(void *data, struct msgb *msgb, struct msgb *rmsgb, int *rfd)
 	int ret;
 
 	/* Process query and find timeslot */
-	intf = _e1d_find_intf(e1d, hdr->intf);
+	intf = e1d_find_intf(e1d, hdr->intf);
 	if (!intf)
 		return 0;
 

@@ -84,6 +84,9 @@ struct e1_daemon {
 struct e1_intf *
 e1_intf_new(struct e1_daemon *e1d, void *drv_data);
 
+struct e1_intf *
+e1d_find_intf(struct e1_daemon *e1d, uint8_t id);
+
 struct e1_line *
 e1_line_new(struct e1_intf *intf, void *drv_data);
 
@@ -92,3 +95,6 @@ e1_line_mux_out(struct e1_line *line, uint8_t *buf, int fts);
 
 int
 e1_line_demux_in(struct e1_line *line, const uint8_t *buf, int size);
+
+void
+e1d_vty_init(struct e1_daemon *e1d);
