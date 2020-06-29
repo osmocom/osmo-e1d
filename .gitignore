@@ -23,3 +23,5 @@ missing
 *.o
 
 src/osmo-e1d
+contrib/e1-prbs-test/e1-prbs-test
+contrib/e1-prbs-test/ice40-e1-prbs-check
