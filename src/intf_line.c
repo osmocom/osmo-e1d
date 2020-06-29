@@ -67,6 +67,21 @@ e1_intf_new(struct e1_daemon *e1d, void *drv_data)
 	return intf;
 }
 
+void
+e1_intf_destroy(struct e1_intf *intf)
+{
+	struct e1_line *line, *line2;
+
+	/* destroy all lines */
+	llist_for_each_entry_safe(line, line2, &intf->lines, list)
+		e1_line_destroy(line);
+
+	/* remove from global list of interfaces */
+	llist_del(&intf->list);
+
+	talloc_free(intf);
+}
+
 struct e1_line *
 e1_line_new(struct e1_intf *intf, void *drv_data)
 {
@@ -94,6 +109,20 @@ e1_line_new(struct e1_intf *intf, void *drv_data)
 
 	return line;
 }
+
+void
+e1_line_destroy(struct e1_line *line)
+{
+	/* close all [peer] file descriptors */
+	for (int i=0; i<32; i++)
+		e1_ts_stop(&line->ts[i]);
+
+	/* remove from per-interface list of lines */
+	llist_del(&line->list);
+
+	talloc_free(line);
+}
+
 
 // ---------------------------------------------------------------------------
 // data transfer

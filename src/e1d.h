@@ -94,8 +94,14 @@ e1_intf_new(struct e1_daemon *e1d, void *drv_data);
 struct e1_intf *
 e1d_find_intf(struct e1_daemon *e1d, uint8_t id);
 
+void
+e1_intf_destroy(struct e1_intf *intf);
+
 struct e1_line *
 e1_line_new(struct e1_intf *intf, void *drv_data);
+
+void
+e1_line_destroy(struct e1_line *line);
 
 int
 e1_line_mux_out(struct e1_line *line, uint8_t *buf, int fts);
