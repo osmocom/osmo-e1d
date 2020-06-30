@@ -9,6 +9,7 @@ SUBDIRS = \
 EXTRA_DIST = \
 	.version \
 	doc \
+	git-version-gen \
 	$(NULL)
 
 pkgconfigdir = $(libdir)/pkgconfig
