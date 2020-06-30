@@ -74,6 +74,8 @@ fi
 
 AC_OUTPUT(
 	Makefile
+	doc/Makefile
+	doc/examples/Makefile
 	src/Makefile
 	include/Makefile
 	libosmo-e1d.pc

@@ -1,12 +1,14 @@
 AUTOMAKE_OPTIONS = foreign dist-bzip2
 
 SUBDIRS = \
+	doc \
 	src \
 	include \
 	$(NULL)
 
 EXTRA_DIST = \
 	.version \
+	doc \
 	$(NULL)
 
 pkgconfigdir = $(libdir)/pkgconfig
