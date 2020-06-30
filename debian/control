@@ -1,0 +1,43 @@
+Source: osmo-e1d
+Section: net
+Priority: extra
+Maintainer: Harald Welte <laforge@osmocom.org>
+Build-Depends: debhelper (>=9),
+               dh-autoreconf,
+               autotools-dev,
+               autoconf,
+               automake,
+               libtool,
+               pkg-config,
+               python3-minimal,
+               libosmocore-dev (>= 1.3.0),
+               libosmo-abis-dev (>= 0.6.0),
+               osmo-gsm-manuals-dev
+Standards-Version: 3.9.8
+Vcs-Git: git://git.osmocom.org/osmo-e1d.git
+Vcs-Browser: https://git.osmocom.org/osmo-e1d/
+Homepage: https://projects.osmocom.org/projects/osmo-e1d
+
+Package: osmo-e1d
+Architecture: any
+Multi-Arch: foreign
+Depends: ${misc:Depends}, ${shlibs:Depends}
+Description: osmo-e1d: Osmocom's E1 interface daemon
+
+Package: libosmo-e1d0
+Section: libs
+Architecture: any
+Multi-Arch: same
+Depends: ${misc:Depends}, ${shlibs:Depends}
+Pre-Depends: ${misc:Pre-Depends}
+Description: Client library for talking to the Osmocom E1 interface daemon osmo-e1d.
+
+Package: libosmo-e1d-dev
+Section: libdevel
+Architecture: any
+Multi-Arch: same
+Depends: ${misc:Depends}, ${shlibs:Depends},
+	 libosmo-e1d0 (= ${binary:Version}),
+	 libosmocore-dev,
+	 libosmo-abis-dev
+Description: Development headers for the osmo-e1d library.

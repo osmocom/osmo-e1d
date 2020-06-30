@@ -1,0 +1,5 @@
+usr/include/osmocom/e1d
+usr/lib/*/libosmo-e1d*.a
+usr/lib/*/libosmo-e1d*.so
+usr/lib/*/libosmo-e1d*.la
+usr/lib/*/pkgconfig/libosmo-e1d.pc

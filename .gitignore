@@ -18,6 +18,13 @@ missing
 .deps
 .libs
 
+debian/.debhelper
+debian/autoreconf.*
+debian/libosmo-e1d*
+debian/osmo-e1d
+debian/*.log
+debian/tmp
+
 *.la
 *.lo
 *.o

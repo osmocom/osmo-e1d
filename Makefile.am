@@ -8,6 +8,7 @@ SUBDIRS = \
 
 EXTRA_DIST = \
 	.version \
+	debian \
 	doc \
 	git-version-gen \
 	$(NULL)
