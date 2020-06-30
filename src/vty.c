@@ -49,7 +49,8 @@ static void vty_dump_ts(struct vty *vty, const struct e1_ts *ts)
 
 static void vty_dump_intf(struct vty *vty, const struct e1_intf *intf)
 {
-	vty_out(vty, "Interface #%u, Driver: FIXME%s", intf->id, VTY_NEWLINE);
+	vty_out(vty, "Interface #%u, Driver: %s%s", intf->id,
+		get_value_string(e1_driver_names, intf->drv), VTY_NEWLINE);
 }
 
 DEFUN(show_intf, show_intf_cmd, "show interface [<0-255>]",
