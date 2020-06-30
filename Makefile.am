@@ -1,6 +1,7 @@
 AUTOMAKE_OPTIONS = foreign dist-bzip2
 
 SUBDIRS = \
+	contrib \
 	doc \
 	src \
 	include \
@@ -15,6 +16,10 @@ EXTRA_DIST = \
 
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = libosmo-e1d.pc
+
+AM_DISTCHECK_CONFIGURE_FLAGS = \
+	--with-systemdsystemunitdir=$$dc_install_base/$(systemdsystemunitdir)
+
 
 @RELMAKE@
 

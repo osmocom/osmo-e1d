@@ -1,0 +1,12 @@
+[Unit]
+Description=Osmocom E1 Interface Daemon
+Wants=osmo-e1d.service
+
+[Service]
+Type=simple
+Restart=always
+ExecStart=/usr/bin/osmo-e1d -c /etc/osmocom/osmo-e1d.cfg
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target
