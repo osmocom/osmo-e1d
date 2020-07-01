@@ -1,3 +1,11 @@
+osmo-e1d (0.1.0) unstable; urgency=medium
+
+  * debian/control: Add missing dependency to libusb-1.0-0-dev
+  * debian: Fix packaging of libosmo-e1d
+  * debian: Remove dependency to libosmo-abis; remove explicit libosmocore version
+
+ -- Harald Welte <laforge@osmocom.org>  Wed, 01 Jul 2020 12:29:43 +0200
+
 osmo-e1d (0.0.1) unstable; urgency=medium
 
   [ Harald Welte ]
