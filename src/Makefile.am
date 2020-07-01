@@ -5,7 +5,7 @@ LIBVERSION=0:0:0
 
 AM_CPPFLAGS = $(all_includes) -I$(top_srcdir)/include -I$(top_builddir)
 AM_CFLAGS=-Wall -Wno-unused-result $(LIBOSMOCORE_CFLAGS) \
-	  $(LIBOSMOVTY_LIBS) $(LIBOSMOUSB_LIBS) $(LIBUSB_CFLAGS)
+	  $(LIBOSMOVTY_CFLAGS) $(LIBOSMOUSB_CFLAGS) $(LIBUSB_CFLAGS)
 
 lib_LTLIBRARIES = libosmo-e1d.la
 
