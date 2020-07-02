@@ -1,3 +1,9 @@
+osmo-e1d (0.1.1) unstable; urgency=medium
+
+  * Makefile.am: Don't put LIBS into CFLAGS
+
+ -- Harald Welte <laforge@osmocom.org>  Thu, 02 Jul 2020 13:44:06 +0200
+
 osmo-e1d (0.1.0) unstable; urgency=medium
 
   * debian/control: Add missing dependency to libusb-1.0-0-dev
