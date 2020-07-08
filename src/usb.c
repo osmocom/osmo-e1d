@@ -39,7 +39,7 @@
 
 
 #define USB_VID		0x1d50
-#define USB_PID		0xe1e1
+#define USB_PID		0x6145
 
 libusb_context *g_usb = NULL;
 
