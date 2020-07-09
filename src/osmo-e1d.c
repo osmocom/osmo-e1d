@@ -37,6 +37,7 @@
 #include <osmocom/core/msgb.h>
 #include <osmocom/core/select.h>
 #include <osmocom/vty/telnet_interface.h>
+#include <osmocom/vty/logging.h>
 
 #include <osmocom/e1d/proto_srv.h>
 #include <osmocom/e1d/proto.h>
@@ -173,6 +174,7 @@ int main(int argc, char *argv[])
 
 	INIT_LLIST_HEAD(&e1d->interfaces);
 	vty_init(&vty_info);
+	logging_vty_add_cmds();
 	e1d_vty_init(e1d);
 
 	handle_options(argc, argv);
