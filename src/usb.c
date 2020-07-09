@@ -135,7 +135,7 @@ e1_usb_xfer_out(struct e1_usb_flow *flow, uint8_t *buf, int size)
 
 	memset(buf, 0xff, 4);
 
-	return e1_line_mux_out(line, buf+4, fts);
+	return e1_line_mux_out(line, buf+4, fts) + 4;
 }
 
 static int
