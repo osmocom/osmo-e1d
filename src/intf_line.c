@@ -251,12 +251,7 @@ e1_line_mux_out(struct e1_line *line, uint8_t *buf, int fts)
 
 		switch (ts->mode) {
 		case E1_TS_MODE_RAW:
-			l = recv(ts->fd, buf_ts, fts, MSG_TRUNC);
-			if (l > fts) {
-				LOGPTS(ts, DXFR, LOGL_ERROR, "Truncated message: Client tried to "
-					"send %d bytes but our buffer is limited to %d\n", l, fts);
-				l = fts;
-			}
+			l = read(ts->fd, buf_ts, fts);
 			break;
 		case E1_TS_MODE_HDLCFCS:
 			l = _e1_tx_hdlcfs(ts, buf_ts, fts);

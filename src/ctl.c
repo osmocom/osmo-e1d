@@ -25,6 +25,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <string.h>
+#include <errno.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/socket.h>
@@ -110,10 +111,22 @@ static int
 _e1d_ts_start(struct e1_ts *ts, enum e1_ts_mode mode)
 {
 	int ret, sd[2];
+	int sock_type;
 
 	LOGPTS(ts, DE1D, LOGL_INFO, "Starting in mode %s\n", get_value_string(e1_ts_mode_names, mode));
 
-	ret = socketpair(AF_UNIX, SOCK_SEQPACKET, 0, sd);
+	switch (mode) {
+	case E1_TS_MODE_HDLCFCS:
+		sock_type = SOCK_SEQPACKET;
+		break;
+	case E1_TS_MODE_RAW:
+		sock_type = SOCK_STREAM;
+		break;
+	default:
+		return -EINVAL;
+	}
+
+	ret = socketpair(AF_UNIX, sock_type, 0, sd);
 	if (ret < 0)
 		return ret;
 
