@@ -142,7 +142,7 @@ e1_line_destroy(struct e1_line *line)
 // ---------------------------------------------------------------------------
 
 static int
-_e1_rx_hdlcfs(struct e1_ts *ts, uint8_t *buf, int len)
+_e1_rx_hdlcfs(struct e1_ts *ts, const uint8_t *buf, int len)
 {
 	int rv, cl, oi;
 
