@@ -26,6 +26,9 @@
 #include <unistd.h>
 #include <stdint.h>
 #include <string.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+
 #include <talloc.h>
 
 #include <osmocom/core/isdnhdlc.h>
@@ -179,8 +182,14 @@ _e1_tx_hdlcfs(struct e1_ts *ts, uint8_t *buf, int len)
 	while (oo < len) {
 		/* Pending message ? */
 		if (!ts->tx_len) {
-			rv = read(ts->fd, ts->tx_buf, sizeof(ts->tx_buf));
+			rv = recv(ts->fd, ts->tx_buf, sizeof(ts->tx_buf), MSG_TRUNC);
 			if (rv > 0) {
+				if (rv > sizeof(ts->tx_buf)) {
+					LOGPTS(ts, DXFR, LOGL_ERROR, "Truncated message: Client tried to "
+						"send %d bytes but our buffer is limited to %lu\n",
+						rv, sizeof(ts->tx_buf));
+					rv = sizeof(ts->tx_buf);
+				}
 				LOGPTS(ts, DXFR, LOGL_DEBUG, "TX Message: %d [ %s]\n",
 					rv, osmo_hexdump(ts->tx_buf, rv));
 				ts->tx_len = rv; 
@@ -242,7 +251,12 @@ e1_line_mux_out(struct e1_line *line, uint8_t *buf, int fts)
 
 		switch (ts->mode) {
 		case E1_TS_MODE_RAW:
-			l = read(ts->fd, buf_ts, fts);
+			l = recv(ts->fd, buf_ts, fts, MSG_TRUNC);
+			if (l > fts) {
+				LOGPTS(ts, DXFR, LOGL_ERROR, "Truncated message: Client tried to "
+					"send %d bytes but our buffer is limited to %d\n", l, fts);
+				l = fts;
+			}
 			break;
 		case E1_TS_MODE_HDLCFCS:
 			l = _e1_tx_hdlcfs(ts, buf_ts, fts);
