@@ -177,7 +177,7 @@ _e1_rx_hdlcfs(struct e1_ts *ts, const uint8_t *buf, int len)
 		oi += cl;
 	}
 
-	return 0;
+	return len;
 }
 
 static int
@@ -233,6 +233,83 @@ _e1_tx_hdlcfs(struct e1_ts *ts, uint8_t *buf, int len)
 	return len;
 }
 
+/* read from a timeslot-FD (direction application -> hardware) */
+static int
+_e1_ts_read(struct e1_ts *ts, uint8_t *buf, size_t len)
+{
+	int l;
+
+	switch (ts->mode) {
+	case E1_TS_MODE_RAW:
+		l = read(ts->fd, buf, len);
+		/* FIXME: handle underflow */
+		break;
+	case E1_TS_MODE_HDLCFCS:
+		l = _e1_tx_hdlcfs(ts, buf, len);
+		break;
+	default:
+		OSMO_ASSERT(0);
+		break;
+	}
+
+	if (l < 0 && errno != EAGAIN) {
+		LOGPTS(ts, DE1D, LOGL_ERROR, "dead socket during read: %s\n",
+			strerror(errno));
+		e1_ts_stop(ts);
+	} else if (l < len) {
+		LOGPTS(ts, DE1D, LOGL_NOTICE, "TS read underflow: We had %zu bytes to read, "
+			"but socket returned only %d\n", len, l);
+	}
+
+	return l;
+}
+
+static void
+_e1_line_mux_out_channelized(struct e1_line *line, uint8_t *buf, int fts)
+{
+	OSMO_ASSERT(line->mode == E1_LINE_MODE_CHANNELIZED);
+
+	/* Scan timeslots */
+	for (int tsn=1; tsn<32; tsn++)
+	{
+		struct e1_ts *ts = &line->ts[tsn];
+		uint8_t buf_ts[fts];
+		int l;
+
+		if (ts->mode == E1_TS_MODE_OFF)
+			continue;
+
+		l = _e1_ts_read(ts, buf_ts, sizeof(buf_ts));
+		if (l <= 0)
+			continue;
+
+		for (int i=0; i<l; i++)
+			buf[tsn+(i*32)] = buf_ts[i];
+	}
+}
+
+static void
+_e1_line_mux_out_superchan(struct e1_line *line, uint8_t *buf, int fts)
+{
+	struct e1_ts *ts = &line->superchan;
+	uint8_t sc_buf[31*fts];
+	int l;
+
+	OSMO_ASSERT(line->mode == E1_LINE_MODE_SUPERCHANNEL);
+
+	if (ts->mode == E1_TS_MODE_OFF)
+		return;
+
+	/* first pull all we need out of the source */
+	l = _e1_ts_read(ts, sc_buf, sizeof(sc_buf));
+	if (l <= 0)
+		return;
+
+	/* then form E1 frames from it, sprinkling in some gaps for TS0 */
+	for (int i = 0; i < fts; i++)
+		memcpy(buf + i*32 + 1, sc_buf + i*31, 31);
+}
+
 /*! generate (multiplex) output data for the specified e1_line
  *  \param[in] line E1 line for which to genrate output data
  *  \param[in] buf caller-allocated output buffer for multiplexed data
@@ -247,42 +324,91 @@ e1_line_mux_out(struct e1_line *line, uint8_t *buf, int fts)
 	tsz = 32 * fts;
 	memset(buf, 0xff, tsz);
 
-	/* Scan timeslots */
+	switch (line->mode) {
+	case E1_LINE_MODE_CHANNELIZED:
+		_e1_line_mux_out_channelized(line, buf, fts);
+		break;
+	case E1_LINE_MODE_SUPERCHANNEL:
+		_e1_line_mux_out_superchan(line, buf, fts);
+		break;
+	default:
+		OSMO_ASSERT(0);
+	}
+
+	return tsz;
+}
+
+/* write data to a timeslot (hardware -> application direction) */
+static int
+_e1_ts_write(struct e1_ts *ts, const uint8_t *buf, size_t len)
+{
+	int rv;
+
+	switch (ts->mode) {
+	case E1_TS_MODE_RAW:
+		rv = write(ts->fd, buf, len);
+		break;
+	case E1_TS_MODE_HDLCFCS:
+		rv = _e1_rx_hdlcfs(ts, buf, len);
+		break;
+	default:
+		OSMO_ASSERT(0);
+		break;
+	}
+
+	if (rv < 0 && errno != EAGAIN) {
+		LOGPTS(ts, DE1D, LOGL_ERROR, "dead socket during write: %s\n",
+			strerror(errno));
+		e1_ts_stop(ts);
+	} else if (rv < len) {
+		LOGPTS(ts, DE1D, LOGL_NOTICE, "TS write overflow: We had %zu bytes to send, "
+			"but write returned only %d\n", len, rv);
+	}
+
+	return rv;
+}
+
+static int
+_e1_line_demux_in_superchan(struct e1_line *line, const uint8_t *buf, int ftr)
+{
+	struct e1_ts *ts = &line->superchan;
+	uint8_t sc_buf[ftr*31];
+
+	OSMO_ASSERT(line->mode == E1_LINE_MODE_SUPERCHANNEL);
+
+	if (ts->mode == E1_TS_MODE_OFF)
+		return 0;
+
+	/* first gather input data from multiple frames*/
+	for (int i = 0; i < ftr; i++)
+		memcpy(sc_buf + (i*31), buf + (i*32) + 1, 31);
+
+	/* then dispatch to appropriate action */
+	_e1_ts_write(ts, sc_buf, ftr*31);
+
+	return 0;
+}
+
+static int
+_e1_line_demux_in_channelized(struct e1_line *line, const uint8_t *buf, int ftr)
+{
+	OSMO_ASSERT(line->mode == E1_LINE_MODE_CHANNELIZED);
+
 	for (int tsn=1; tsn<32; tsn++)
 	{
 		struct e1_ts *ts = &line->ts[tsn];
-		uint8_t buf_ts[fts];
-		int l;
+		uint8_t buf_ts[ftr];
 
 		if (ts->mode == E1_TS_MODE_OFF)
 			continue;
 
-		switch (ts->mode) {
-		case E1_TS_MODE_RAW:
-			l = read(ts->fd, buf_ts, fts);
-			break;
-		case E1_TS_MODE_HDLCFCS:
-			l = _e1_tx_hdlcfs(ts, buf_ts, fts);
-			break;
-		default:
-			OSMO_ASSERT(0);
-			continue;
-		}
+		for (int i=0; i<ftr; i++)
+			buf_ts[i] = buf[tsn+(i*32)];
 
-		if (l < 0 && errno != EAGAIN) {
-			LOGPTS(ts, DE1D, LOGL_ERROR, "dead socket during read: %s\n",
-				strerror(errno));
-			e1_ts_stop(ts);
-		}
-
-		if (l <= 0)
-			continue;
-
-		for (int i=0; i<l; i++)
-			buf[tsn+(i*32)] = buf_ts[i];
+		_e1_ts_write(ts, buf_ts, ftr);
 	}
 
-	return tsz;
+	return 0;
 }
 
 /*! de-multiplex E1 line data to the individual timeslots.
@@ -303,36 +429,12 @@ e1_line_demux_in(struct e1_line *line, const uint8_t *buf, int size)
 	ftr = size / 32;
 	OSMO_ASSERT(size % 32 == 0);
 
-	for (int tsn=1; tsn<32; tsn++)
-	{
-		struct e1_ts *ts = &line->ts[tsn];
-		uint8_t buf_ts[ftr];
-		int rv;
-
-		if (ts->mode == E1_TS_MODE_OFF)
-			continue;
-
-		for (int i=0; i<ftr; i++)
-			buf_ts[i] = buf[tsn+(i*32)];
-
-		switch (ts->mode) {
-		case E1_TS_MODE_RAW:
-			rv = write(ts->fd, buf_ts, ftr);
-			break;
-		case E1_TS_MODE_HDLCFCS:
-			rv = _e1_rx_hdlcfs(ts, buf_ts, ftr);
-			break;
-		default:
-			OSMO_ASSERT(0);
-			continue;
-		}
-		if (rv < 0 && errno != EAGAIN) {
-			LOGPTS(ts, DE1D, LOGL_ERROR, "dead socket during write: %s\n",
-				strerror(errno));
-			e1_ts_stop(ts);
-		}
-
+	switch (line->mode) {
+	case E1_LINE_MODE_CHANNELIZED:
+		return _e1_line_demux_in_channelized(line, buf, ftr);
+	case E1_LINE_MODE_SUPERCHANNEL:
+		return _e1_line_demux_in_superchan(line, buf, ftr);
+	default:
+		OSMO_ASSERT(0);
 	}
-
-	return 0;
 }

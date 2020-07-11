@@ -93,11 +93,18 @@ const struct value_string e1_ts_mode_names[] = {
 	{ 0, NULL }
 };
 
+const struct value_string e1_line_mode_names[] = {
+	{ E1_LINE_MODE_CHANNELIZED,	"CHANNELIZED" },
+	{ E1_LINE_MODE_SUPERCHANNEL,	"SUPERCHANNEL" },
+	{ 0, NULL }
+};
+
 static void vty_dump_line(struct vty *vty, const struct e1_line *line)
 {
 	int tn;
 
-	vty_out(vty, "Interface #%u, Line #%u:%s", line->intf->id, line->id, VTY_NEWLINE);
+	vty_out(vty, "Interface #%u, Line #%u, Mode %s:%s", line->intf->id, line->id,
+		get_value_string(e1_line_mode_names, line->mode), VTY_NEWLINE);
 
 	for (tn = 0; tn < ARRAY_SIZE(line->ts); tn++) {
 		const struct e1_ts *ts = &line->ts[tn];
@@ -105,6 +112,9 @@ static void vty_dump_line(struct vty *vty, const struct e1_line *line)
 			ts->id, get_value_string(e1_ts_mode_names, ts->mode),
 			ts->fd, get_remote_pid(ts->fd), VTY_NEWLINE);
 	}
+	vty_out(vty, " SC: Mode %s, FD %d, Peer PID %d%s",
+		get_value_string(e1_ts_mode_names, line->superchan.mode),
+		line->superchan.fd, get_remote_pid(line->superchan.fd), VTY_NEWLINE);
 }
 
 DEFUN(show_line, show_line_cmd, "show line [<0-255>]",

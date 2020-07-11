@@ -85,6 +85,7 @@ enum e1_driver {
 };
 
 extern const struct value_string e1_driver_names[];
+extern const struct value_string e1_line_mode_names[];
 
 struct e1_intf {
 	struct llist_head list;
