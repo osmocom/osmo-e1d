@@ -68,7 +68,12 @@ e1_intf_find_line(struct e1_intf *intf, uint8_t id)
 static struct e1_ts *
 _e1d_get_ts(struct e1_line *line, uint8_t ts)
 {
-	return (ts < 32) ? &line->ts[ts] : NULL;
+	if (ts < 32)
+		return &line->ts[ts];
+	else if (ts == E1DP_TS_SUPERCHAN)
+		return &line->superchan;
+	else
+		return NULL;
 }
 
 static void

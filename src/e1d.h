@@ -55,15 +55,28 @@ struct e1_ts {
 	int fd;
 };
 
+enum e1_line_mode {
+	/* 31 individual 64k timeslots, as used on 3GPP Abis, 3GPP A or ISDN */
+	E1_LINE_MODE_CHANNELIZED,
+	/* 1 channel group spanning all 31 TS, as used e.g. when using Frame Relay
+	 * or raw HDLC over channelized E1. */
+	E1_LINE_MODE_SUPERCHANNEL,
+};
+
 struct e1_line {
 	struct llist_head list;
 
 	struct e1_intf *intf;
 	uint8_t id;
 
+	enum e1_line_mode mode;
+
 	void *drv_data;
 
+	/* timeslots for channelized mode */
 	struct e1_ts ts[32];
+	/* superchannel */
+	struct e1_ts superchan;
 };
 
 enum e1_driver {

@@ -33,6 +33,7 @@
 
 #include <osmocom/core/isdnhdlc.h>
 #include <osmocom/core/utils.h>
+#include <osmocom/e1d/proto.h>
 
 #include "e1d.h"
 #include "log.h"
@@ -90,6 +91,14 @@ e1_intf_destroy(struct e1_intf *intf)
 	talloc_free(intf);
 }
 
+static void
+_ts_init(struct e1_ts *ts, struct e1_line *line, int id)
+{
+	ts->line = line;
+	ts->id = id;
+	ts->fd = -1;
+}
+
 struct e1_line *
 e1_line_new(struct e1_intf *intf, void *drv_data)
 {
@@ -100,12 +109,11 @@ e1_line_new(struct e1_intf *intf, void *drv_data)
 
 	line->intf = intf;
 	line->drv_data = drv_data;
+	line->mode = E1_LINE_MODE_CHANNELIZED;
 
-	for (int i=0; i<32; i++) {
-		line->ts[i].line = line;
-		line->ts[i].id = i;
-		line->ts[i].fd = -1;
-	}
+	for (int i=0; i<32; i++)
+		_ts_init(&line->ts[i], line, i);
+	_ts_init(&line->superchan, line, E1DP_TS_SUPERCHAN);
 
 	INIT_LLIST_HEAD(&line->list);
 
