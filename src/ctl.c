@@ -111,7 +111,7 @@ _e1d_ts_start(struct e1_ts *ts, enum e1_ts_mode mode)
 {
 	int ret, sd[2];
 
-	LOGPTS(ts, DE1D, LOGL_INFO, "Starting in mode %u\n", mode);
+	LOGPTS(ts, DE1D, LOGL_INFO, "Starting in mode %s\n", get_value_string(e1_ts_mode_names, mode));
 
 	ret = socketpair(AF_UNIX, SOCK_SEQPACKET, 0, sd);
 	if (ret < 0)

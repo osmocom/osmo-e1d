@@ -86,7 +86,7 @@ static int get_remote_pid(int fd)
 	return uc.pid;
 }
 
-static const struct value_string e1_ts_mode_names[] = {
+const struct value_string e1_ts_mode_names[] = {
 	{ E1_TS_MODE_OFF,	"OFF" },
 	{ E1_TS_MODE_RAW,	"RAW" },
 	{ E1_TS_MODE_HDLCFCS,	"HDLC-FCS" },

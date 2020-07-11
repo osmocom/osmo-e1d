@@ -33,6 +33,7 @@ enum e1_ts_mode {
 	E1_TS_MODE_RAW,
 	E1_TS_MODE_HDLCFCS,
 };
+extern const struct value_string e1_ts_mode_names[];
 
 struct e1_ts {
 	struct e1_line *line;
