@@ -96,5 +96,6 @@ AC_OUTPUT(
 	doc/examples/Makefile
 	src/Makefile
 	include/Makefile
+	tests/Makefile
 	libosmo-e1d.pc
 	)

@@ -5,6 +5,7 @@ SUBDIRS = \
 	doc \
 	src \
 	include \
+	tests \
 	$(NULL)
 
 EXTRA_DIST = \
