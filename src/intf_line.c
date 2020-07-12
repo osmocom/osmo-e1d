@@ -194,7 +194,7 @@ _e1_tx_hdlcfs(struct e1_ts *ts, uint8_t *buf, int len)
 					rv, osmo_hexdump(ts->tx_buf, rv));
 				ts->tx_len = rv; 
 				ts->tx_ofs = 0;
-			} else if (rv < 0)
+			} else if (rv < 0 && errno != EAGAIN)
 				return rv;
 		}
 
