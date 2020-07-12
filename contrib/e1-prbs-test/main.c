@@ -36,6 +36,7 @@
 #include <dahdi/user.h>
 
 #include <osmocom/core/select.h>
+#include <osmocom/core/application.h>
 #include <osmocom/core/utils.h>
 #include <osmocom/core/bits.h>
 #include <osmocom/core/prbs.h>
@@ -238,6 +239,8 @@ int main(int argc, char **argv)
 {
 	char *basedir;
 	int rc;
+
+	osmo_init_logging2(NULL, NULL);
 
 	handle_options(argc, argv);
 

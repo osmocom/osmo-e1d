@@ -22,12 +22,14 @@ libosmo_e1d_la_LIBADD = $(LIBOSMOCORE_LIBS)
 noinst_HEADERS = \
 	e1d.h \
 	log.h \
+	frame_relay.h \
 	$(NULL)
 
 
 bin_PROGRAMS = \
 	osmo-e1d \
 	osmo-e1d-pipe \
+	e1d-fr-test \
 	$(NULL)
 
 osmo_e1d_SOURCES = \
@@ -48,3 +50,10 @@ osmo_e1d_pipe_SOURCES = \
 	$(NULL)
 
 osmo_e1d_pipe_LDADD = $(LIBOSMOCORE_LIBS) libosmo-e1d.la
+
+e1d_fr_test_SOURCES = \
+	e1d-fr-test.c \
+	frame_relay.c \
+	$(NULL)
+
+e1d_fr_test_LDADD = $(LIBOSMOCORE_LIBS) $(LIBOSMOGSM_LIBS) libosmo-e1d.la
