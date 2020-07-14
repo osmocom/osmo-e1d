@@ -2,6 +2,7 @@
  * proto.h
  *
  * (C) 2019 by Sylvain Munaut <tnt@246tNt.com>
+ * (C) 2020 by Harald Welte <laforge@gnumonks.org>
  *
  * All Rights Reserved
  *
@@ -44,6 +45,11 @@
  * 	in: n/a
  * 	out: array of osmo_e1dp_ts_info
  *
+ *      E1DP_CMD_LINE_CONFIG
+ *      filter: intf (required), line (required)
+ *      in: osmo_e1dp_line_config
+ *      out: osmo_e1dp_line_info
+ *
  * 	E1DP_CMD_TS_OPEN
  * 	filter: intf (required), line (required), ts (required)
  * 	in: osmo_e1dp_ts_config
@@ -55,11 +61,18 @@ enum osmo_e1dp_msg_type {
 	E1DP_CMD_INTF_QUERY	= 0x00,
 	E1DP_CMD_LINE_QUERY	= 0x01,
 	E1DP_CMD_TS_QUERY	= 0x02,
+	E1DP_CMD_LINE_CONFIG	= 0x03,
 	E1DP_CMD_TS_OPEN	= 0x04,
 	E1DP_EVT_TYPE		= 0x40,
 	E1DP_RESP_TYPE		= 0x80,
 	E1DP_ERR_TYPE		= 0xc0,
 	E1DP_TYPE_MSK		= 0xc0,
+};
+
+enum osmo_e1dp_line_mode {
+	E1DP_LMODE_OFF		= 0x00,
+	E1DP_LMODE_CHANNELIZED	= 0x20,
+	E1DP_LMODE_SUPERCHANNEL	= 0x21,
 };
 
 enum osmo_e1dp_ts_mode {
@@ -91,8 +104,13 @@ struct osmo_e1dp_intf_info {
 	uint8_t n_lines;
 } __attribute__((packed));
 
+struct osmo_e1dp_line_config {
+	uint8_t mode;
+} __attribute__((packed));
+
 struct osmo_e1dp_line_info {
 	uint8_t id;
+	struct osmo_e1dp_line_config cfg;
 	uint8_t status;		/* TBD */
 } __attribute__((packed));
 
@@ -111,4 +129,5 @@ struct msgb *osmo_e1dp_recv(struct osmo_fd *ofd, int *fd);
 int osmo_e1dp_send(struct osmo_fd *ofd, struct msgb *msgb, int fd);
 
 extern const struct value_string osmo_e1dp_msg_type_names[];
+extern const struct value_string osmo_e1dp_line_mode_names[];
 extern const struct value_string osmo_e1dp_ts_mode_names[];

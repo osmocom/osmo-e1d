@@ -2,6 +2,7 @@
  * ctl.c
  *
  * (C) 2019 by Sylvain Munaut <tnt@246tNt.com>
+ * (C) 2020 by Harald Welte <laforge@gnumonks.org>
  *
  * All Rights Reserved
  *
@@ -87,6 +88,16 @@ static void
 _e1d_fill_line_info(struct osmo_e1dp_line_info *li, struct e1_line *line)
 {
 	li->id = line->id;
+	switch (line->mode) {
+	case E1_LINE_MODE_CHANNELIZED:
+		li->cfg.mode = E1DP_LMODE_CHANNELIZED;
+		break;
+	case E1_LINE_MODE_SUPERCHANNEL:
+		li->cfg.mode = E1DP_LMODE_SUPERCHANNEL;
+		break;
+	default:
+		OSMO_ASSERT(0);
+	}
 	li->status = 0x00;
 }
 
@@ -273,6 +284,53 @@ _e1d_ctl_ts_query(void *data, struct msgb *msgb, struct msgb *rmsgb, int *rfd)
 }
 
 static int
+_e1d_ctl_line_config(void *data, struct msgb *msgb, struct msgb *rmsgb, int *rfd)
+{
+	struct e1_daemon *e1d = (struct e1_daemon *)data;
+	struct osmo_e1dp_msg_hdr *hdr = msgb_l1(msgb);
+	struct osmo_e1dp_line_config *cfg = msgb_l2(msgb);
+	struct osmo_e1dp_line_info *info;
+	struct e1_intf *intf = NULL;
+	struct e1_line *line = NULL;
+
+	/* Process query and find timeslot */
+	intf = e1d_find_intf(e1d, hdr->intf);
+	if (!intf)
+		return 0;
+
+	line = e1_intf_find_line(intf, hdr->line);
+	if (!line)
+		return 0;
+
+	LOGPLI(line, DE1D, LOGL_NOTICE, "Setting line mode from %s to %s\n",
+		get_value_string(e1_line_mode_names, line->mode),
+		get_value_string(osmo_e1dp_line_mode_names, cfg->mode));
+	/* Select mode */
+	switch (cfg->mode) {
+	case E1DP_LMODE_CHANNELIZED:
+		line->mode = E1_LINE_MODE_CHANNELIZED;
+		break;
+	case E1DP_LMODE_SUPERCHANNEL:
+		line->mode = E1_LINE_MODE_SUPERCHANNEL;
+		break;
+	default:
+		return 0;
+	}
+
+	/* Allocate response */
+	rmsgb->l2h = msgb_put(rmsgb, sizeof(struct osmo_e1dp_line_info));
+	info = msgb_l2(rmsgb);
+
+	memset(info, 0x00, sizeof(struct osmo_e1dp_line_info));
+
+	/* Fill reponse */
+	_e1d_fill_line_info(info, line);
+
+	return 0;
+}
+
+
+static int
 _e1d_ctl_ts_open(void *data, struct msgb *msgb, struct msgb *rmsgb, int *rfd)
 {
 	struct e1_daemon *e1d = (struct e1_daemon *)data;
@@ -353,6 +411,12 @@ struct osmo_e1dp_server_handler e1d_ctl_handlers[] = {
 		.flags = E1DP_SF_INTF_REQ | E1DP_SF_LINE_REQ | E1DP_SF_TS_OPT,
 		.payload_len = 0,
 		.fn = _e1d_ctl_ts_query,
+	},
+	{
+		.type = E1DP_CMD_LINE_CONFIG,
+		.flags = E1DP_SF_INTF_REQ | E1DP_SF_LINE_REQ,
+		.payload_len = sizeof(struct osmo_e1dp_line_config),
+		.fn = _e1d_ctl_line_config,
 	},
 	{
 		.type = E1DP_CMD_TS_OPEN,

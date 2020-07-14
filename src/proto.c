@@ -46,6 +46,12 @@ const struct value_string osmo_e1dp_msg_type_names[] = {
 	{ E1DP_ERR_TYPE,	"ERR_TYPE" },
 	{ 0, NULL }
 };
+const struct value_string osmo_e1dp_line_mode_names[] = {
+	{ E1DP_LMODE_OFF,		"OFF" },
+	{ E1DP_LMODE_CHANNELIZED,	"CHANNELIZED" },
+	{ E1DP_LMODE_SUPERCHANNEL,	"SUPERCHANNEL" },
+	{ 0, NULL }
+};
 const struct value_string osmo_e1dp_ts_mode_names[] = {
 	{ E1DP_TSMODE_OFF,	"OFF" },
 	{ E1DP_TSMODE_RAW,	"RAW" },

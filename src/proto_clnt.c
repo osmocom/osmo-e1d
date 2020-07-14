@@ -2,6 +2,7 @@
  * proto_clnt.c
  *
  * (C) 2019 by Sylvain Munaut <tnt@246tNt.com>
+ * (C) 2020 by Harald Welte <laforge@gnumonks.org>
  *
  * All Rights Reserved
  *
@@ -278,6 +279,36 @@ osmo_e1dp_client_ts_query(struct osmo_e1dp_client *clnt,
 		*ti = talloc_array(clnt->ctx, struct osmo_e1dp_ts_info, *n);
 		memcpy(*ti, msgb_l2(msgb), *n * sizeof(struct osmo_e1dp_ts_info));
 	}
+
+	msgb_free(msgb);
+
+	return 0;
+}
+
+int
+osmo_e1dp_client_line_config(struct osmo_e1dp_client *clnt,
+	uint8_t intf, uint8_t line, enum osmo_e1dp_line_mode mode)
+{
+	struct msgb *msgb;
+	struct osmo_e1dp_msg_hdr hdr;
+	struct osmo_e1dp_line_config cfg;
+	int rc;
+
+	memset(&hdr, 0x00, sizeof(struct osmo_e1dp_msg_hdr));
+	hdr.type = E1DP_CMD_LINE_CONFIG;
+	hdr.intf = intf;
+	hdr.line = line;
+	hdr.ts = E1DP_INVALID;
+
+	memset(&cfg, 0x00, sizeof(struct osmo_e1dp_line_config));
+	cfg.mode = mode;
+
+	rc = _e1dp_client_query_base(clnt, &hdr, &cfg, sizeof(struct osmo_e1dp_line_config), &msgb, NULL);
+	if (rc)
+		return rc;
+
+	if (msgb_l2len(msgb) != sizeof(struct osmo_e1dp_line_info))
+		return -EPIPE;
 
 	msgb_free(msgb);
 
