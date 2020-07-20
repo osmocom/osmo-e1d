@@ -150,8 +150,8 @@ _e1d_ts_start(struct e1_ts *ts, enum e1_ts_mode mode)
 	ts->mode = mode;
 
 	if (mode == E1_TS_MODE_HDLCFCS) {
-		osmo_isdnhdlc_out_init(&ts->hdlc_tx, OSMO_HDLC_F_BITREVERSE);
-		osmo_isdnhdlc_rcv_init(&ts->hdlc_rx, OSMO_HDLC_F_BITREVERSE);
+		osmo_isdnhdlc_out_init(&ts->hdlc.tx, OSMO_HDLC_F_BITREVERSE);
+		osmo_isdnhdlc_rcv_init(&ts->hdlc.rx, OSMO_HDLC_F_BITREVERSE);
 	}
 
 	int flags = fcntl(ts->fd, F_GETFL);

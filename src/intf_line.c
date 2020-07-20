@@ -157,16 +157,16 @@ _e1_rx_hdlcfs(struct e1_ts *ts, const uint8_t *buf, int len)
 	oi = 0;
 
 	while (oi < len) {
-		rv = osmo_isdnhdlc_decode(&ts->hdlc_rx,
+		rv = osmo_isdnhdlc_decode(&ts->hdlc.rx,
 			&buf[oi], len-oi, &cl,
-			ts->rx_buf, sizeof(ts->rx_buf)
+			ts->hdlc.rx_buf, sizeof(ts->hdlc.rx_buf)
 		);
 
 		if (rv > 0) {
 			int bytes_to_write = rv;
 			LOGPTS(ts, DXFR, LOGL_DEBUG, "RX Message: %d [ %s]\n",
-				rv, osmo_hexdump(ts->rx_buf, rv));
-			rv = write(ts->fd, ts->rx_buf, bytes_to_write);
+				rv, osmo_hexdump(ts->hdlc.rx_buf, rv));
+			rv = write(ts->fd, ts->hdlc.rx_buf, bytes_to_write);
 			if (rv < 0)
 				return rv;
 		} else  if (rv < 0 && ts->id == 4) {
@@ -189,44 +189,44 @@ _e1_tx_hdlcfs(struct e1_ts *ts, uint8_t *buf, int len)
 
 	while (oo < len) {
 		/* Pending message ? */
-		if (!ts->tx_len) {
-			rv = recv(ts->fd, ts->tx_buf, sizeof(ts->tx_buf), MSG_TRUNC);
+		if (!ts->hdlc.tx_len) {
+			rv = recv(ts->fd, ts->hdlc.tx_buf, sizeof(ts->hdlc.tx_buf), MSG_TRUNC);
 			if (rv > 0) {
-				if (rv > sizeof(ts->tx_buf)) {
+				if (rv > sizeof(ts->hdlc.tx_buf)) {
 					LOGPTS(ts, DXFR, LOGL_ERROR, "Truncated message: Client tried to "
 						"send %d bytes but our buffer is limited to %lu\n",
-						rv, sizeof(ts->tx_buf));
-					rv = sizeof(ts->tx_buf);
+						rv, sizeof(ts->hdlc.tx_buf));
+					rv = sizeof(ts->hdlc.tx_buf);
 				}
 				LOGPTS(ts, DXFR, LOGL_DEBUG, "TX Message: %d [ %s]\n",
-					rv, osmo_hexdump(ts->tx_buf, rv));
-				ts->tx_len = rv; 
-				ts->tx_ofs = 0;
+					rv, osmo_hexdump(ts->hdlc.tx_buf, rv));
+				ts->hdlc.tx_len = rv; 
+				ts->hdlc.tx_ofs = 0;
 			} else if (rv < 0 && errno != EAGAIN)
 				return rv;
 		}
 
 		/* */
-		rv = osmo_isdnhdlc_encode(&ts->hdlc_tx,
-			&ts->tx_buf[ts->tx_ofs], ts->tx_len - ts->tx_ofs, &cl,
+		rv = osmo_isdnhdlc_encode(&ts->hdlc.tx,
+			&ts->hdlc.tx_buf[ts->hdlc.tx_ofs], ts->hdlc.tx_len - ts->hdlc.tx_ofs, &cl,
 			&buf[oo], len - oo
 		);
 
 		if (rv < 0)
 			LOGPTS(ts, DXFR, LOGL_ERROR, "ERR TX: %d\n", rv);
 
-		if (ts->tx_ofs < ts->tx_len) {
+		if (ts->hdlc.tx_ofs < ts->hdlc.tx_len) {
 			LOGPTS(ts, DXFR, LOGL_DEBUG, "TX chunk %d/%d %d [ %s]\n",
-				ts->tx_ofs, ts->tx_len, cl, osmo_hexdump(&buf[ts->tx_ofs], rv));
+				ts->hdlc.tx_ofs, ts->hdlc.tx_len, cl, osmo_hexdump(&buf[ts->hdlc.tx_ofs], rv));
 		}
 
 		if (rv > 0)
 			oo += rv;
 
-		ts->tx_ofs += cl;
-		if (ts->tx_ofs >= ts->tx_len) {
-			ts->tx_len = 0;
-			ts->tx_ofs = 0;
+		ts->hdlc.tx_ofs += cl;
+		if (ts->hdlc.tx_ofs >= ts->hdlc.tx_len) {
+			ts->hdlc.tx_len = 0;
+			ts->hdlc.tx_ofs = 0;
 		}
 	}
 

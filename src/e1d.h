@@ -43,13 +43,15 @@ struct e1_ts {
 	enum e1_ts_mode mode;
 
 	/* HDLC handling */
-	struct osmo_isdnhdlc_vars hdlc_tx;
-	struct osmo_isdnhdlc_vars hdlc_rx;
+	struct {
+		struct osmo_isdnhdlc_vars tx;
+		struct osmo_isdnhdlc_vars rx;
 
-	uint8_t rx_buf[264];
-	uint8_t tx_buf[264];
-	int tx_ofs;
-	int tx_len;
+		uint8_t rx_buf[264];
+		uint8_t tx_buf[264];
+		int tx_ofs;
+		int tx_len;
+	} hdlc;
 
 	/* Remote end */
 	int fd;
