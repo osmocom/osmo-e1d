@@ -200,7 +200,7 @@ _e1_tx_hdlcfs(struct e1_ts *ts, uint8_t *buf, int len)
 				}
 				LOGPTS(ts, DXFR, LOGL_DEBUG, "TX Message: %d [ %s]\n",
 					rv, osmo_hexdump(ts->hdlc.tx_buf, rv));
-				ts->hdlc.tx_len = rv; 
+				ts->hdlc.tx_len = rv;
 				ts->hdlc.tx_ofs = 0;
 			} else if (rv < 0 && errno != EAGAIN)
 				return rv;
@@ -338,6 +338,48 @@ e1_line_mux_out(struct e1_line *line, uint8_t *buf, int fts)
 	return tsz;
 }
 
+/* append data to the per-timeslot buffer; flush to socket every time buffer is full */
+static int
+_e1_rx_raw(struct e1_ts *ts, const uint8_t *buf, unsigned int len)
+{
+	unsigned int appended = 0;
+	int rv;
+
+	OSMO_ASSERT(ts->mode == E1_TS_MODE_RAW);
+
+	/* we don't keep a larger set of buffers but simply assume that whenever
+	 * we received one full chunk/buffer size, we are able to push the data
+	 * into the underlying unix domain socket.  Kernel socket buffering should
+	 * be far sufficient in terms of buffering capacity of voice data (which
+	 * is typically consumed reasonably low latency and hence buffer size) */
+
+	while (appended < len) {
+		unsigned int ts_buf_tailroom = ts->raw.rx_buf_size - ts->raw.rx_buf_used;
+		unsigned int chunk_len;
+
+		/* determine size of chunk we can write at this point */
+		chunk_len = len - appended;
+		if (chunk_len > ts_buf_tailroom)
+			chunk_len = ts_buf_tailroom;
+
+		/* actually copy the chunk */
+		memcpy(ts->raw.rx_buf + ts->raw.rx_buf_used, buf + appended, chunk_len);
+		ts->raw.rx_buf_used += chunk_len;
+		appended += chunk_len;
+
+		/* if ts_buf is full: flush + rewind */
+		if (ts->raw.rx_buf_used >= ts->raw.rx_buf_size) {
+			rv = write(ts->fd, ts->raw.rx_buf, ts->raw.rx_buf_size);
+			if (rv < 0)
+				return rv;
+			/* FIXME: count overflows */
+			ts->raw.rx_buf_used = 0;
+		}
+	}
+
+	return appended;
+}
+
 /* write data to a timeslot (hardware -> application direction) */
 static int
 _e1_ts_write(struct e1_ts *ts, const uint8_t *buf, size_t len)
@@ -346,7 +388,7 @@ _e1_ts_write(struct e1_ts *ts, const uint8_t *buf, size_t len)
 
 	switch (ts->mode) {
 	case E1_TS_MODE_RAW:
-		rv = write(ts->fd, buf, len);
+		rv = _e1_rx_raw(ts, buf, len);
 		break;
 	case E1_TS_MODE_HDLCFCS:
 		rv = _e1_rx_hdlcfs(ts, buf, len);

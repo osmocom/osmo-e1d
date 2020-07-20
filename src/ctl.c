@@ -121,6 +121,20 @@ e1_ts_stop(struct e1_ts *ts)
 		close(ts->fd);
 		ts->fd = -1;
 	}
+
+	talloc_free(ts->raw.rx_buf);
+	ts->raw.rx_buf = NULL;
+	ts->raw.rx_buf_size = 0;
+	ts->raw.rx_buf_used = 0;
+}
+
+static void
+_e1d_ts_raw_buf_realloc(struct e1_ts *ts, unsigned int size)
+{
+	ts->raw.rx_buf = talloc_realloc_size(ts->line, ts->raw.rx_buf, size);
+	OSMO_ASSERT(ts->raw.rx_buf);
+	ts->raw.rx_buf_size = size;
+	ts->raw.rx_buf_used = 0;
 }
 
 static int
@@ -137,6 +151,7 @@ _e1d_ts_start(struct e1_ts *ts, enum e1_ts_mode mode)
 		break;
 	case E1_TS_MODE_RAW:
 		sock_type = SOCK_STREAM;
+		_e1d_ts_raw_buf_realloc(ts, 160); /* TODO: make configurable */
 		break;
 	default:
 		return -EINVAL;

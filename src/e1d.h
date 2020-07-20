@@ -53,6 +53,13 @@ struct e1_ts {
 		int tx_len;
 	} hdlc;
 
+	/* RAW handling */
+	struct {
+		uint8_t *rx_buf;		/* actual buffer storage */
+		unsigned int rx_buf_size;	/* size of 'buf' in bytes */
+		unsigned int rx_buf_used;	/* number of bytes used so far */
+	} raw;
+
 	/* Remote end */
 	int fd;
 };
