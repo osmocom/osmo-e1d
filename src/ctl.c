@@ -138,7 +138,7 @@ _e1d_ts_raw_buf_realloc(struct e1_ts *ts, unsigned int size)
 }
 
 static int
-_e1d_ts_start(struct e1_ts *ts, enum e1_ts_mode mode)
+_e1d_ts_start(struct e1_ts *ts, enum e1_ts_mode mode, uint16_t bufsize)
 {
 	int ret, sd[2];
 	int sock_type;
@@ -151,7 +151,7 @@ _e1d_ts_start(struct e1_ts *ts, enum e1_ts_mode mode)
 		break;
 	case E1_TS_MODE_RAW:
 		sock_type = SOCK_STREAM;
-		_e1d_ts_raw_buf_realloc(ts, 160); /* TODO: make configurable */
+		_e1d_ts_raw_buf_realloc(ts, bufsize);
 		break;
 	default:
 		return -EINVAL;
@@ -383,11 +383,14 @@ _e1d_ctl_ts_open(void *data, struct msgb *msgb, struct msgb *rmsgb, int *rfd)
 		return 0;
 	}
 
+	if (cfg->read_bufsize == 0)
+		return 0;
+
 	/* If already open, close previous */
 	e1_ts_stop(ts);
 
 	/* Init */
-	ret = _e1d_ts_start(ts, mode);
+	ret = _e1d_ts_start(ts, mode, cfg->read_bufsize);
 	if (ret < 0)
 		return ret;
 

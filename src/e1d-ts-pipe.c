@@ -44,9 +44,9 @@ static int infd = 0;
 
 
 static int ts_open(uint8_t intf_nr, uint8_t line_nr, uint8_t ts_nr,
-		   enum osmo_e1dp_ts_mode mode)
+		   enum osmo_e1dp_ts_mode mode, uint16_t bufsize)
 {
-	int  rc = osmo_e1dp_client_ts_open(g_client, intf_nr, line_nr, ts_nr, mode);
+	int  rc = osmo_e1dp_client_ts_open(g_client, intf_nr, line_nr, ts_nr, mode, bufsize);
 	if (rc < 0)
 		fprintf(stderr, "Cannot open e1d timeslot %u:%u:%u\n", intf_nr, line_nr, ts_nr);
 	return rc;
@@ -122,6 +122,7 @@ int main(int argc, char **argv)
 	int intf_nr = -1, line_nr = -1, ts_nr = -1;
 	enum osmo_e1dp_ts_mode mode = E1DP_TSMODE_RAW;
 	char *path = E1DP_DEFAULT_SOCKET;
+	int bufsize = 160;
 	int tsfd;
 	int option_index, rc;
 
@@ -141,10 +142,11 @@ int main(int argc, char **argv)
 			{ "timeslot", 1, 0, 't' },
 			{ "mode", 1, 0, 'm' },
 			{ "read", 1, 0, 'r' },
+			{ "read-bufsize", 1, 0, 'b' },
 			{ 0,0,0,0 }
 		};
 
-		c = getopt_long(argc, argv, "hp:i:l:t:m:r:", long_options, &option_index);
+		c = getopt_long(argc, argv, "hp:i:l:t:m:r:b:", long_options, &option_index);
 		if (c == -1)
 			break;
 
@@ -180,6 +182,9 @@ int main(int argc, char **argv)
 			}
 			infd = rc;
 			break;
+		case 'b':
+			bufsize = atoi(optarg);
+			break;
 		}
 	}
 
@@ -194,7 +199,7 @@ int main(int argc, char **argv)
 		exit(1);
 	}
 
-	tsfd = ts_open(intf_nr, line_nr, ts_nr, mode);
+	tsfd = ts_open(intf_nr, line_nr, ts_nr, mode, bufsize);
 	if (tsfd < 0)
 		exit(2);
 

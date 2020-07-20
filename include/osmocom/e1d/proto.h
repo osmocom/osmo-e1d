@@ -84,7 +84,7 @@ enum osmo_e1dp_ts_mode {
 
 /* the idea here is to use the first byte as a version number, to prevent incompatible
  * clients from connecting to e1d */
-#define E1DP_MAGIC	0x00e1
+#define E1DP_MAGIC	0x01e1
 #define E1DP_MAX_LEN	4096
 #define E1DP_TS_SUPERCHAN 0xfe
 #define E1DP_INVALID	0xff
@@ -118,6 +118,7 @@ struct osmo_e1dp_line_info {
 
 struct osmo_e1dp_ts_config {
 	uint8_t mode;
+	uint16_t read_bufsize;
 } __attribute__((packed));
 
 struct osmo_e1dp_ts_info {

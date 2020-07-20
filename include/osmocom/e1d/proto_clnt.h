@@ -45,4 +45,4 @@ int osmo_e1dp_client_line_config(struct osmo_e1dp_client *clnt,
 	uint8_t intf, uint8_t line, enum osmo_e1dp_line_mode mode);
 int osmo_e1dp_client_ts_open(struct osmo_e1dp_client *clnt,
 	uint8_t intf, uint8_t line, uint8_t ts,
-	enum osmo_e1dp_ts_mode mode);
+	enum osmo_e1dp_ts_mode mode, uint16_t read_bufsize);
