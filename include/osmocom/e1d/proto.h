@@ -82,6 +82,8 @@ enum osmo_e1dp_ts_mode {
 };
 
 
+/* the idea here is to use the first byte as a version number, to prevent incompatible
+ * clients from connecting to e1d */
 #define E1DP_MAGIC	0x00e1
 #define E1DP_MAX_LEN	4096
 #define E1DP_TS_SUPERCHAN 0xfe
