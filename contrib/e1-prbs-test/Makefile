@@ -1,5 +1,5 @@
-LIBOSMO_CFLAGS:=$(shell pkg-config --cflags libosmocore)
-LIBOSMO_LIBS:=$(shell pkg-config --libs libosmocore)
+LIBOSMO_CFLAGS:=$(shell pkg-config --cflags libosmocore libosmo-e1d)
+LIBOSMO_LIBS:=$(shell pkg-config --libs libosmocore libosmo-e1d)
 
 CFLAGS=-O2 -g -Wall -Werror $(LIBOSMO_CFLAGS)
 LIBS=$(LIBOSMO_LIBS)

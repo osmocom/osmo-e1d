@@ -40,6 +40,8 @@
 #include <osmocom/core/bits.h>
 #include <osmocom/core/prbs.h>
 
+#include <osmocom/e1d/proto_clnt.h>
+
 #include "internal.h"
 
 static struct test_state g_tst;
@@ -69,12 +71,69 @@ static int e1_fd_cb(struct osmo_fd *ofd, unsigned int what)
 	return 0;
 }
 
-static int open_slots(struct test_state *tst, const char *basedir)
+static void init_timeslot(struct timeslot_state *ts)
 {
-	DIR *dir = opendir(basedir);
+	osmo_fd_register(&ts->ofd);
+	printf("E1TS(%02u) opened\n", ts->ofd.priv_nr);
+
+	ts_init_prbs_tx(ts, g_prbs_offs_tx);
+	ts_init_prbs_rx(ts, g_prbs_offs_rx);
+
+	/* start to put something into the transmit queue, before we get read-triggered
+	 * later on */
+	process_tx(ts, 1024);
+}
+
+static int open_slots_e1d(struct test_state *tst, int intf_nr, int line_nr)
+{
+	struct osmo_e1dp_client *clnt = osmo_e1dp_client_create(NULL, E1DP_DEFAULT_SOCKET);
+	int i, rc, num_slots = 0;
+
+	if (!clnt) {
+		fprintf(stderr, "Unable to connect to osmo-e1d\n");
+		return -1;
+	}
+
+	for (i = 1; i < 32; i++) {
+		struct timeslot_state *ts;
+		rc = osmo_e1dp_client_ts_open(clnt, intf_nr, line_nr, i, E1DP_TSMODE_RAW, 1024);
+		if (rc < 0) {
+			fprintf(stderr, "Error opening %d: %d (%s)\n", i, rc, strerror(errno));
+			return -1;
+		}
+		ts = &tst->ts[tst->next_unused_ts++];
+
+		/* open the respective file descriptor */
+		osmo_fd_setup(&ts->ofd, rc, BSC_FD_READ, e1_fd_cb, ts, i);
+
+		init_timeslot(ts);
+		num_slots++;
+	}
+
+	return num_slots;
+}
+
+static int open_slots(struct test_state *tst, char *basedir)
+{
+	DIR *dir;
 	struct dirent *ent;
 	int rc, num_slots = 0;
 
+	if (!strncmp(basedir, "e1d", 3)) {
+		int intf = 0, line = 0;
+		char *intf_str, *line_str;
+		strtok(basedir, ":");
+		intf_str = strtok(NULL, ":");
+		if (intf_str) {
+			intf = atoi(intf_str);
+			line_str = strtok(NULL, ":");
+			if (line_str)
+				line = atoi(line_str);
+		}
+		return open_slots_e1d(tst, intf, line);
+	}
+
+	dir = opendir(basedir);
 	if (!dir)
 		return -ENOENT;
 
@@ -99,15 +158,6 @@ static int open_slots(struct test_state *tst, const char *basedir)
 
 		/* open the respective file descriptor */
 		osmo_fd_setup(&ts->ofd, rc, BSC_FD_READ, e1_fd_cb, ts, atoi(ent->d_name));
-		osmo_fd_register(&ts->ofd);
-		printf("E1TS(%02u) opened\n", ts->ofd.priv_nr);
-
-		ts_init_prbs_tx(ts, g_prbs_offs_tx);
-		ts_init_prbs_rx(ts, g_prbs_offs_rx);
-
-		/* start to put something into the transmit queue, before we get read-triggered
-		 * later on */
-		process_tx(ts, 1024);
 
 		cfg_dahdi_buffer(ts->ofd.fd);
 		struct dahdi_bufferinfo bi;
@@ -115,6 +165,8 @@ static int open_slots(struct test_state *tst, const char *basedir)
 		OSMO_ASSERT(rc == 0);
 		printf("tx_pol=%d, rx_pol=%d, num=%d, size=%d, nread=%d, nwrite=%d\n",
 			bi.txbufpolicy, bi.rxbufpolicy, bi.numbufs, bi.bufsize, bi.readbufs, bi.writebufs); 
+
+		init_timeslot(ts);
 		num_slots++;
 	}
 	closedir(dir);
@@ -191,13 +243,15 @@ int main(int argc, char **argv)
 
 	if (argc <= optind) {
 		fprintf(stderr, "You must specify the base-path of your DAHDI span "
-			"like /dev/dahdi/chan/001\n");
+			"like /dev/dahdi/chan/001 or e1d:0:0\n");
 		exit(1);
 	}
 	basedir = argv[optind];
 
 	set_realtime(10);
 	rc = open_slots(&g_tst, basedir);
+	if (rc < 0)
+		exit(1);
 	printf("==> opened a total of %d slots\n", rc);
 
 	signal(SIGINT, sig_handler);
