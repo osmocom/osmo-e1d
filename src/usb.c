@@ -107,6 +107,8 @@ struct e1_usb_flow {
 static int
 e1_usb_xfer_in(struct e1_usb_flow *flow, uint8_t *buf, int size)
 {
+	if (size == 0)
+		return 0;
 	return e1_line_demux_in(flow->line, buf + 4, size - 4);
 }
 
