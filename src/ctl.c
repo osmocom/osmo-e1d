@@ -360,16 +360,22 @@ _e1d_ctl_ts_open(void *data, struct msgb *msgb, struct msgb *rmsgb, int *rfd)
 
 	/* Process query and find timeslot */
 	intf = e1d_find_intf(e1d, hdr->intf);
-	if (!intf)
+	if (!intf) {
+		LOGP(DE1D, LOGL_NOTICE, "Client request for non-existant Interface %u\n", hdr->intf);
 		return 0;
+	}
 
 	line = e1_intf_find_line(intf, hdr->line);
-	if (!line)
+	if (!line) {
+		LOGPIF(intf, DE1D, LOGL_NOTICE, "Client request for non-existant line %u\n", hdr->line);
 		return 0;
+	}
 
 	ts = _e1d_get_ts(line, hdr->ts);
-	if (!ts)
+	if (!ts) {
+		LOGPLI(line, DE1D, LOGL_NOTICE, "Client request for non-existant ts %u\n", hdr->ts);
 		return 0;
+	}
 
 	/* Select mode */
 	switch (cfg->mode) {
@@ -380,19 +386,24 @@ _e1d_ctl_ts_open(void *data, struct msgb *msgb, struct msgb *rmsgb, int *rfd)
 		mode = E1_TS_MODE_HDLCFCS;
 		break;
 	default:
+		LOGPTS(ts, DE1D, LOGL_NOTICE, "Client request for unknown mode %u\n", cfg->mode);
 		return 0;
 	}
 
-	if (cfg->read_bufsize == 0)
+	if (cfg->read_bufsize == 0) {
+		LOGPTS(ts, DE1D, LOGL_NOTICE, "Client request for invalid bufsize %u\n", cfg->read_bufsize);
 		return 0;
+	}
 
 	/* If already open, close previous */
 	e1_ts_stop(ts);
 
 	/* Init */
 	ret = _e1d_ts_start(ts, mode, cfg->read_bufsize);
-	if (ret < 0)
+	if (ret < 0) {
+		LOGPTS(ts, DE1D, LOGL_ERROR, "Unable to start timeslot: %d\n", ret);
 		return ret;
+	}
 
 	*rfd = ret;
 
