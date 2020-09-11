@@ -1,0 +1,1 @@
+* bump protocol version as 'flags' member was added to osmo_d1dp_ts_config

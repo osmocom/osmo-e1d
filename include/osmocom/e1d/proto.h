@@ -81,6 +81,8 @@ enum osmo_e1dp_ts_mode {
 	E1DP_TSMODE_HDLCFCS	= 0x11,
 };
 
+/* osmo_e1dp_ts_config.flags */
+#define E1DP_TS_OPEN_F_FORCE	0x80
 
 /* the idea here is to use the first byte as a version number, to prevent incompatible
  * clients from connecting to e1d */
@@ -118,6 +120,7 @@ struct osmo_e1dp_line_info {
 
 struct osmo_e1dp_ts_config {
 	uint8_t mode;
+	uint8_t flags;
 	uint16_t read_bufsize;
 } __attribute__((packed));
 

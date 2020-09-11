@@ -395,8 +395,16 @@ _e1d_ctl_ts_open(void *data, struct msgb *msgb, struct msgb *rmsgb, int *rfd)
 		return 0;
 	}
 
-	/* If already open, close previous */
-	e1_ts_stop(ts);
+	if (ts->fd >= 0) {
+		/* we only force-reopen a busy timeslot if the flag is set */
+		if (cfg->flags & E1DP_TS_OPEN_F_FORCE) {
+			e1_ts_stop(ts);
+		} else {
+			LOGPTS(ts, DE1D, LOGL_ERROR,
+				"Timeslot already open, rejecting re-open without F_FORCE\n");
+			return 0;
+		}
+	}
 
 	/* Init */
 	ret = _e1d_ts_start(ts, mode, cfg->read_bufsize);

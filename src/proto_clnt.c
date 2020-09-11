@@ -315,10 +315,10 @@ osmo_e1dp_client_line_config(struct osmo_e1dp_client *clnt,
 	return 0;
 }
 
-int
-osmo_e1dp_client_ts_open(struct osmo_e1dp_client *clnt,
+static int
+_client_ts_open(struct osmo_e1dp_client *clnt,
 	uint8_t intf, uint8_t line, uint8_t ts,
-	enum osmo_e1dp_ts_mode mode, uint16_t read_bufsize)
+	enum osmo_e1dp_ts_mode mode, uint16_t read_bufsize, uint8_t flags)
 {
 	struct msgb *msgb;
 	struct osmo_e1dp_msg_hdr hdr;
@@ -333,6 +333,7 @@ osmo_e1dp_client_ts_open(struct osmo_e1dp_client *clnt,
 
 	memset(&cfg, 0x00, sizeof(struct osmo_e1dp_ts_config));
 	cfg.mode = mode;
+	cfg.flags = flags;
 	cfg.read_bufsize = read_bufsize;
 
 	tsfd = -1;
@@ -347,4 +348,20 @@ osmo_e1dp_client_ts_open(struct osmo_e1dp_client *clnt,
 	msgb_free(msgb);
 
 	return tsfd;
+}
+
+int
+osmo_e1dp_client_ts_open(struct osmo_e1dp_client *clnt,
+	uint8_t intf, uint8_t line, uint8_t ts,
+	enum osmo_e1dp_ts_mode mode, uint16_t read_bufsize)
+{
+	return _client_ts_open(clnt, intf, line, ts, mode, read_bufsize, 0);
+}
+
+int
+osmo_e1dp_client_ts_open_force(struct osmo_e1dp_client *clnt,
+	uint8_t intf, uint8_t line, uint8_t ts,
+	enum osmo_e1dp_ts_mode mode, uint16_t read_bufsize)
+{
+	return _client_ts_open(clnt, intf, line, ts, mode, read_bufsize, E1DP_TS_OPEN_F_FORCE);
 }
