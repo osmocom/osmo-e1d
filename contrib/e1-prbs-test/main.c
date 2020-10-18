@@ -104,7 +104,7 @@ static int open_slots_e1d(struct test_state *tst, int intf_nr, int line_nr)
 		ts = &tst->ts[tst->next_unused_ts++];
 
 		/* open the respective file descriptor */
-		osmo_fd_setup(&ts->ofd, rc, BSC_FD_READ, e1_fd_cb, ts, i);
+		osmo_fd_setup(&ts->ofd, rc, OSMO_FD_READ, e1_fd_cb, ts, i);
 
 		init_timeslot(ts);
 		num_slots++;
@@ -157,7 +157,7 @@ static int open_slots(struct test_state *tst, char *basedir)
 		ts = &tst->ts[tst->next_unused_ts++];
 
 		/* open the respective file descriptor */
-		osmo_fd_setup(&ts->ofd, rc, BSC_FD_READ, e1_fd_cb, ts, atoi(ent->d_name));
+		osmo_fd_setup(&ts->ofd, rc, OSMO_FD_READ, e1_fd_cb, ts, atoi(ent->d_name));
 
 		cfg_dahdi_buffer(ts->ofd.fd);
 		struct dahdi_bufferinfo bi;

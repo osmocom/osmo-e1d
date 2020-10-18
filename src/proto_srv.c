@@ -191,7 +191,7 @@ _e1dp_server_accept(struct osmo_fd *fd, unsigned int flags)
 	conn->srv = srv;
 
 	conn->fd.fd = rc;
-	conn->fd.when = BSC_FD_READ;
+	conn->fd.when = OSMO_FD_READ;
 	conn->fd.cb = _e1dp_server_read;
 	conn->fd.data = conn;
 
