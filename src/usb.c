@@ -36,6 +36,7 @@
 
 #include "e1d.h"
 #include "log.h"
+#include "ice1usb_proto.h"
 
 
 #define USB_VID		0x1d50
@@ -57,6 +58,7 @@ struct e1_usb_line_data {
 	uint8_t ep_in;
 	uint8_t ep_out;
 	uint8_t ep_fb;
+	uint8_t ep_int;
 
 	/* Max packet size */
 	int pkt_size;
@@ -65,6 +67,12 @@ struct e1_usb_line_data {
 	struct e1_usb_flow *flow_in;
 	struct e1_usb_flow *flow_out;
 	struct e1_usb_flow *flow_fb;
+
+	/* Interrupt */
+	struct {
+		uint8_t buf[10];
+		struct ice1usb_irq_err last_errcnt;
+	} irq;
 
 	/* Rate regulation */
 	uint32_t r_acc;
@@ -97,8 +105,6 @@ struct e1_usb_flow {
 
 	struct e1_usb_flow_entry *entries;
 };
-
-
 
 // ---------------------------------------------------------------------------
 // USB data transfer
@@ -275,6 +281,88 @@ e1uf_start(struct e1_usb_flow *flow)
 	return 0;
 }
 
+// ---------------------------------------------------------------------------
+// USB interrupt
+// ---------------------------------------------------------------------------
+
+static int resubmit_irq(struct e1_line *line);
+
+static void rx_interrupt_errcnt(struct e1_line *line, const struct ice1usb_irq_err *errcnt)
+{
+	struct e1_usb_line_data *ld = (struct e1_usb_line_data *) line->drv_data;
+	struct ice1usb_irq_err *last = &ld->irq.last_errcnt;
+
+	if (errcnt->crc != last->crc) {
+		LOGPLI(line, DE1D, LOGL_ERROR, "CRC error count %d (was %d)\n",
+			errcnt->crc, last->crc);
+	}
+
+	if (errcnt->align != last->align) {
+		LOGPLI(line, DE1D, LOGL_ERROR, "ALIGNMENT error count %d (was %d)\n",
+			errcnt->align, last->align);
+	}
+
+	if (errcnt->ovfl != last->ovfl) {
+		LOGPLI(line, DE1D, LOGL_ERROR, "OVERFLOW error count %d (was %d)\n",
+			errcnt->ovfl, last->ovfl);
+	}
+
+	if (errcnt->unfl != last->unfl) {
+		LOGPLI(line, DE1D, LOGL_ERROR, "UNDERFLOW error count %d (was %d)\n",
+			errcnt->unfl, last->unfl);
+	}
+
+	if ((errcnt->flags & ICE1USB_ERR_F_ALIGN_ERR) != (last->flags & ICE1USB_ERR_F_ALIGN_ERR)) {
+		LOGPLI(line, DE1D, LOGL_ERROR, "ALIGNMENT %s\n",
+			errcnt->flags & ICE1USB_ERR_F_ALIGN_ERR ? "LOST" : "REGAINED");
+	}
+
+	if ((errcnt->flags & ICE1USB_ERR_F_TICK_ERR) != (last->flags & ICE1USB_ERR_F_TICK_ERR)) {
+		LOGPLI(line, DE1D, LOGL_ERROR, "Rx Clock %s\n",
+			errcnt->flags & ICE1USB_ERR_F_TICK_ERR ? "LOST" : "REGAINED");
+	}
+
+	ld->irq.last_errcnt = *errcnt;
+}
+
+static void interrupt_ep_cb(struct libusb_transfer *xfer)
+{
+	struct e1_line *line = (struct e1_line *) xfer->user_data;
+	const struct ice1usb_irq *irq = (const struct ice1usb_irq *) xfer->buffer;
+
+	if (!xfer->actual_length) {
+		LOGPLI(line, DE1D, LOGL_ERROR, "Zero-Length Interrupt transfer\n");
+		goto out;
+	}
+
+	switch (irq->type) {
+	case ICE1USB_IRQQ_T_ERRCNT:
+		if (xfer->actual_length < sizeof(*irq)) {
+			LOGPLI(line, DE1D, LOGL_ERROR, "Short ERRCNT interrupt: %u<%zu\n",
+				xfer->actual_length, sizeof(*irq));
+			break;
+		}
+		rx_interrupt_errcnt(line, &irq->u.errors);
+		break;
+	default:
+		LOGPLI(line, DE1D, LOGL_INFO, "Unsupported interrupt 0x%02x\n", irq->type);
+		break;
+	}
+
+out:
+	resubmit_irq(line);
+}
+
+static int resubmit_irq(struct e1_line *line)
+{
+	struct e1_usb_line_data *ld = (struct e1_usb_line_data *) line->drv_data;
+	struct e1_usb_intf_data *id = (struct e1_usb_intf_data *) line->intf->drv_data;
+	struct libusb_transfer *xfr = libusb_alloc_transfer(0);
+
+	libusb_fill_interrupt_transfer(xfr, id->devh, ld->ep_int, ld->irq.buf, sizeof(ld->irq.buf),
+					interrupt_ep_cb, line, 0);
+	return libusb_submit_transfer(xfr);
+}
 
 // ---------------------------------------------------------------------------
 // Init / Probing
@@ -316,7 +404,7 @@ _e1_usb_open_device(struct e1_daemon *e1d, struct libusb_device *dev)
 			continue;
 
 		id = &cd->interface[i].altsetting[1];
-		if ((id->bInterfaceClass != 0xff) || (id->bInterfaceSubClass != 0xe1) || (id->bNumEndpoints != 3))
+		if ((id->bInterfaceClass != 0xff) || (id->bInterfaceSubClass != 0xe1) || (id->bNumEndpoints < 3))
 			continue;
 
 		/* Get interface and set it up */
@@ -353,6 +441,8 @@ _e1_usb_open_device(struct e1_daemon *e1d, struct libusb_device *dev)
 				else if (line_data->pkt_size != id->endpoint[j].wMaxPacketSize)
 					LOGP(DE1D, LOGL_ERROR, "Inconsistent max packet size %d vs %d\n",
 						line_data->pkt_size, (int)id->endpoint[j].wMaxPacketSize);
+			} else if (id->endpoint[j].bmAttributes == 0x03) {
+				line_data->ep_int = id->endpoint[j].bEndpointAddress;
 			} else {
 				LOGP(DE1D, LOGL_ERROR, "Invalid EP %02x\n", id->endpoint[j].bEndpointAddress);
 			}
@@ -372,6 +462,9 @@ _e1_usb_open_device(struct e1_daemon *e1d, struct libusb_device *dev)
 		e1uf_start(line_data->flow_in);
 		e1uf_start(line_data->flow_out);
 		e1uf_start(line_data->flow_fb);
+
+		if (line_data->ep_int)
+			resubmit_irq(line);
 	}
 
 	return 0;
