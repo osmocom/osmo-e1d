@@ -21,6 +21,7 @@ libosmo_e1d_la_LIBADD = $(LIBOSMOCORE_LIBS)
 
 noinst_HEADERS = \
 	e1d.h \
+	ice1usb_proto.h \
 	log.h \
 	$(NULL)
 
