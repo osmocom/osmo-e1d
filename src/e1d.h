@@ -146,3 +146,6 @@ e1d_vty_init(struct e1_daemon *e1d);
 
 int
 e1d_vpair_create(struct e1_daemon *e1d, unsigned int num_lines);
+
+struct e1_intf *
+e1d_vpair_intf_peer(struct e1_intf *intf);

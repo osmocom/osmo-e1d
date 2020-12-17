@@ -88,6 +88,15 @@ vintf_destroy(struct e1_intf *intf)
 	talloc_free(intf->drv_data);
 }
 
+/* resolve the peer of a given interface */
+struct e1_intf *
+e1d_vpair_intf_peer(struct e1_intf *intf)
+{
+	struct ve1_intf_data *intf_data = intf->drv_data;
+	OSMO_ASSERT(intf->drv == E1_DRIVER_VPAIR);
+	return intf_data->peer;
+}
+
 static int
 ve1_timerfd_cb(struct osmo_fd *ofd, unsigned int what)
 {
