@@ -77,6 +77,9 @@ struct e1_usb_line_data {
 	/* Rate regulation */
 	uint32_t r_acc;
 	uint32_t r_sw;
+
+	/* list of in-progress CTRL operations */
+	struct llist_head ctrl_inprogress;
 };
 
 struct e1_usb_intf_data {
@@ -375,6 +378,110 @@ static int resubmit_irq(struct e1_line *line)
 }
 
 // ---------------------------------------------------------------------------
+// Control transfers
+// ---------------------------------------------------------------------------
+
+struct e1_usb_ctrl_xfer {
+	struct e1_line *line;
+	struct llist_head list;
+	/* 8 bytes control setup packet, remainder for data */
+	uint8_t buffer[8 + 8];
+};
+
+
+static void
+ctrl_xfer_compl_cb(struct libusb_transfer *xfr)
+{
+	struct e1_usb_ctrl_xfer *ucx = xfr->user_data;
+
+	switch (xfr->status) {
+	case LIBUSB_TRANSFER_COMPLETED:
+		LOGPLI(ucx->line, DE1D, LOGL_INFO, "CTRL transfer completed successfully\n");
+		break;
+	default:
+		LOGPLI(ucx->line, DE1D, LOGL_ERROR, "CTRL transfer completed unsuccessfully %d\n",
+			xfr->status);
+		break;
+	}
+	llist_del(&ucx->list);
+	talloc_free(ucx);
+	libusb_free_transfer(xfr);
+}
+
+/* generic helper for async transmission of control endpoint requests */
+static int
+_e1_usb_line_send_ctrl(struct e1_line *line, uint8_t bmReqType, uint8_t bReq, uint16_t wValue,
+		       const uint8_t *data, size_t data_len)
+{
+	struct e1_usb_ctrl_xfer *ucx = talloc_zero(line, struct e1_usb_ctrl_xfer);
+	struct e1_usb_line_data *ld = (struct e1_usb_line_data *) line->drv_data;
+	struct e1_usb_intf_data *id = (struct e1_usb_intf_data *) line->intf->drv_data;
+	struct libusb_transfer *xfr;
+	int rc;
+
+	if (!ucx)
+		return -ENOMEM;
+
+	OSMO_ASSERT(sizeof(ucx->buffer) >= 8+data_len);
+	ucx->line = line;
+	libusb_fill_control_setup(ucx->buffer, bmReqType, bReq, wValue, ld->if_num, data_len);
+	if (data && data_len)
+		memcpy(ucx->buffer+8, data, data_len);
+
+	xfr = libusb_alloc_transfer(0);
+	if (!xfr) {
+		rc = -ENOMEM;
+		goto free_ucx;
+	}
+
+	libusb_fill_control_transfer(xfr, id->devh, ucx->buffer, ctrl_xfer_compl_cb, ucx, 3000);
+	rc = libusb_submit_transfer(xfr);
+	if (rc != 0)
+		goto free_xfr;
+
+	llist_add_tail(&ucx->list, &ld->ctrl_inprogress);
+
+	return 0;
+
+free_xfr:
+	libusb_free_transfer(xfr);
+free_ucx:
+	talloc_free(ucx);
+
+	return rc;
+}
+
+int
+e1_usb_ctrl_set_tx_cfg(struct e1_line *line, enum ice1usb_tx_mode mode, enum ice1usb_tx_timing timing,
+			enum ice1usb_tx_ext_loopback ext_loop, uint8_t alarm)
+{
+	const uint16_t bmReqType = LIBUSB_RECIPIENT_INTERFACE | LIBUSB_REQUEST_TYPE_VENDOR |
+				   LIBUSB_ENDPOINT_OUT;
+	struct ice1usb_tx_config tx_cfg = {
+		.mode = mode,
+		.timing = timing,
+		.ext_loopback = ext_loop,
+		.alarm = alarm,
+	};
+
+	return _e1_usb_line_send_ctrl(line, bmReqType, ICE1USB_INTF_SET_TX_CFG, 0, (uint8_t *)&tx_cfg,
+				      sizeof(tx_cfg));
+}
+
+int
+e1_usb_ctrl_set_rx_cfg(struct e1_line *line, enum ice1usb_rx_mode mode)
+{
+	const uint16_t bmReqType = LIBUSB_RECIPIENT_INTERFACE | LIBUSB_REQUEST_TYPE_VENDOR |
+				   LIBUSB_ENDPOINT_OUT;
+	struct ice1usb_rx_config rx_cfg = {
+		.mode = mode,
+	};
+
+	return _e1_usb_line_send_ctrl(line, bmReqType, ICE1USB_INTF_SET_RX_CFG, 0, (uint8_t *)&rx_cfg,
+				      sizeof(rx_cfg));
+}
+
+// ---------------------------------------------------------------------------
 // Init / Probing
 // ---------------------------------------------------------------------------
 
@@ -433,6 +540,7 @@ _e1_usb_open_device(struct e1_daemon *e1d, struct libusb_device *dev)
 		/* Setup driver data and find endpoints */
 		line_data = talloc_zero(e1d->ctx, struct e1_usb_line_data);
 
+		INIT_LLIST_HEAD(&line_data->ctrl_inprogress);
 		line_data->if_num = id->bInterfaceNumber;
 		line_data->r_acc  = 0;
 		line_data->r_sw   = 8192;
