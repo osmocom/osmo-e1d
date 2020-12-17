@@ -41,6 +41,16 @@
 
 static struct e1_daemon *vty_e1d;
 
+enum e1d_vty_node {
+	E1D_NODE = _LAST_OSMOVTY_NODE + 1,
+};
+
+static struct cmd_node e1d_node = {
+	(enum node_type) E1D_NODE,
+	"%s(config-e1d)# ",
+	1,
+};
+
 #if 0
 static void vty_dump_ts(struct vty *vty, const struct e1_ts *ts)
 {
@@ -142,6 +152,14 @@ DEFUN(show_line, show_line_cmd, "show line [<0-255>]",
 	return CMD_SUCCESS;
 }
 
+DEFUN(cfg_e1d, cfg_e1d_cmd, "e1d",
+	"E1 Daemon specific configuration\n")
+{
+	vty->node = E1D_NODE;
+
+	return CMD_SUCCESS;
+}
+
 DEFUN(cfg_vpair, cfg_vpair_cmd, "virtual-e1-pair <1-255>",
 	"Create a virtual E1 interface pair\n"
 	"Number of E1 lines in virtual E1 interface pair\n")
@@ -158,11 +176,39 @@ DEFUN(cfg_vpair, cfg_vpair_cmd, "virtual-e1-pair <1-255>",
 	return CMD_SUCCESS;
 }
 
+static int config_write_e1d(struct vty *vty)
+{
+	struct e1_intf *intf;
+
+	vty_out(vty, "e1d%s", VTY_NEWLINE);
+
+	/* find all vpair interfaces */
+	llist_for_each_entry(intf, &vty_e1d->interfaces, list) {
+		struct e1_intf *peer = e1d_vpair_intf_peer(intf);
+		unsigned int line_count = 0;
+		struct e1_line *line;
+
+		if (intf->drv != E1_DRIVER_VPAIR)
+			continue;
+		/* skip the 'mirror' interfaces */
+		if (intf->id > peer->id)
+			continue;
+
+		llist_for_each_entry(line, &intf->lines, list)
+			line_count++;
+
+		vty_out(vty, " virtual-e1-pair %u%s", line_count, VTY_NEWLINE);
+	}
+	return 0;
+}
+
 void e1d_vty_init(struct e1_daemon *e1d)
 {
 	vty_e1d = e1d;
 	install_element_ve(&show_intf_cmd);
 	install_element_ve(&show_line_cmd);
 
-	install_element(CONFIG_NODE, &cfg_vpair_cmd);
+	install_node(&e1d_node, config_write_e1d);
+	install_element(CONFIG_NODE, &cfg_e1d_cmd);
+	install_element(E1D_NODE, &cfg_vpair_cmd);
 }
