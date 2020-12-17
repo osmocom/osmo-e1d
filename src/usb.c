@@ -283,6 +283,14 @@ e1uf_start(struct e1_usb_flow *flow)
 
 static int resubmit_irq(struct e1_line *line);
 
+#define line_ctr_add(line, idx, add) rate_ctr_add(&(line)->ctrs->ctr[idx], add)
+
+/* compute how much advanced 'cur' is copared to 'prev', in modulo-0xffff for wraps */
+static uint32_t delta_mod_u16(uint32_t cur, uint32_t prev)
+{
+	return ((cur + 0xffff) - prev) % 0xffff;
+}
+
 static void rx_interrupt_errcnt(struct e1_line *line, const struct ice1usb_irq_err *errcnt)
 {
 	struct e1_usb_line_data *ld = (struct e1_usb_line_data *) line->drv_data;
@@ -291,21 +299,25 @@ static void rx_interrupt_errcnt(struct e1_line *line, const struct ice1usb_irq_e
 	if (errcnt->crc != last->crc) {
 		LOGPLI(line, DE1D, LOGL_ERROR, "CRC error count %d (was %d)\n",
 			errcnt->crc, last->crc);
+		line_ctr_add(line, LINE_CTR_CRC_ERR, delta_mod_u16(errcnt->crc, last->crc));
 	}
 
 	if (errcnt->align != last->align) {
 		LOGPLI(line, DE1D, LOGL_ERROR, "ALIGNMENT error count %d (was %d)\n",
 			errcnt->align, last->align);
+		line_ctr_add(line, LINE_CTR_LOA, delta_mod_u16(errcnt->align, last->align));
 	}
 
 	if (errcnt->ovfl != last->ovfl) {
 		LOGPLI(line, DE1D, LOGL_ERROR, "OVERFLOW error count %d (was %d)\n",
 			errcnt->ovfl, last->ovfl);
+		line_ctr_add(line, LINE_CTR_RX_OVFL, delta_mod_u16(errcnt->ovfl, last->ovfl));
 	}
 
 	if (errcnt->unfl != last->unfl) {
 		LOGPLI(line, DE1D, LOGL_ERROR, "UNDERFLOW error count %d (was %d)\n",
 			errcnt->unfl, last->unfl);
+		line_ctr_add(line, LINE_CTR_TX_UNFL, delta_mod_u16(errcnt->unfl, last->unfl));
 	}
 
 	if ((errcnt->flags & ICE1USB_ERR_F_ALIGN_ERR) != (last->flags & ICE1USB_ERR_F_ALIGN_ERR)) {
@@ -316,6 +328,8 @@ static void rx_interrupt_errcnt(struct e1_line *line, const struct ice1usb_irq_e
 	if ((errcnt->flags & ICE1USB_ERR_F_TICK_ERR) != (last->flags & ICE1USB_ERR_F_TICK_ERR)) {
 		LOGPLI(line, DE1D, LOGL_ERROR, "Rx Clock %s\n",
 			errcnt->flags & ICE1USB_ERR_F_TICK_ERR ? "LOST" : "REGAINED");
+		if (errcnt->flags & ICE1USB_ERR_F_TICK_ERR)
+			line_ctr_add(line, LINE_CTR_LOS, 1);
 	}
 
 	ld->irq.last_errcnt = *errcnt;

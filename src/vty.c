@@ -125,6 +125,8 @@ static void vty_dump_line(struct vty *vty, const struct e1_line *line)
 	vty_out(vty, " SC: Mode %s, FD %d, Peer PID %d%s",
 		get_value_string(e1_ts_mode_names, line->superchan.mode),
 		line->superchan.fd, get_remote_pid(line->superchan.fd), VTY_NEWLINE);
+
+	vty_out_rate_ctr_group(vty, " ", line->ctrs);
 }
 
 DEFUN(show_line, show_line_cmd, "show line [<0-255>]",
