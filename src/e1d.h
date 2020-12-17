@@ -26,7 +26,17 @@
 
 #include <osmocom/core/isdnhdlc.h>
 #include <osmocom/core/linuxlist.h>
+#include <osmocom/core/rate_ctr.h>
 
+#define line_ctr_add(line, idx, add) rate_ctr_add(&(line)->ctrs->ctr[idx], add)
+
+enum e1d_line_ctr {
+	LINE_CTR_LOS,
+	LINE_CTR_LOA,
+	LINE_CTR_CRC_ERR,
+	LINE_CTR_RX_OVFL,
+	LINE_CTR_TX_UNFL,
+};
 
 enum e1_ts_mode {
 	E1_TS_MODE_OFF = 0,
@@ -81,6 +91,7 @@ struct e1_line {
 	enum e1_line_mode mode;
 
 	void *drv_data;
+	struct rate_ctr_group *ctrs;
 
 	/* timeslots for channelized mode */
 	struct e1_ts ts[32];

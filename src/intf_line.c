@@ -33,6 +33,8 @@
 
 #include <osmocom/core/isdnhdlc.h>
 #include <osmocom/core/utils.h>
+#include <osmocom/core/stats.h>
+#include <osmocom/core/rate_ctr.h>
 #include <osmocom/e1d/proto.h>
 
 #include "e1d.h"
@@ -42,6 +44,22 @@ const struct value_string e1_driver_names[] = {
 	{ E1_DRIVER_USB, "usb" },
 	{ E1_DRIVER_VPAIR, "vpair" },
 	{ 0, NULL }
+};
+
+static const struct rate_ctr_desc line_ctr_description[] = {
+	[LINE_CTR_LOS] =	{ "rx:signal_lost",		"Rx Signal Lost" },
+	[LINE_CTR_LOA] =	{ "rx:alignment_lost",		"Rx Alignment Lost" },
+	[LINE_CTR_CRC_ERR] =	{ "rx:crc_errors",		"E1 Rx CRC Errors" },
+	[LINE_CTR_RX_OVFL] =	{ "rx:overflow",		"E1 Rx Overflow" },
+	[LINE_CTR_TX_UNFL] =	{ "tx:underflow",		"E1 Tx Underflow" },
+};
+
+static const struct rate_ctr_group_desc line_ctrg_desc = {
+	.group_name_prefix = "e1d_line",
+	.group_description = "Counters for each line in e1d",
+	.class_id = OSMO_STATS_CLASS_GLOBAL,
+	.num_ctr = ARRAY_SIZE(line_ctr_description),
+	.ctr_desc = line_ctr_description,
 };
 
 // ---------------------------------------------------------------------------
@@ -121,6 +139,9 @@ e1_line_new(struct e1_intf *intf, void *drv_data)
 		struct e1_line *l = llist_last_entry(&intf->lines, struct e1_line, list);
 		line->id = l->id + 1;
 	}
+
+	line->ctrs = rate_ctr_group_alloc(line, &line_ctrg_desc, line->id);
+	OSMO_ASSERT(line->ctrs);
 
 	llist_add_tail(&line->list, &intf->lines);
 
