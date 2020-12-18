@@ -101,6 +101,8 @@ struct e1_line {
 	struct e1_ts ts[32];
 	/* superchannel */
 	struct e1_ts superchan;
+
+	void *e1gen_priv;
 };
 
 enum e1_driver {

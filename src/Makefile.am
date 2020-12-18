@@ -32,6 +32,10 @@ bin_PROGRAMS = \
 	osmo-e1d-pipe \
 	$(NULL)
 
+noinst_PROGRAMS = \
+	osmo-e1gen \
+	$(NULL)
+
 osmo_e1d_SOURCES = \
 	ctl.c \
 	intf_line.c \
@@ -51,3 +55,17 @@ osmo_e1d_pipe_SOURCES = \
 	$(NULL)
 
 osmo_e1d_pipe_LDADD = $(LIBOSMOCORE_LIBS) libosmo-e1d.la
+
+
+osmo_e1gen_LDADD = $(LIBOSMOCORE_LIBS) $(LIBOSMOVTY_LIBS) \
+		   $(LIBOSMOUSB_LIBS) $(LIBUSB_LIBS)
+
+osmo_e1gen_SOURCES = \
+	intf_line.c \
+	log.c \
+	e1gen/crc4itu.c \
+	e1gen/osmo_e1f.c \
+	osmo-e1gen.c \
+	usb.c \
+	vty.c \
+	$(NULL)
