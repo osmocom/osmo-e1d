@@ -120,6 +120,8 @@ struct e1_line {
 		/*! timer to re-set the rx_crc4_err and rx_alarm above */
 		struct osmo_timer_list timer;
 	} ts0;
+
+	void *e1gen_priv;
 };
 
 enum e1_driver {
