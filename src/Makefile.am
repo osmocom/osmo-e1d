@@ -35,6 +35,7 @@ osmo_e1d_SOURCES = \
 	ctl.c \
 	intf_line.c \
 	log.c \
+	mux_demux.c \
 	osmo-e1d.c \
 	usb.c \
 	vpair.c \
