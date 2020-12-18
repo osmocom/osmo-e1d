@@ -43,6 +43,7 @@
 #include <osmocom/e1d/proto.h>
 
 #include "e1d.h"
+#include "usb.h"
 #include "log.h"
 
 #ifndef OSMO_VTY_PORT_E1D
@@ -50,8 +51,6 @@
 #endif
 
 extern struct osmo_e1dp_server_handler e1d_ctl_handlers[];
-extern int e1_usb_probe(struct e1_daemon *e1d);
-
 
 static const char *g_config_file = "osmo-e1d.cfg";
 static void *g_e1d_ctx = NULL;
