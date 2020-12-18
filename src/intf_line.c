@@ -67,6 +67,30 @@ static const struct rate_ctr_group_desc line_ctrg_desc = {
 // ---------------------------------------------------------------------------
 
 struct e1_intf *
+e1d_find_intf(struct e1_daemon *e1d, uint8_t id)
+{
+	struct e1_intf *intf;
+
+	llist_for_each_entry(intf, &e1d->interfaces, list)
+		if (intf->id == id)
+			return intf;
+
+	return NULL;
+}
+
+struct e1_line *
+e1_intf_find_line(struct e1_intf *intf, uint8_t id)
+{
+	struct e1_line *line;
+
+	llist_for_each_entry(line, &intf->lines, list)
+		if (line->id == id)
+			return line;
+
+	return NULL;
+}
+
+struct e1_intf *
 e1_intf_new(struct e1_daemon *e1d, void *drv_data)
 {
 	struct e1_intf *intf;
