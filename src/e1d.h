@@ -124,6 +124,13 @@ struct e1_daemon {
 	struct llist_head interfaces;
 };
 
+
+struct e1_line *
+e1_intf_find_line(struct e1_intf *intf, uint8_t id);
+
+struct e1_line *
+e1_intf_find_line(struct e1_intf *intf, uint8_t id);
+
 struct e1_intf *
 e1_intf_new(struct e1_daemon *e1d, void *drv_data);
 
