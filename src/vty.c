@@ -39,11 +39,7 @@
 #include <osmocom/e1d/proto.h>
 #include "e1d.h"
 
-static struct e1_daemon *vty_e1d;
-
-enum e1d_vty_node {
-	E1D_NODE = _LAST_OSMOVTY_NODE + 1,
-};
+struct e1_daemon *vty_e1d;
 
 static struct cmd_node e1d_node = {
 	(enum node_type) E1D_NODE,
