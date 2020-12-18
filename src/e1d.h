@@ -27,6 +27,12 @@
 #include <osmocom/core/isdnhdlc.h>
 #include <osmocom/core/linuxlist.h>
 #include <osmocom/core/rate_ctr.h>
+#include <osmocom/vty/command.h>
+
+enum e1d_vty_node {
+	E1D_NODE = _LAST_OSMOVTY_NODE + 1,
+	LINE_NODE
+};
 
 #define line_ctr_add(line, idx, add) rate_ctr_add(&(line)->ctrs->ctr[idx], add)
 
