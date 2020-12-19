@@ -365,8 +365,8 @@ _e1_usb_open_device(struct e1_daemon *e1d, struct libusb_device *dev)
 
 		line = e1_line_new(intf, line_data);
 
-		line_data->flow_in  = e1uf_create(line, e1_usb_xfer_in,  line_data->ep_in,  2, line_data->pkt_size, 4);
-		line_data->flow_out = e1uf_create(line, e1_usb_xfer_out, line_data->ep_out, 2, line_data->pkt_size, 4);
+		line_data->flow_in  = e1uf_create(line, e1_usb_xfer_in,  line_data->ep_in,  4, line_data->pkt_size, 4);
+		line_data->flow_out = e1uf_create(line, e1_usb_xfer_out, line_data->ep_out, 4, line_data->pkt_size, 4);
 		line_data->flow_fb  = e1uf_create(line, e1_usb_xfer_fb,  line_data->ep_fb,  2, 8, 1);
 
 		e1uf_start(line_data->flow_in);
