@@ -348,13 +348,41 @@ _e1_line_demux_in_channelized(struct e1_line *line, const uint8_t *buf, int ftr)
 	return 0;
 }
 
+static void
+_e1_line_demux_in_ts0(struct e1_line *line, const uint8_t *buf, int ftr, uint8_t frame_base)
+{
+	int i;
+
+	for (i = 0; i < ftr; i++) {
+		const uint8_t *frame = buf + i*32;
+		uint8_t frame_nr = (frame_base + i) & 0xf;
+
+		/* A bit is present in each odd frame */
+		if (frame_nr % 2) {
+			if (frame[0] & 0x20)
+				line->ts0.cur_errmask |= E1L_TS0_RX_ALARM;
+		}
+
+		/* E bits are present in frame 13 + 15 */
+		if (frame_nr == 13)
+			line->ts0.e_bits = frame[0] & 0x80 ? 2 : 0;
+		if (frame_nr == 15) {
+			line->ts0.e_bits |= frame[0] & 0x80 ? 1 : 0;
+			if (line->ts0.e_bits != 3)
+				line->ts0.cur_errmask |= E1L_TS0_RX_CRC4_ERR;
+		}
+		/* cur_errmask is being cleared once per second via line->ts0.timer */
+	}
+}
+
 /*! de-multiplex E1 line data to the individual timeslots.
  *  \param[in] line E1 line on which we operate.
  *  \param[in] buf buffer containing multiplexed frame-aligned E1 data.
  *  \param[in] size size of 'buf' in octets; assumed to be multiple of E1 frame size (32).
+ *  \param[in] frame_base frame number (in multiframe) of first frame in 'buf'. -1 to disable TS0.
  *  \returns 0 on success; negative on error */
 int
-e1_line_demux_in(struct e1_line *line, const uint8_t *buf, int size)
+e1_line_demux_in(struct e1_line *line, const uint8_t *buf, int size, int frame_base)
 {
 	int ftr;
 
@@ -365,6 +393,9 @@ e1_line_demux_in(struct e1_line *line, const uint8_t *buf, int size)
 
 	ftr = size / 32;
 	OSMO_ASSERT(size % 32 == 0);
+
+	if (frame_base >= 0)
+		_e1_line_demux_in_ts0(line, buf, ftr, frame_base);
 
 	switch (line->mode) {
 	case E1_LINE_MODE_CHANNELIZED:

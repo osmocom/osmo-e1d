@@ -52,6 +52,8 @@ static const struct rate_ctr_desc line_ctr_description[] = {
 	[LINE_CTR_CRC_ERR] =	{ "rx:crc_errors",		"E1 Rx CRC Errors" },
 	[LINE_CTR_RX_OVFL] =	{ "rx:overflow",		"E1 Rx Overflow" },
 	[LINE_CTR_TX_UNFL] =	{ "tx:underflow",		"E1 Tx Underflow" },
+	[LINE_CTR_RX_REMOTE_E] ={ "rx:remote_crc_errors",	"Rx Frames Reporting Remote CRC Error"},
+	[LINE_CTR_RX_REMOTE_A] ={ "rx:remote_alarm",		"Rx Frames Reporting Remote Alarm"},
 };
 
 static const struct rate_ctr_group_desc line_ctrg_desc = {
@@ -134,6 +136,28 @@ e1_intf_destroy(struct e1_intf *intf)
 }
 
 static void
+_ts0_tmr_cb(void *_line)
+{
+	struct e1_line *line = (struct e1_line *) _line;
+
+	if ((line->ts0.cur_errmask & E1L_TS0_RX_CRC4_ERR) !=
+	    (line->ts0.prev_errmask & E1L_TS0_RX_CRC4_ERR)) {
+		LOGPLI(line, DE1D, LOGL_NOTICE, "Remote CRC4 Error report %s\n",
+			line->ts0.cur_errmask & E1L_TS0_RX_CRC4_ERR ? "STARTED" : "CEASED");
+	}
+
+	if ((line->ts0.cur_errmask & E1L_TS0_RX_ALARM) !=
+	    (line->ts0.prev_errmask & E1L_TS0_RX_ALARM)) {
+		LOGPLI(line, DE1D, LOGL_NOTICE, "Remote ALARM condition %s\n",
+			line->ts0.cur_errmask & E1L_TS0_RX_ALARM ? "STARTED" : "CEASED");
+	}
+
+	line->ts0.prev_errmask = line->ts0.cur_errmask;
+	line->ts0.cur_errmask = 0;
+	osmo_timer_schedule(&line->ts0.timer, 1, 0);
+}
+
+static void
 _ts_init(struct e1_ts *ts, struct e1_line *line, int id)
 {
 	ts->line = line;
@@ -166,6 +190,9 @@ e1_line_new(struct e1_intf *intf, void *drv_data)
 
 	line->ctrs = rate_ctr_group_alloc(line, &line_ctrg_desc, line->id);
 	OSMO_ASSERT(line->ctrs);
+
+	osmo_timer_setup(&line->ts0.timer, _ts0_tmr_cb, line);
+	osmo_timer_schedule(&line->ts0.timer, 1, 0);
 
 	llist_add_tail(&line->list, &intf->lines);
 

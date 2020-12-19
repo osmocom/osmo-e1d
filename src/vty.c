@@ -109,8 +109,11 @@ static void vty_dump_line(struct vty *vty, const struct e1_line *line)
 {
 	int tn;
 
-	vty_out(vty, "Interface #%u, Line #%u, Mode %s:%s", line->intf->id, line->id,
-		get_value_string(e1_line_mode_names, line->mode), VTY_NEWLINE);
+	vty_out(vty, "Interface #%u, Line #%u, Mode %s%s%s:%s", line->intf->id, line->id,
+		get_value_string(e1_line_mode_names, line->mode),
+		line->ts0.cur_errmask & E1L_TS0_RX_ALARM ? " [REMOTE-ALARM]" : "",
+		line->ts0.cur_errmask & E1L_TS0_RX_CRC4_ERR ? " [REMOTE-CRC-ERROR]" : "",
+		VTY_NEWLINE);
 
 	for (tn = 0; tn < ARRAY_SIZE(line->ts); tn++) {
 		const struct e1_ts *ts = &line->ts[tn];

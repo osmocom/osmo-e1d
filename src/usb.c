@@ -118,7 +118,7 @@ e1_usb_xfer_in(struct e1_usb_flow *flow, uint8_t *buf, int size)
 {
 	if (size == 0)
 		return 0;
-	return e1_line_demux_in(flow->line, buf + 4, size - 4);
+	return e1_line_demux_in(flow->line, buf + 4, size - 4, buf[3] & 0xf);
 }
 
 static int

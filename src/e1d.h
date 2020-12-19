@@ -27,6 +27,7 @@
 #include <osmocom/core/isdnhdlc.h>
 #include <osmocom/core/linuxlist.h>
 #include <osmocom/core/rate_ctr.h>
+#include <osmocom/core/timer.h>
 #include <osmocom/vty/command.h>
 
 enum e1d_vty_node {
@@ -42,6 +43,8 @@ enum e1d_line_ctr {
 	LINE_CTR_CRC_ERR,
 	LINE_CTR_RX_OVFL,
 	LINE_CTR_TX_UNFL,
+	LINE_CTR_RX_REMOTE_E,
+	LINE_CTR_RX_REMOTE_A,
 };
 
 enum e1_ts_mode {
@@ -88,6 +91,9 @@ enum e1_line_mode {
 	E1_LINE_MODE_SUPERCHANNEL,
 };
 
+#define E1L_TS0_RX_CRC4_ERR	0x01
+#define E1L_TS0_RX_ALARM	0x02
+
 struct e1_line {
 	struct llist_head list;
 
@@ -103,6 +109,17 @@ struct e1_line {
 	struct e1_ts ts[32];
 	/* superchannel */
 	struct e1_ts superchan;
+
+	struct {
+		/*! buffer where we aggregate the E bits each multi-frame */
+		uint8_t e_bits;
+		/*! did we receive CRC4 / ALARM error reports this second (timer tick) */
+		uint8_t cur_errmask;
+		/*! did we receive CRC4 / ALARM error reports previous second (timer tick) */
+		uint8_t prev_errmask;
+		/*! timer to re-set the rx_crc4_err and rx_alarm above */
+		struct osmo_timer_list timer;
+	} ts0;
 };
 
 enum e1_driver {
@@ -160,7 +177,7 @@ int
 e1_line_mux_out(struct e1_line *line, uint8_t *buf, int fts);
 
 int
-e1_line_demux_in(struct e1_line *line, const uint8_t *buf, int size);
+e1_line_demux_in(struct e1_line *line, const uint8_t *buf, int size, int frame_base);
 
 void
 e1_ts_stop(struct e1_ts *ts);
