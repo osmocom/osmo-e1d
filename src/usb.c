@@ -487,7 +487,7 @@ e1_usb_ctrl_set_rx_cfg(struct e1_line *line, enum ice1usb_rx_mode mode)
 // Init / Probing
 // ---------------------------------------------------------------------------
 
-int
+static int
 _e1_usb_open_device(struct e1_daemon *e1d, struct libusb_device *dev)
 {
 	struct e1_intf *intf;
