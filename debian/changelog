@@ -1,3 +1,44 @@
+osmo-e1d (0.2.0) unstable; urgency=medium
+
+  [ Harald Welte ]
+  * migrate to proper allocated USB Product ID
+  * add missing call to logging_vty_add_cmds() during startup
+  * usb.c: Fix error introducing Tx underflows
+  * Detect truncated reads on SOCK_SEQPACKET sockets
+  * print E1DP Mode as string, not in numeric format
+  * Use SOCK_STREAM sockets for E1_TS_MODE_RAW
+  * Fix HDLC-FCS transmit side
+  * _e1_rx_hdlcfs: const-ify input buffer argument
+  * introduce concept of superchannel to data structures
+  * actually implement the superchannel mode
+  * Add new E1DP_CMD_LINE_CONFIG for switching channelized/superchannel
+  * cosmetic: create HDLC specific sub-structure within e1_ts
+  * implement buffering to chunks in E1->application direction
+  * add comment about first byte of E1DP_MAGIC
+  * make RAW read buffer size configurable (instead of hard-coded 160)
+  * usb: Don't pass negative length values to e1_line_demux_in()
+  * src/ctl.c: Log NOTICE messages whenever client send unexpected requests
+  * e1-prbs-test: Add support for osmo-e1d
+  * make sure a given timeslot can only be opened once (by default)
+  * Use OSMO_FD_* instead of deprecated BSC_FD_*
+  * vpair: fix writing config file with vpairs configured
+  * usb: Increase number of transfers from 2 to 4
+  * Add support for icE1usb interrupt endpoint error reporting
+  * Add per-line rate counter group to count various errors
+  * support for control endpoint requests to icE1usb to switch Rx/Tx mode
+  * e1_line.c: Split multiplex + demultiplex into separate mux_demux.c
+  * usb.c: Mark _e1_usb_open_device() as static
+  * move usb.c function declarations to newly-created usb.h
+  * Move e1d_find_intf + e1_intf_find_line to intf_line.c
+  * vty: export vty_e1d + move e1d_vty_node to header file
+  * Evaluate received E and A bits in TS0
+  * Add new "osmo-e1gen" program.
+
+  [ Oliver Smith ]
+  * configure.ac: set -std=gnu11
+
+ -- Pau Espin Pedrol <pespin@sysmocom.de>  Wed, 24 Feb 2021 14:07:27 +0100
+
 osmo-e1d (0.1.1) unstable; urgency=medium
 
   * Makefile.am: Don't put LIBS into CFLAGS

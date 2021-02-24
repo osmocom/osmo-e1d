@@ -1,7 +1,7 @@
 # This is _NOT_ the library release version, it's an API version.
 # Please read Chapter 6 "Library interface versions" of the libtool
 # documentation before making any modification
-LIBVERSION=0:0:0
+LIBVERSION=1:0:0
 
 AM_CPPFLAGS = $(all_includes) -I$(top_srcdir)/include -I$(top_builddir)
 AM_CFLAGS=-Wall -Wno-unused-result $(LIBOSMOCORE_CFLAGS) \
