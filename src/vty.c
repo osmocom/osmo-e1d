@@ -185,12 +185,16 @@ static int config_write_e1d(struct vty *vty)
 
 	/* find all vpair interfaces */
 	llist_for_each_entry(intf, &vty_e1d->interfaces, list) {
-		struct e1_intf *peer = e1d_vpair_intf_peer(intf);
+		struct e1_intf *peer;
 		unsigned int line_count = 0;
 		struct e1_line *line;
 
 		if (intf->drv != E1_DRIVER_VPAIR)
 			continue;
+
+		peer = e1d_vpair_intf_peer(intf);
+		OSMO_ASSERT(peer);
+
 		/* skip the 'mirror' interfaces */
 		if (intf->id > peer->id)
 			continue;
