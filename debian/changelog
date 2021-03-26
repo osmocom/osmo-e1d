@@ -1,3 +1,10 @@
+osmo-e1d (0.2.1) unstable; urgency=medium
+
+  * add README.md describing what this repository is about
+  * e1d: fix ASSERT during "write terminal"
+
+ -- Harald Welte <laforge@osmocom.org>  Fri, 26 Mar 2021 09:34:49 +0100
+
 osmo-e1d (0.2.0) unstable; urgency=medium
 
   [ Harald Welte ]
