@@ -39,6 +39,7 @@
 #include <osmocom/core/utils.h>
 #include <osmocom/core/bits.h>
 #include <osmocom/core/prbs.h>
+#include <osmocom/core/application.h>
 
 #include <osmocom/e1d/proto_clnt.h>
 
@@ -238,6 +239,7 @@ int main(int argc, char **argv)
 {
 	char *basedir;
 	int rc;
+	void *g_ctx;
 
 	handle_options(argc, argv);
 
@@ -247,6 +249,10 @@ int main(int argc, char **argv)
 		exit(1);
 	}
 	basedir = argv[optind];
+
+	g_ctx = talloc_named_const(NULL, 0, "g_ctx");
+	OSMO_ASSERT(g_ctx);
+	osmo_init_logging2(g_ctx, NULL);
 
 	set_realtime(10);
 	rc = open_slots(&g_tst, basedir);
