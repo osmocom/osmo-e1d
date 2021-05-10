@@ -81,7 +81,19 @@ static void
 _e1d_fill_ts_info(struct osmo_e1dp_ts_info *ti, struct e1_ts *ts)
 {
 	ti->id = ts->id;
-	ti->cfg.mode = 0;
+
+	switch (ts->mode) {
+	case E1_TS_MODE_RAW:
+		ti->cfg.mode = E1DP_TSMODE_RAW;
+		break;
+	case E1_TS_MODE_HDLCFCS:
+		ti->cfg.mode = E1DP_TSMODE_HDLCFCS;
+		break;
+	default:
+		LOGPTS(ts, DE1D, LOGL_NOTICE, "TS in unknown  mode %u?x\n", ts->mode);
+		ti->cfg.mode = 0;
+		break;
+	}
 	ti->status = 0;
 }
 
