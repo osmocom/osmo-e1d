@@ -35,7 +35,7 @@ enum e1d_vty_node {
 	LINE_NODE
 };
 
-#define line_ctr_add(line, idx, add) rate_ctr_add(&(line)->ctrs->ctr[idx], add)
+#define line_ctr_add(line, idx, add) rate_ctr_add(rate_ctr_group_get_ctr((line)->ctrs, idx), add)
 
 enum e1d_line_ctr {
 	LINE_CTR_LOS,
