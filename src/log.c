@@ -30,12 +30,12 @@
 static const struct log_info_cat default_categories[] = {
 	[DE1D] = {
 		.name = "DE1D",
-		.loglevel = LOGL_DEBUG,
+		.loglevel = LOGL_INFO,
 		.enabled = 1,
 	},
 	[DXFR] = {
 		.name = "DXFR",
-		.loglevel = LOGL_DEBUG,
+		.loglevel = LOGL_NOTICE,
 		.enabled = 1,
 	},
 };
