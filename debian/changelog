@@ -1,3 +1,16 @@
+osmo-e1d (0.2.2) unstable; urgency=medium
+
+  [ Harald Welte ]
+  * e1d-prbs-test: Initialize libosmocore logging
+  * ctl: properly set the timeslot mode in E1DP_CMD_TS_QUERY
+  * make compile-time default logging configuration less verbose
+
+  [ Pau Espin Pedrol ]
+  * Use new stat item/ctr getter APIs
+  * gitignore: Add configure~
+
+ -- Pau Espin Pedrol <pespin@sysmocom.de>  Tue, 16 Nov 2021 18:10:15 +0100
+
 osmo-e1d (0.2.1) unstable; urgency=medium
 
   * add README.md describing what this repository is about
