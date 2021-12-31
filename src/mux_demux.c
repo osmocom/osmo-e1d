@@ -62,7 +62,7 @@ _e1_rx_hdlcfs(struct e1_ts *ts, const uint8_t *buf, int len)
 			LOGPTS(ts, DXFR, LOGL_DEBUG, "RX Message: %d [ %s]\n",
 				rv, osmo_hexdump(ts->hdlc.rx_buf, rv));
 			rv = write(ts->fd, ts->hdlc.rx_buf, bytes_to_write);
-			if (rv < 0)
+			if (rv <= 0)
 				return rv;
 		} else  if (rv < 0 && ts->id == 4) {
 			LOGPTS(ts, DXFR, LOGL_ERROR, "ERR RX: %d %d %d [ %s]\n",
@@ -97,7 +97,7 @@ _e1_tx_hdlcfs(struct e1_ts *ts, uint8_t *buf, int len)
 					rv, osmo_hexdump(ts->hdlc.tx_buf, rv));
 				ts->hdlc.tx_len = rv;
 				ts->hdlc.tx_ofs = 0;
-			} else if (rv < 0 && errno != EAGAIN)
+			} else if ((rv < 0 && errno != EAGAIN) || rv == 0)
 				return rv;
 		}
 
