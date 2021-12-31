@@ -147,7 +147,7 @@ _e1_ts_read(struct e1_ts *ts, uint8_t *buf, size_t len)
 		break;
 	}
 
-	if (l < 0 && errno != EAGAIN) {
+	if ((l < 0 && errno != EAGAIN) || l == 0) {
 		LOGPTS(ts, DE1D, LOGL_ERROR, "dead socket during read: %s\n",
 			strerror(errno));
 		e1_ts_stop(ts);
@@ -293,7 +293,7 @@ _e1_ts_write(struct e1_ts *ts, const uint8_t *buf, size_t len)
 		break;
 	}
 
-	if (rv < 0 && errno != EAGAIN) {
+	if ((rv < 0 && errno != EAGAIN) || rv == 0) {
 		LOGPTS(ts, DE1D, LOGL_ERROR, "dead socket during write: %s\n",
 			strerror(errno));
 		e1_ts_stop(ts);
