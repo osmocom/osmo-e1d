@@ -123,6 +123,12 @@ struct e1_line {
 		struct osmo_timer_list timer;
 	} ts0;
 
+	/* watchdog timer to catch situations where no more USB data is received */
+	struct {
+		struct osmo_timer_list timer;
+		uint32_t rx_bytes;
+	} watchdog;
+
 	void *e1gen_priv;
 };
 

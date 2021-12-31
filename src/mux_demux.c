@@ -391,6 +391,8 @@ e1_line_demux_in(struct e1_line *line, const uint8_t *buf, int size, int frame_b
 		return -1;
 	}
 
+	line->watchdog.rx_bytes += size;
+
 	ftr = size / 32;
 	OSMO_ASSERT(size % 32 == 0);
 

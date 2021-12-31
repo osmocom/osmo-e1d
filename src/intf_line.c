@@ -35,6 +35,7 @@
 #include <osmocom/core/utils.h>
 #include <osmocom/core/stats.h>
 #include <osmocom/core/rate_ctr.h>
+#include <osmocom/core/timer.h>
 #include <osmocom/e1d/proto.h>
 
 #include "e1d.h"
@@ -63,6 +64,20 @@ static const struct rate_ctr_group_desc line_ctrg_desc = {
 	.num_ctr = ARRAY_SIZE(line_ctr_description),
 	.ctr_desc = line_ctr_description,
 };
+
+/* watchdog timer, called once per second to check if we still receive data on the line */
+static void line_watchdog_cb(void *data)
+{
+	struct e1_line *line = data;
+
+	if (line->watchdog.rx_bytes < 240000) {
+		LOGPLI(line, DE1D, LOGL_ERROR, "Received Only %u bytes/s (expected: 262144): Line dead?\n",
+			line->watchdog.rx_bytes);
+	}
+
+	line->watchdog.rx_bytes = 0;
+	osmo_timer_schedule(&line->watchdog.timer, 1, 0);
+}
 
 // ---------------------------------------------------------------------------
 // e1d structures
@@ -196,6 +211,10 @@ e1_line_new(struct e1_intf *intf, void *drv_data)
 
 	llist_add_tail(&line->list, &intf->lines);
 
+	/* start watchdog timer */
+	osmo_timer_setup(&line->watchdog.timer, line_watchdog_cb, line);
+	osmo_timer_schedule(&line->watchdog.timer, 1, 0);
+
 	LOGPLI(line, DE1D, LOGL_NOTICE, "Created\n");
 
 	return line;
@@ -205,6 +224,8 @@ void
 e1_line_destroy(struct e1_line *line)
 {
 	LOGPLI(line, DE1D, LOGL_NOTICE, "Destroying\n");
+
+	osmo_timer_del(&line->watchdog.timer);
 
 	/* close all [peer] file descriptors */
 	for (int i=0; i<32; i++)
