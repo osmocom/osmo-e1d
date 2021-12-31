@@ -39,6 +39,7 @@
 static void *g_ctx;
 static struct osmo_e1dp_client *g_client;
 static struct osmo_fd ts_ofd;
+static enum osmo_e1dp_ts_mode g_mode = E1DP_TSMODE_RAW;
 static int outfd = 1;
 static int infd = 0;
 
@@ -70,7 +71,11 @@ static int ts_fd_cb(struct osmo_fd *ofd, unsigned int what)
 	}
 
 	if (what & OSMO_FD_WRITE) {
-		rc = read(infd, buf, sizeof(buf));
+		unsigned int read_len = sizeof(buf);
+		if (g_mode == E1DP_TSMODE_HDLCFCS)
+			read_len = E1DP_MAX_SIZE_HDLC;
+
+		rc = read(infd, buf, read_len);
 		if (rc < 0 && errno != EAGAIN)
 			exit(4);
 		else if (rc == 0) { /* EOF */
@@ -120,7 +125,6 @@ static void print_help(void)
 int main(int argc, char **argv)
 {
 	int intf_nr = -1, line_nr = -1, ts_nr = -1;
-	enum osmo_e1dp_ts_mode mode = E1DP_TSMODE_RAW;
 	char *path = E1DP_DEFAULT_SOCKET;
 	int bufsize = 160;
 	int tsfd;
@@ -172,7 +176,7 @@ int main(int argc, char **argv)
 				fprintf(stderr, "Unknown mode '%s'\n", optarg);
 				exit(2);
 			}
-			mode = rc;
+			g_mode = rc;
 			break;
 		case 'r':
 			rc = open(optarg, 0, O_RDONLY);
@@ -199,7 +203,7 @@ int main(int argc, char **argv)
 		exit(1);
 	}
 
-	tsfd = ts_open(intf_nr, line_nr, ts_nr, mode, bufsize);
+	tsfd = ts_open(intf_nr, line_nr, ts_nr, g_mode, bufsize);
 	if (tsfd < 0)
 		exit(2);
 
