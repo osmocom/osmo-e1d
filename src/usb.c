@@ -330,10 +330,10 @@ static void rx_interrupt_errcnt(struct e1_line *line, const struct ice1usb_irq_e
 			errcnt->flags & ICE1USB_ERR_F_ALIGN_ERR ? "LOST" : "REGAINED");
 	}
 
-	if ((errcnt->flags & ICE1USB_ERR_F_TICK_ERR) != (last->flags & ICE1USB_ERR_F_TICK_ERR)) {
+	if ((errcnt->flags & ICE1USB_ERR_F_LOS) != (last->flags & ICE1USB_ERR_F_LOS)) {
 		LOGPLI(line, DE1D, LOGL_ERROR, "Rx Clock %s\n",
-			errcnt->flags & ICE1USB_ERR_F_TICK_ERR ? "LOST" : "REGAINED");
-		if (errcnt->flags & ICE1USB_ERR_F_TICK_ERR)
+			errcnt->flags & ICE1USB_ERR_F_LOS ? "LOST" : "REGAINED");
+		if (errcnt->flags & ICE1USB_ERR_F_LOS)
 			line_ctr_add(line, LINE_CTR_LOS, 1);
 	}
 
@@ -351,7 +351,7 @@ static void interrupt_ep_cb(struct libusb_transfer *xfer)
 	}
 
 	switch (irq->type) {
-	case ICE1USB_IRQQ_T_ERRCNT:
+	case ICE1USB_IRQ_T_ERRCNT:
 		if (xfer->actual_length < sizeof(*irq)) {
 			LOGPLI(line, DE1D, LOGL_ERROR, "Short ERRCNT interrupt: %u<%zu\n",
 				xfer->actual_length, sizeof(*irq));

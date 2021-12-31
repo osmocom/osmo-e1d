@@ -1,7 +1,14 @@
-#pragma once
+/*
+ * ice1usb_proto.h
+ *
+ * Copyright (C) 2020  Harald Welte <laforge@osmocom.org>
+ * SPDX-License-Identifier: MIT
+ *
+ * Header file describing the USB protocol between the icE1usb firmware and the host
+ * software (currently really only osmo-e1d)
+ */
 
-/* Header file describing the USB protocol between the icE1usb firmware and the host
- * software (currently really only osmo-e1d) */
+#pragma once
 
 /***********************************************************************
  * Control Endpoint / Device Requests
@@ -75,12 +82,12 @@ struct ice1usb_rx_config {
  ***********************************************************************/
 
 enum ice1usb_irq_type {
-	ICE1USB_IRQQ_T_ERRCNT		= 1,
+	ICE1USB_IRQ_T_ERRCNT		= 1,
 };
 
 /* Ensue ro keep those in sync with e1.h */
 #define ICE1USB_ERR_F_ALIGN_ERR	0x01
-#define ICE1USB_ERR_F_TICK_ERR	0x02
+#define ICE1USB_ERR_F_LOS	0x02
 
 struct ice1usb_irq_err {
 	/* 16-bit little-endian counters */
