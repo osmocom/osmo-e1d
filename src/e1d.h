@@ -30,6 +30,8 @@
 #include <osmocom/core/timer.h>
 #include <osmocom/vty/command.h>
 
+#include <osmocom/e1d/proto.h>
+
 enum e1d_vty_node {
 	E1D_NODE = _LAST_OSMOVTY_NODE + 1,
 	LINE_NODE
@@ -66,8 +68,8 @@ struct e1_ts {
 		struct osmo_isdnhdlc_vars tx;
 		struct osmo_isdnhdlc_vars rx;
 
-		uint8_t rx_buf[264];
-		uint8_t tx_buf[264];
+		uint8_t rx_buf[E1DP_MAX_SIZE_HDLC];
+		uint8_t tx_buf[E1DP_MAX_SIZE_HDLC];
 		int tx_ofs;
 		int tx_len;
 	} hdlc;
