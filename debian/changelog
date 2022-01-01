@@ -1,3 +1,14 @@
+osmo-e1d (0.3.0) unstable; urgency=medium
+
+  * e1d: reliably detect EOF in _e1_ts_{read,write} (RAW mode)
+  * e1d: reliably detect EOF (HDLC-FCS mode)
+  * Introduce a #define for the maximum HDLC buffer size (264)
+  * e1d-ts-pipe: Don't write more HDLC bytes than e1d supports
+  * e1d: Add watchdog timer to detect dead lines / USB devices
+  * update ice1usb_proto.h to current master
+
+ -- Harald Welte <laforge@osmocom.org>  Sat, 01 Jan 2022 15:42:20 +0100
+
 osmo-e1d (0.2.2) unstable; urgency=medium
 
   [ Harald Welte ]
