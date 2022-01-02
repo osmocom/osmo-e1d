@@ -337,6 +337,12 @@ static void rx_interrupt_errcnt(struct e1_line *line, const struct ice1usb_irq_e
 			line_ctr_add(line, LINE_CTR_LOS, 1);
 	}
 
+	if ((errcnt->flags & ICE1USB_ERR_F_RAI) != (last->flags & ICE1USB_ERR_F_RAI)) {
+		LOGPLI(line, DE1D, LOGL_ERROR, "Remote Alarm (YELLOW) %s\n",
+			errcnt->flags & ICE1USB_ERR_F_RAI ? "PRESENT" : "ABSENT");
+		/* don't increment counter here, our TS0 code in mux_demux.c does this */
+	}
+
 	ld->irq.last_errcnt = *errcnt;
 }
 
