@@ -359,8 +359,10 @@ _e1_line_demux_in_ts0(struct e1_line *line, const uint8_t *buf, int ftr, uint8_t
 
 		/* A bit is present in each odd frame */
 		if (frame_nr % 2) {
-			if (frame[0] & 0x20)
+			if (frame[0] & 0x20) {
 				line->ts0.cur_errmask |= E1L_TS0_RX_ALARM;
+				line_ctr_add(line, LINE_CTR_RX_REMOTE_A, 1);
+			}
 		}
 
 		/* E bits are present in frame 13 + 15 */
@@ -368,8 +370,10 @@ _e1_line_demux_in_ts0(struct e1_line *line, const uint8_t *buf, int ftr, uint8_t
 			line->ts0.e_bits = frame[0] & 0x80 ? 2 : 0;
 		if (frame_nr == 15) {
 			line->ts0.e_bits |= frame[0] & 0x80 ? 1 : 0;
-			if (line->ts0.e_bits != 3)
+			if (line->ts0.e_bits != 3) {
 				line->ts0.cur_errmask |= E1L_TS0_RX_CRC4_ERR;
+				line_ctr_add(line, LINE_CTR_RX_REMOTE_E, 1);
+			}
 		}
 		/* cur_errmask is being cleared once per second via line->ts0.timer */
 	}
