@@ -126,7 +126,7 @@ e1_usb_xfer_out(struct e1_usb_flow *flow, uint8_t *buf, int size)
 {
 	struct e1_line *line = flow->line;
 	struct e1_usb_line_data *ld = (struct e1_usb_line_data *) line->drv_data;
-	int fts;
+	int fm, fts;
 
 	if (size <= 0) {
 		LOGPLI(line, DXFR, LOGL_ERROR, "OUT ERROR: %d\n", size);
@@ -136,9 +136,10 @@ e1_usb_xfer_out(struct e1_usb_flow *flow, uint8_t *buf, int size)
 	/* Flow regulation */
 	ld->r_acc += ld->r_sw;
 
+	fm = (ld->pkt_size - 4) / 32;
 	fts = ld->r_acc >> 10;
 	if      (fts <  4) fts = 4;
-	else if (fts > 12) fts = 12;
+	else if (fts > fm) fts = fm;
 
 	ld->r_acc -= fts << 10;
 	if (ld->r_acc & 0x80000000)
