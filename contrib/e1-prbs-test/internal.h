@@ -30,6 +30,7 @@ struct timeslot_state_tx {
 	struct osmo_prbs prbs;			/* PRBS definition */
 	struct prbs_precomp prbs_pc;		/* pre-computed PRBS bytes */
 	unsigned int prbs_pc_idx;		/* next to-be-transmitted byte offset in prbs_pc */
+	bool active;				/* started tx ? */
 };
 
 struct timeslot_state_rx {

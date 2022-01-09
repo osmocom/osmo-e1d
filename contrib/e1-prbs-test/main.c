@@ -66,6 +66,12 @@ static int e1_fd_cb(struct osmo_fd *ofd, unsigned int what)
 	len = rc;
 	process_rx(&ts->rx, ofd->priv_nr, buf, len);
 
+	/* if this is the first cb, we preload the transmit queue a bit */
+	if (!ts->tx.active) {
+		process_tx(ts, 1024);
+		ts->tx.active = true;
+	}
+
 	/* generate as many bytes as were read */
 	process_tx(ts, len);
 
@@ -79,10 +85,6 @@ static void init_timeslot(struct timeslot_state *ts)
 
 	ts_init_prbs_tx(ts, g_prbs_offs_tx);
 	ts_init_prbs_rx(ts, g_prbs_offs_rx);
-
-	/* start to put something into the transmit queue, before we get read-triggered
-	 * later on */
-	process_tx(ts, 1024);
 }
 
 static int open_slots_e1d(struct test_state *tst, int intf_nr, int line_nr)
