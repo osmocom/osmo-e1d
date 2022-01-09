@@ -45,37 +45,6 @@
 // ---------------------------------------------------------------------------
 
 static int
-_e1_rx_hdlcfs(struct e1_ts *ts, const uint8_t *buf, int len)
-{
-	int rv, cl, oi;
-
-	oi = 0;
-
-	while (oi < len) {
-		rv = osmo_isdnhdlc_decode(&ts->hdlc.rx,
-			&buf[oi], len-oi, &cl,
-			ts->hdlc.rx_buf, sizeof(ts->hdlc.rx_buf)
-		);
-
-		if (rv > 0) {
-			int bytes_to_write = rv;
-			LOGPTS(ts, DXFR, LOGL_DEBUG, "RX Message: %d [ %s]\n",
-				rv, osmo_hexdump(ts->hdlc.rx_buf, rv));
-			rv = write(ts->fd, ts->hdlc.rx_buf, bytes_to_write);
-			if (rv <= 0)
-				return rv;
-		} else  if (rv < 0 && ts->id == 4) {
-			LOGPTS(ts, DXFR, LOGL_ERROR, "ERR RX: %d %d %d [ %s]\n",
-				rv,oi,cl, osmo_hexdump(buf, len));
-		}
-
-		oi += cl;
-	}
-
-	return len;
-}
-
-static int
 _e1_tx_hdlcfs(struct e1_ts *ts, uint8_t *buf, int len)
 {
 	int rv, oo, cl;
@@ -275,6 +244,37 @@ _e1_rx_raw(struct e1_ts *ts, const uint8_t *buf, unsigned int len)
 	return appended;
 }
 
+static int
+_e1_rx_hdlcfs(struct e1_ts *ts, const uint8_t *buf, int len)
+{
+	int rv, cl, oi;
+
+	oi = 0;
+
+	while (oi < len) {
+		rv = osmo_isdnhdlc_decode(&ts->hdlc.rx,
+			&buf[oi], len-oi, &cl,
+			ts->hdlc.rx_buf, sizeof(ts->hdlc.rx_buf)
+		);
+
+		if (rv > 0) {
+			int bytes_to_write = rv;
+			LOGPTS(ts, DXFR, LOGL_DEBUG, "RX Message: %d [ %s]\n",
+				rv, osmo_hexdump(ts->hdlc.rx_buf, rv));
+			rv = write(ts->fd, ts->hdlc.rx_buf, bytes_to_write);
+			if (rv <= 0)
+				return rv;
+		} else  if (rv < 0 && ts->id == 4) {
+			LOGPTS(ts, DXFR, LOGL_ERROR, "ERR RX: %d %d %d [ %s]\n",
+				rv, oi, cl, osmo_hexdump(buf, len));
+		}
+
+		oi += cl;
+	}
+
+	return len;
+}
+
 /* write data to a timeslot (hardware -> application direction) */
 static int
 _e1_ts_write(struct e1_ts *ts, const uint8_t *buf, size_t len)
@@ -306,27 +306,6 @@ _e1_ts_write(struct e1_ts *ts, const uint8_t *buf, size_t len)
 }
 
 static int
-_e1_line_demux_in_superchan(struct e1_line *line, const uint8_t *buf, int ftr)
-{
-	struct e1_ts *ts = &line->superchan;
-	uint8_t sc_buf[ftr*31];
-
-	OSMO_ASSERT(line->mode == E1_LINE_MODE_SUPERCHANNEL);
-
-	if (ts->mode == E1_TS_MODE_OFF)
-		return 0;
-
-	/* first gather input data from multiple frames*/
-	for (int i = 0; i < ftr; i++)
-		memcpy(sc_buf + (i*31), buf + (i*32) + 1, 31);
-
-	/* then dispatch to appropriate action */
-	_e1_ts_write(ts, sc_buf, ftr*31);
-
-	return 0;
-}
-
-static int
 _e1_line_demux_in_channelized(struct e1_line *line, const uint8_t *buf, int ftr)
 {
 	OSMO_ASSERT(line->mode == E1_LINE_MODE_CHANNELIZED);
@@ -344,6 +323,27 @@ _e1_line_demux_in_channelized(struct e1_line *line, const uint8_t *buf, int ftr)
 
 		_e1_ts_write(ts, buf_ts, ftr);
 	}
+
+	return 0;
+}
+
+static int
+_e1_line_demux_in_superchan(struct e1_line *line, const uint8_t *buf, int ftr)
+{
+	struct e1_ts *ts = &line->superchan;
+	uint8_t sc_buf[ftr*31];
+
+	OSMO_ASSERT(line->mode == E1_LINE_MODE_SUPERCHANNEL);
+
+	if (ts->mode == E1_TS_MODE_OFF)
+		return 0;
+
+	/* first gather input data from multiple frames*/
+	for (int i = 0; i < ftr; i++)
+		memcpy(sc_buf + (i*31), buf + (i*32) + 1, 31);
+
+	/* then dispatch to appropriate action */
+	_e1_ts_write(ts, sc_buf, ftr*31);
 
 	return 0;
 }
