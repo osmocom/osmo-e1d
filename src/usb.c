@@ -173,6 +173,18 @@ e1_usb_xfer_fb(struct e1_usb_flow *flow, uint8_t *buf, int size)
 // USB flow
 // ---------------------------------------------------------------------------
 
+/* strings for enum libusb_transfer_status */
+static const struct value_string libusb_status_str[] = {
+	{ LIBUSB_TRANSFER_COMPLETED,	"COMPLETED" },
+	{ LIBUSB_TRANSFER_ERROR,	"ERROR" },
+	{ LIBUSB_TRANSFER_TIMED_OUT,	"TIMED_OUT" },
+	{ LIBUSB_TRANSFER_CANCELLED,	"CANCELLED" },
+	{ LIBUSB_TRANSFER_STALL,	"STALL" },
+	{ LIBUSB_TRANSFER_NO_DEVICE,	"NO_DEVICE" },
+	{ LIBUSB_TRANSFER_OVERFLOW,	"OVERFLOW" },
+	{ 0, NULL }
+};
+
 static void LIBUSB_CALL
 _e1uf_xfr(struct libusb_transfer *xfr)
 {
@@ -184,18 +196,29 @@ _e1uf_xfr(struct libusb_transfer *xfr)
 
 	/* FIXME: Check transfer status ? Error handling ? */
 
+
 	if (flow->ep & 0x80) {
 		for (j = 0; j < flow->ppx; j++) {
+			struct libusb_iso_packet_descriptor *iso_pd = &xfr->iso_packet_desc[j];
+			if (iso_pd->status != LIBUSB_TRANSFER_COMPLETED) {
+				LOGPLI(flow->line, DE1D, LOGL_ERROR, "IN EP %02x ISO packet %d failed with status %s\n",
+					flow->ep, j, get_value_string(libusb_status_str, iso_pd->status));
+			}
 			flow->cb(flow,
 				libusb_get_iso_packet_buffer_simple(xfr, j),
-				(xfr->iso_packet_desc[j].status == LIBUSB_TRANSFER_COMPLETED) ?
-					(int)xfr->iso_packet_desc[j].actual_length : -1
+				(iso_pd->status == LIBUSB_TRANSFER_COMPLETED) ?  (int)iso_pd->actual_length : -1
 			);
-			len += (xfr->iso_packet_desc[j].length = flow->size);
+			len += (iso_pd->length = flow->size);
 		}
 	} else {
-		for (j = 0; j < flow->ppx; j++)
-			len += (xfr->iso_packet_desc[j].length = flow->cb(flow, &xfr->buffer[len], flow->size));
+		for (j = 0; j < flow->ppx; j++) {
+			struct libusb_iso_packet_descriptor *iso_pd = &xfr->iso_packet_desc[j];
+			if (iso_pd->status != LIBUSB_TRANSFER_COMPLETED) {
+				LOGPLI(flow->line, DE1D, LOGL_ERROR, "OUT EP %02x ISO packet %d failed with status %s\n",
+					flow->ep, j, get_value_string(libusb_status_str, iso_pd->status));
+			}
+			len += (iso_pd->length = flow->cb(flow, &xfr->buffer[len], flow->size));
+		}
 	}
 
 	libusb_fill_iso_transfer(xfr, id->devh, flow->ep,
