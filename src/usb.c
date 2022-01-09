@@ -375,7 +375,8 @@ static void interrupt_ep_cb(struct libusb_transfer *xfer)
 	const struct ice1usb_irq *irq = (const struct ice1usb_irq *) xfer->buffer;
 
 	if (xfer->status != LIBUSB_TRANSFER_COMPLETED) {
-		LOGPLI(line, DE1D, LOGL_ERROR, "Error in Interrupt transfer\n");
+		LOGPLI(line, DE1D, LOGL_ERROR, "INT EP %02x transfer failed with status %s\n",
+			xfer->endpoint, get_value_string(libusb_status_str, xfer->status));
 		goto out;
 	}
 
