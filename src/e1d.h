@@ -79,6 +79,7 @@ struct e1_ts {
 		uint8_t *rx_buf;		/* actual buffer storage */
 		unsigned int rx_buf_size;	/* size of 'buf' in bytes */
 		unsigned int rx_buf_used;	/* number of bytes used so far */
+		bool tx_started;		/* tx started */
 	} raw;
 
 	/* Remote end */

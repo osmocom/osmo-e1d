@@ -45,6 +45,24 @@
 // ---------------------------------------------------------------------------
 
 static int
+_e1_tx_raw(struct e1_ts *ts, uint8_t *buf, int len)
+{
+		int l;
+
+		l = read(ts->fd, buf, len);
+		/* FIXME: handle underflow */
+
+		/* If we're not started yet, we 'fake' data until the other side
+		 * send something */
+		if (l < 0 && errno == EAGAIN && !ts->raw.tx_started)
+			return len;
+
+		ts->raw.tx_started = true;
+
+		return l;
+}
+
+static int
 _e1_tx_hdlcfs(struct e1_ts *ts, uint8_t *buf, int len)
 {
 	int rv, oo, cl;
@@ -105,8 +123,7 @@ _e1_ts_read(struct e1_ts *ts, uint8_t *buf, size_t len)
 
 	switch (ts->mode) {
 	case E1_TS_MODE_RAW:
-		l = read(ts->fd, buf, len);
-		/* FIXME: handle underflow */
+		l = _e1_tx_raw(ts, buf, len);
 		break;
 	case E1_TS_MODE_HDLCFCS:
 		l = _e1_tx_hdlcfs(ts, buf, len);
