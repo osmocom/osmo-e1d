@@ -352,6 +352,11 @@ static void interrupt_ep_cb(struct libusb_transfer *xfer)
 	struct e1_line *line = (struct e1_line *) xfer->user_data;
 	const struct ice1usb_irq *irq = (const struct ice1usb_irq *) xfer->buffer;
 
+	if (xfer->status != LIBUSB_TRANSFER_COMPLETED) {
+		LOGPLI(line, DE1D, LOGL_ERROR, "Error in Interrupt transfer\n");
+		goto out;
+	}
+
 	if (!xfer->actual_length) {
 		LOGPLI(line, DE1D, LOGL_ERROR, "Zero-Length Interrupt transfer\n");
 		goto out;
