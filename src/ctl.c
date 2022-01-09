@@ -278,7 +278,7 @@ _e1d_ctl_ts_query(void *data, struct msgb *msgb, struct msgb *rmsgb, int *rfd)
 	if (n == 1) {
 		_e1d_fill_ts_info(ti, &line->ts[hdr->ts]);
 	} else {
-		for (int i=0; i<32; i++)
+		for (int  i = 0; i < 32; i++)
 			_e1d_fill_ts_info(ti++, &line->ts[i]);
 	}
 

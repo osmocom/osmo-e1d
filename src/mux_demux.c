@@ -151,8 +151,7 @@ _e1_line_mux_out_channelized(struct e1_line *line, uint8_t *buf, int fts)
 	OSMO_ASSERT(line->mode == E1_LINE_MODE_CHANNELIZED);
 
 	/* Scan timeslots */
-	for (int tsn=1; tsn<32; tsn++)
-	{
+	for (int tsn = 1; tsn < 32; tsn++) {
 		struct e1_ts *ts = &line->ts[tsn];
 		uint8_t buf_ts[fts];
 		int l;
@@ -164,7 +163,7 @@ _e1_line_mux_out_channelized(struct e1_line *line, uint8_t *buf, int fts)
 		if (l <= 0)
 			continue;
 
-		for (int i=0; i<l; i++)
+		for (int i = 0; i < l; i++)
 			buf[tsn+(i*32)] = buf_ts[i];
 	}
 }
@@ -327,15 +326,14 @@ _e1_line_demux_in_channelized(struct e1_line *line, const uint8_t *buf, int ftr)
 {
 	OSMO_ASSERT(line->mode == E1_LINE_MODE_CHANNELIZED);
 
-	for (int tsn=1; tsn<32; tsn++)
-	{
+	for (int tsn = 1; tsn < 32; tsn++) {
 		struct e1_ts *ts = &line->ts[tsn];
 		uint8_t buf_ts[ftr];
 
 		if (ts->mode == E1_TS_MODE_OFF)
 			continue;
 
-		for (int i=0; i<ftr; i++)
+		for (int i = 0; i < ftr; i++)
 			buf_ts[i] = buf[tsn+(i*32)];
 
 		_e1_ts_write(ts, buf_ts, ftr);

@@ -192,7 +192,7 @@ e1_line_new(struct e1_intf *intf, void *drv_data)
 	line->drv_data = drv_data;
 	line->mode = E1_LINE_MODE_CHANNELIZED;
 
-	for (int i=0; i<32; i++)
+	for (int i = 0; i < 32; i++)
 		_ts_init(&line->ts[i], line, i);
 	_ts_init(&line->superchan, line, E1DP_TS_SUPERCHAN);
 
@@ -228,7 +228,7 @@ e1_line_destroy(struct e1_line *line)
 	osmo_timer_del(&line->watchdog.timer);
 
 	/* close all [peer] file descriptors */
-	for (int i=0; i<32; i++)
+	for (int i = 0; i < 32; i++)
 		e1_ts_stop(&line->ts[i]);
 
 	/* remove from per-interface list of lines */

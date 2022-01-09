@@ -185,7 +185,7 @@ _e1uf_xfr(struct libusb_transfer *xfr)
 	/* FIXME: Check transfer status ? Error handling ? */
 
 	if (flow->ep & 0x80) {
-		for (j=0; j<flow->ppx; j++) {
+		for (j = 0; j < flow->ppx; j++) {
 			flow->cb(flow,
 				libusb_get_iso_packet_buffer_simple(xfr, j),
 				(xfr->iso_packet_desc[j].status == LIBUSB_TRANSFER_COMPLETED) ?
@@ -194,7 +194,7 @@ _e1uf_xfr(struct libusb_transfer *xfr)
 			len += (xfr->iso_packet_desc[j].length = flow->size);
 		}
 	} else {
-		for (j=0; j<flow->ppx; j++)
+		for (j = 0; j < flow->ppx; j++)
 			len += (xfr->iso_packet_desc[j].length = flow->cb(flow, &xfr->buffer[len], flow->size));
 	}
 
@@ -226,7 +226,7 @@ e1uf_create(struct e1_line *line, xfer_cb_t cb,
 	flow->ppx   = ppx;
 	flow->entries = talloc_zero_size(ctx, count * sizeof(struct e1_usb_flow_entry));
 
-	for (int i=0; i<count; i++)
+	for (int i = 0; i < count; i++)
 		flow->entries[i].buf = talloc_zero_size(ctx, size * ppx);
 
 	return flow;
@@ -239,7 +239,7 @@ e1uf_destroy(struct e1_usb_flow *flow)
 		return;
 
 	/* FIXME: stop pending transfers */
-	for (int i=0; i<flow->count; i++)
+	for (int i = 0; i < flow->count; i++)
 		talloc_free(flow->entries[i].buf);
 
 	talloc_free(flow->entries);
@@ -253,8 +253,7 @@ e1uf_start(struct e1_usb_flow *flow)
 	struct libusb_transfer *xfr;
 	int i, j, rv, len;
 
-	for (i=0; i<flow->count; i++)
-	{
+	for (i = 0; i < flow->count; i++) {
 		xfr = libusb_alloc_transfer(flow->ppx);
 		if (!xfr)
 			return -ENOMEM;
@@ -262,10 +261,10 @@ e1uf_start(struct e1_usb_flow *flow)
 		len = 0;
 
 		if (flow->ep & 0x80) {
-			for (j=0; j<flow->ppx; j++)
+			for (j = 0; j < flow->ppx; j++)
 				len += (xfr->iso_packet_desc[j].length = flow->size);
 		} else {
-			for (j=0; j<flow->ppx; j++)
+			for (j = 0; j < flow->ppx; j++)
 				len += (xfr->iso_packet_desc[j].length = flow->cb(flow, &flow->entries[i].buf[len], flow->size));
 		}
 
@@ -529,7 +528,7 @@ _e1_usb_open_device(struct e1_daemon *e1d, struct libusb_device *dev)
 		return ret;
 	}
 
-	for (i=0; i<cd->bNumInterfaces; i++) {
+	for (i = 0; i < cd->bNumInterfaces; i++) {
 		/* Expect 2 altsettings with proper class/subclass/eps */
 		if (cd->interface[i].num_altsetting != 2)
 			continue;
@@ -559,7 +558,7 @@ _e1_usb_open_device(struct e1_daemon *e1d, struct libusb_device *dev)
 		line_data->r_acc  = 0;
 		line_data->r_sw   = 8192;
 
-		for (j=0; j<id->bNumEndpoints; j++) {
+		for (j = 0; j < id->bNumEndpoints; j++) {
 			if (id->endpoint[j].bmAttributes == 0x11) {
 				line_data->ep_fb = id->endpoint[j].bEndpointAddress;
 			} else if (id->endpoint[j].bmAttributes == 0x05) {
@@ -623,7 +622,7 @@ e1_usb_probe(struct e1_daemon *e1d)
 		return -EIO;
 	}
 
-	for (i=0; i<n_dev; i++) {
+	for (i = 0; i < n_dev; i++) {
 		struct libusb_device_descriptor desc;
 
 		ret = libusb_get_device_descriptor(dev_list[i], &desc);
