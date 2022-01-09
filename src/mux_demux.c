@@ -87,7 +87,7 @@ _e1_tx_hdlcfs(struct e1_ts *ts, uint8_t *buf, int len)
 		if (!ts->hdlc.tx_len) {
 			rv = recv(ts->fd, ts->hdlc.tx_buf, sizeof(ts->hdlc.tx_buf), MSG_TRUNC);
 			if (rv > 0) {
-				if (rv > sizeof(ts->hdlc.tx_buf)) {
+				if (rv > (int)sizeof(ts->hdlc.tx_buf)) {
 					LOGPTS(ts, DXFR, LOGL_ERROR, "Truncated message: Client tried to "
 						"send %d bytes but our buffer is limited to %lu\n",
 						rv, sizeof(ts->hdlc.tx_buf));
@@ -151,7 +151,7 @@ _e1_ts_read(struct e1_ts *ts, uint8_t *buf, size_t len)
 		LOGPTS(ts, DE1D, LOGL_ERROR, "dead socket during read: %s\n",
 			strerror(errno));
 		e1_ts_stop(ts);
-	} else if (l < len) {
+	} else if (l < (int)len) {
 		LOGPTS(ts, DE1D, LOGL_NOTICE, "TS read underflow: We had %zu bytes to read, "
 			"but socket returned only %d\n", len, l);
 	}
@@ -297,7 +297,7 @@ _e1_ts_write(struct e1_ts *ts, const uint8_t *buf, size_t len)
 		LOGPTS(ts, DE1D, LOGL_ERROR, "dead socket during write: %s\n",
 			strerror(errno));
 		e1_ts_stop(ts);
-	} else if (rv < len) {
+	} else if (rv < (int)len) {
 		LOGPTS(ts, DE1D, LOGL_NOTICE, "TS write overflow: We had %zu bytes to send, "
 			"but write returned only %d\n", len, rv);
 	}

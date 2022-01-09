@@ -94,7 +94,7 @@ _e1dp_server_request(struct osmo_e1dp_server_conn *conn, struct msgb *msgb)
 
 	/* Check payload length */
 	if ((h->payload_len >= 0) &&
-	    (h->payload_len != (msgb_length(msgb) - sizeof(struct osmo_e1dp_msg_hdr))))
+	    (h->payload_len != (int)(msgb_length(msgb) - sizeof(struct osmo_e1dp_msg_hdr))))
 	{
 		LOGP(DE1D, LOGL_ERROR, "Invalid payload for message type: %d / (%d/%d/%d).\n",
 			hdr->type, hdr->intf, hdr->line, hdr->ts);

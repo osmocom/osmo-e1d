@@ -107,7 +107,7 @@ const struct value_string e1_line_mode_names[] = {
 
 static void vty_dump_line(struct vty *vty, const struct e1_line *line)
 {
-	int tn;
+	unsigned int tn;
 
 	vty_out(vty, "Interface #%u, Line #%u, Mode %s%s%s:%s", line->intf->id, line->id,
 		get_value_string(e1_line_mode_names, line->mode),

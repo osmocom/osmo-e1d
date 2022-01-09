@@ -264,10 +264,7 @@ _e1d_ctl_ts_query(void *data, struct msgb *msgb, struct msgb *rmsgb, int *rfd)
 	if (!line)
 		return 0;
 
-	n = (hdr->ts == E1DP_INVALID) ? 32 : (
-		((hdr->ts >= 0) && (hdr->ts < 31)) ? 1 : 0
-	);
-
+	n = (hdr->ts == E1DP_INVALID) ? 32 : ((hdr->ts < 31) ? 1 : 0);
 	if (!n)
 		return 0;
 

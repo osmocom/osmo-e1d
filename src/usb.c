@@ -189,7 +189,7 @@ _e1uf_xfr(struct libusb_transfer *xfr)
 			flow->cb(flow,
 				libusb_get_iso_packet_buffer_simple(xfr, j),
 				(xfr->iso_packet_desc[j].status == LIBUSB_TRANSFER_COMPLETED) ?
-					xfr->iso_packet_desc[j].actual_length : -1
+					(int)xfr->iso_packet_desc[j].actual_length : -1
 			);
 			len += (xfr->iso_packet_desc[j].length = flow->size);
 		}
@@ -359,7 +359,7 @@ static void interrupt_ep_cb(struct libusb_transfer *xfer)
 
 	switch (irq->type) {
 	case ICE1USB_IRQ_T_ERRCNT:
-		if (xfer->actual_length < sizeof(*irq)) {
+		if (xfer->actual_length < (int)sizeof(*irq)) {
 			LOGPLI(line, DE1D, LOGL_ERROR, "Short ERRCNT interrupt: %u<%zu\n",
 				xfer->actual_length, sizeof(*irq));
 			break;

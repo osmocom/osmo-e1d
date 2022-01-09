@@ -55,7 +55,7 @@ static void notify_user(struct osmo_e1f_instance *e1i, enum osmo_e1f_notify_even
 int osmo_e1f_instance_init(struct osmo_e1f_instance *e1i, const char *name, e1_notify_cb cb,
 			  bool crc4_enabled, void *priv)
 {
-	int i;
+	unsigned int i;
 
 	e1i->crc4_enabled = crc4_enabled;
 	e1i->notify_cb = cb;
@@ -101,7 +101,7 @@ void osmo_e1f_ts_reset(struct osmo_e1f_instance_ts *e1t)
  *  \param[in] e1t E1 instance which we are to stop */
 void osmo_e1f_instance_reset(struct osmo_e1f_instance *e1i)
 {
-	int i;
+	unsigned int i;
 
 	align_fsm_reset(e1i);
 
@@ -290,7 +290,7 @@ static void e1_tx_update_crc4(struct osmo_e1f_instance *e1i, const uint8_t *out_
  *  \returns 0 on success, negative on error */
 int osmo_e1f_pull_tx_frame(struct osmo_e1f_instance *e1i, uint8_t *out_frame)
 {
-	int i;
+	unsigned int i;
 
 	if (e1i->tx.ais) {
 		memset(out_frame, 0xff, 32);
@@ -684,7 +684,7 @@ flush:
  */
 int osmo_e1f_rx_frame(struct osmo_e1f_instance *e1i, const uint8_t *in_frame)
 {
-	int i;
+	unsigned int i;
 
 	e1_rx_update_crc4(e1i, in_frame);
 
