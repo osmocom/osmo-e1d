@@ -73,6 +73,7 @@ enum osmo_e1dp_line_mode {
 	E1DP_LMODE_OFF		= 0x00,
 	E1DP_LMODE_CHANNELIZED	= 0x20,
 	E1DP_LMODE_SUPERCHANNEL	= 0x21,
+	E1DP_LMODE_E1OIP	= 0x22,
 };
 
 enum osmo_e1dp_ts_mode {

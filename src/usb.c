@@ -939,6 +939,8 @@ _e1_usb_open_device(struct e1_daemon *e1d, struct libusb_device *dev)
 		if (line_data->ep_int)
 			resubmit_irq(line);
 
+		e1_line_active(line);
+
 next_interface:
 		line_nr++;
 	}

@@ -71,6 +71,9 @@ _e1d_fill_line_info(struct osmo_e1dp_line_info *li, struct e1_line *line)
 	case E1_LINE_MODE_SUPERCHANNEL:
 		li->cfg.mode = E1DP_LMODE_SUPERCHANNEL;
 		break;
+	case E1_LINE_MODE_E1OIP:
+		li->cfg.mode = E1DP_LMODE_E1OIP;
+		break;
 	default:
 		OSMO_ASSERT(0);
 	}

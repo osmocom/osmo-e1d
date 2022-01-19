@@ -31,7 +31,12 @@
 #include <osmocom/core/timer.h>
 #include <osmocom/vty/command.h>
 
+#include <osmocom/octoi/octoi.h>
 #include <osmocom/e1d/proto.h>
+
+/***********************************************************************
+ * core e1d related data structures
+ ***********************************************************************/
 
 enum e1d_vty_node {
 	E1D_NODE = _LAST_OSMOVTY_NODE + 1,
@@ -94,6 +99,8 @@ enum e1_line_mode {
 	/* 1 channel group spanning all 31 TS, as used e.g. when using Frame Relay
 	 * or raw HDLC over channelized E1. */
 	E1_LINE_MODE_SUPERCHANNEL,
+	/* E1 forwarding over IP */
+	E1_LINE_MODE_E1OIP,
 };
 
 #define E1L_TS0_RX_CRC4_ERR	0x01
@@ -114,6 +121,7 @@ struct e1_line {
 	struct e1_ts ts[32];
 	/* superchannel */
 	struct e1_ts superchan;
+	struct octoi_peer *octoi_peer;
 
 	struct {
 		/*! buffer where we aggregate the E bits each multi-frame */
@@ -165,6 +173,7 @@ struct e1_daemon {
 	struct llist_head interfaces;
 };
 
+extern const struct octoi_ops e1d_octoi_ops;
 
 struct e1_line *
 e1_intf_find_line(struct e1_intf *intf, uint8_t id);
@@ -194,6 +203,9 @@ e1_line_new(struct e1_intf *intf, int line_id, void *drv_data);
 void
 e1_line_destroy(struct e1_line *line);
 
+void
+e1_line_active(struct e1_line *line);
+
 int
 e1_line_mux_out(struct e1_line *line, uint8_t *buf, int fts);
 
@@ -211,3 +223,12 @@ e1d_vpair_create(struct e1_daemon *e1d, unsigned int num_lines);
 
 struct e1_intf *
 e1d_vpair_intf_peer(struct e1_intf *intf);
+
+int
+e1oip_line_demux_in(struct e1_line *line, const uint8_t *buf, int ftr);
+
+int
+e1oip_line_mux_out(struct e1_line *line, uint8_t *buf, int fts);
+
+int
+e1d_vty_go_parent(struct vty *vty);

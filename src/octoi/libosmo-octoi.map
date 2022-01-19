@@ -1,0 +1,12 @@
+{
+global:
+g_octoi;
+octoi_vty_go_parent;
+octoi_init;
+octoi_client_get_peer;
+octoi_clnt_start_for_peer;
+octoi_peer_e1o_in;
+octoi_peer_e1t_out;
+
+local: *;
+};

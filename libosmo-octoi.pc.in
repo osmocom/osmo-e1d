@@ -1,0 +1,11 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir=@includedir@
+
+Name: Osmocom Community TDMoIP Library
+Description: C Utility Library
+Version: @VERSION@
+Requires: libosmocore
+Libs: -L${libdir} -losmo-octoi
+Cflags: -I${includedir}/

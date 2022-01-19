@@ -1,3 +1,5 @@
+SUBDIRS = octoi .
+
 # This is _NOT_ the library release version, it's an API version.
 # Please read Chapter 6 "Library interface versions" of the libtool
 # documentation before making any modification
@@ -47,10 +49,12 @@ osmo_e1d_SOURCES = \
 	usb.c \
 	vpair.c \
 	vty.c \
+	e1oip.c \
 	$(NULL)
 
 osmo_e1d_LDADD = $(LIBOSMOCORE_LIBS) $(LIBOSMOVTY_LIBS) \
-		 $(LIBOSMOUSB_LIBS) $(LIBUSB_LIBS) libosmo-e1d.la
+		 $(LIBOSMOUSB_LIBS) $(LIBUSB_LIBS) libosmo-e1d.la \
+		 octoi/libosmo-octoi.la
 
 osmo_e1d_pipe_SOURCES = \
 	e1d-ts-pipe.c \
@@ -60,7 +64,8 @@ osmo_e1d_pipe_LDADD = $(LIBOSMOCORE_LIBS) libosmo-e1d.la
 
 
 osmo_e1gen_LDADD = $(LIBOSMOCORE_LIBS) $(LIBOSMOVTY_LIBS) \
-		   $(LIBOSMOUSB_LIBS) $(LIBUSB_LIBS)
+		   $(LIBOSMOUSB_LIBS) $(LIBUSB_LIBS) \
+		   octoi/libosmo-octoi.la
 
 osmo_e1gen_SOURCES = \
 	intf_line.c \

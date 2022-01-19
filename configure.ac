@@ -97,6 +97,8 @@ AC_OUTPUT(
 	doc/Makefile
 	doc/examples/Makefile
 	src/Makefile
+	src/octoi/Makefile
 	include/Makefile
 	libosmo-e1d.pc
+	libosmo-octoi.pc
 	)

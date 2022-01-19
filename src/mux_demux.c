@@ -211,6 +211,9 @@ e1_line_mux_out(struct e1_line *line, uint8_t *buf, int fts)
 	case E1_LINE_MODE_SUPERCHANNEL:
 		_e1_line_mux_out_superchan(line, buf, fts);
 		break;
+	case E1_LINE_MODE_E1OIP:
+		e1oip_line_mux_out(line, buf, fts);
+		break;
 	default:
 		OSMO_ASSERT(0);
 	}
@@ -423,6 +426,8 @@ e1_line_demux_in(struct e1_line *line, const uint8_t *buf, int size, int frame_b
 		return _e1_line_demux_in_channelized(line, buf, ftr);
 	case E1_LINE_MODE_SUPERCHANNEL:
 		return _e1_line_demux_in_superchan(line, buf, ftr);
+	case E1_LINE_MODE_E1OIP:
+		return e1oip_line_demux_in(line, buf, ftr);
 	default:
 		OSMO_ASSERT(0);
 	}

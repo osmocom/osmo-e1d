@@ -15,7 +15,7 @@ EXTRA_DIST = \
 	$(NULL)
 
 pkgconfigdir = $(libdir)/pkgconfig
-pkgconfig_DATA = libosmo-e1d.pc
+pkgconfig_DATA = libosmo-e1d.pc libosmo-octoi.pc
 
 AM_DISTCHECK_CONFIGURE_FLAGS = \
 	--with-systemdsystemunitdir=$$dc_install_base/$(systemdsystemunitdir)

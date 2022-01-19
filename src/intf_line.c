@@ -40,6 +40,7 @@
 
 #include "e1d.h"
 #include "log.h"
+#include <osmocom/octoi/octoi.h>
 
 const struct value_string e1_driver_names[] = {
 	{ E1_DRIVER_USB, "usb" },
@@ -250,18 +251,66 @@ e1_line_new(struct e1_intf *intf, int line_id, void *drv_data)
 	line->ctrs = rate_ctr_group_alloc(line, &line_ctrg_desc, intf->id << 8 | line->id);
 	OSMO_ASSERT(line->ctrs);
 
+	llist_add_tail(&line->list, &intf->lines);
+
+	LOGPLI(line, DE1D, LOGL_NOTICE, "Created\n");
+
+	return line;
+}
+
+/* find an octoi client (if any) for the given line */
+static struct octoi_client *octoi_client_by_line(struct e1_line *line)
+{
+	struct octoi_client *clnt;
+
+	llist_for_each_entry(clnt, &g_octoi->clients, list) {
+		struct octoi_account *acc = clnt->cfg.account;
+		switch (acc->mode) {
+		case ACCOUNT_MODE_ICE1USB:
+			if (!strcmp(line->intf->usb.serial_str, acc->u.ice1usb.usb_serial) &&
+			    line->id == acc->u.ice1usb.line_nr)
+				return clnt;
+			break;
+		case ACCOUNT_MODE_NONE:
+		case ACCOUNT_MODE_REDIRECT:
+			break;
+		default:
+			OSMO_ASSERT(0);
+		}
+	}
+	return NULL;
+}
+
+/* mark given line as 'active' (hardware present + enabled) */
+void
+e1_line_active(struct e1_line *line)
+{
+	struct octoi_client *clnt;
+
+	LOGPLI(line, DE1D, LOGL_NOTICE, "Activated\n");
+
 	osmo_timer_setup(&line->ts0.timer, _ts0_tmr_cb, line);
 	osmo_timer_schedule(&line->ts0.timer, 1, 0);
-
-	llist_add_tail(&line->list, &intf->lines);
 
 	/* start watchdog timer */
 	osmo_timer_setup(&line->watchdog.timer, line_watchdog_cb, line);
 	osmo_timer_schedule(&line->watchdog.timer, 1, 0);
 
-	LOGPLI(line, DE1D, LOGL_NOTICE, "Created\n");
-
-	return line;
+	switch (line->mode) {
+	case E1_LINE_MODE_E1OIP:
+		OSMO_ASSERT(!line->octoi_peer);
+		/* find a client for this line */
+		clnt = octoi_client_by_line(line);
+		if (!clnt)
+			return;
+		/* start the peer for this client */
+		line->octoi_peer = octoi_client_get_peer(clnt);
+		OSMO_ASSERT(line->octoi_peer);
+		octoi_clnt_start_for_peer(line->octoi_peer, clnt->cfg.account);
+		break;
+	default:
+		break;
+	}
 }
 
 void

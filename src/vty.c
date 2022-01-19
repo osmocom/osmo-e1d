@@ -24,6 +24,7 @@
 #include <stdbool.h>
 #include <unistd.h>
 #include <time.h>
+#include <errno.h>
 
 #include <osmocom/core/linuxlist.h>
 
@@ -36,7 +37,9 @@
 #include <osmocom/vty/misc.h>
 #include <osmocom/vty/tdef_vty.h>
 
+#include <osmocom/octoi/octoi.h>
 #include <osmocom/e1d/proto.h>
+
 #include "e1d.h"
 #include "usb.h"
 
@@ -59,6 +62,23 @@ static struct cmd_node line_node = {
 	"%s(config-e1d-intf-line)# ",
 	1,
 };
+
+int e1d_vty_go_parent(struct vty *vty)
+{
+	struct e1_line *line;
+
+	switch (vty->node) {
+	case LINE_NODE:
+		line = vty->index;
+		vty->node = INTF_NODE;
+		vty->index = line->intf;
+		break;
+	default:
+		return octoi_vty_go_parent(vty);
+	}
+
+	return 0;
+}
 
 #if 0
 static void vty_dump_ts(struct vty *vty, const struct e1_ts *ts)
@@ -135,6 +155,7 @@ const struct value_string e1_ts_mode_names[] = {
 const struct value_string e1_line_mode_names[] = {
 	{ E1_LINE_MODE_CHANNELIZED,	"channelized" },
 	{ E1_LINE_MODE_SUPERCHANNEL,	"superchannel" },
+	{ E1_LINE_MODE_E1OIP,		"e1oip" },
 	{ 0, NULL }
 };
 
@@ -294,14 +315,17 @@ DEFUN(cfg_e1d_if_line, cfg_e1d_if_line_cmd, "line <0-255>",
 }
 
 DEFUN(cfg_e1d_if_line_mode, cfg_e1d_if_line_mode_cmd,
-	"mode (channelized|superchannel)",
+	"mode (channelized|superchannel|e1oip)",
 	"Configure the mode of the E1 line\n"
 	"Channelized (64kBps timeslot) mode\n"
 	"Superchannel (1xHDLC over 31x64kBps) mode\n")
 {
 	struct e1_line *line = vty->index;
-
-	line->mode = get_string_value(e1_line_mode_names, argv[0]);
+	enum e1_line_mode new_mode = get_string_value(e1_line_mode_names, argv[0]);
+	if (line->mode != new_mode) {
+		/* FIXME: clean up any old state */
+		line->mode = new_mode;
+	}
 	return CMD_SUCCESS;
 }
 

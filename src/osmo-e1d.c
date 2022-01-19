@@ -39,11 +39,14 @@
 #include <osmocom/core/select.h>
 #include <osmocom/vty/telnet_interface.h>
 #include <osmocom/vty/logging.h>
+#include <osmocom/vty/stats.h>
+#include <osmocom/vty/misc.h>
 
 #include <osmocom/e1d/proto_srv.h>
 #include <osmocom/e1d/proto.h>
 
 #include "e1d.h"
+#include <osmocom/octoi/octoi.h>
 #include "usb.h"
 #include "log.h"
 
@@ -83,6 +86,7 @@ static void sig_handler(int signo)
 static struct vty_app_info vty_info = {
 	.name = "osmo-e1d",
 	.version = PACKAGE_VERSION,
+	.go_parent_cb = e1d_vty_go_parent,
 	.copyright =
 	"(C) 2019-2022 by Sylvain Munaut, Harald Welte and contributors\r\n",
 	"License GPLv2+: GNU GPL version 2 or later <http://gnu.org/licenses/gpl-2.0.html>\r\n"
@@ -176,7 +180,12 @@ int main(int argc, char *argv[])
 	vty_init(&vty_info);
 	logging_vty_add_cmds();
 	e1d_vty_init(e1d);
+	octoi_init(g_e1d_ctx, e1d, &e1d_octoi_ops);
 	rate_ctr_init(e1d);
+	osmo_stat_item_init(e1d);
+	osmo_stats_vty_add_cmds();
+	osmo_talloc_vty_add_cmds();
+	osmo_fsm_vty_add_cmds();
 
 	handle_options(argc, argv);
 

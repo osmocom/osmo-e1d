@@ -1,0 +1,5 @@
+usr/include/osmocom/octoi
+usr/lib/*/libosmo-octoi*.a
+usr/lib/*/libosmo-octoi*.so
+usr/lib/*/libosmo-octoi*.la
+usr/lib/*/pkgconfig/libosmo-octoi.pc
