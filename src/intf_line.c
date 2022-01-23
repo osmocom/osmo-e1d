@@ -95,6 +95,18 @@ e1d_find_intf(struct e1_daemon *e1d, uint8_t id)
 	return NULL;
 }
 
+struct e1_intf *
+e1d_find_intf_by_usb_serial(struct e1_daemon *e1d, const char *serial_str)
+{
+	struct e1_intf *intf;
+
+	llist_for_each_entry(intf, &e1d->interfaces, list)
+		if (intf->usb.serial_str && !strcmp(intf->usb.serial_str, serial_str))
+			return intf;
+
+	return NULL;
+}
+
 struct e1_line *
 e1_intf_find_line(struct e1_intf *intf, uint8_t id)
 {

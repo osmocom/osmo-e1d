@@ -34,7 +34,8 @@
 
 enum e1d_vty_node {
 	E1D_NODE = _LAST_OSMOVTY_NODE + 1,
-	LINE_NODE
+	INTF_NODE,
+	LINE_NODE,
 };
 
 #define line_ctr_add(line, idx, add) rate_ctr_add(rate_ctr_group_get_ctr((line)->ctrs, idx), add)
@@ -147,6 +148,11 @@ struct e1_intf {
 	struct e1_daemon *e1d;
 	uint8_t id;
 
+	struct {
+		char *serial_str;
+	} usb;
+
+	bool vty_created;
 	enum e1_driver drv;
 	void *drv_data;
 
@@ -170,6 +176,9 @@ e1_intf_new(struct e1_daemon *e1d, int intf_id, void *drv_data);
 
 struct e1_intf *
 e1d_find_intf(struct e1_daemon *e1d, uint8_t id);
+
+struct e1_intf *
+e1d_find_intf_by_usb_serial(struct e1_daemon *e1d, const char *serial_str);
 
 void
 e1_intf_destroy(struct e1_intf *intf);

@@ -529,9 +529,13 @@ _e1_usb_open_device(struct e1_daemon *e1d, struct libusb_device *dev)
 	struct e1_line *line;
 	struct e1_usb_intf_data *intf_data;
 	struct e1_usb_line_data *line_data;
+	struct libusb_device_descriptor dd;
 	struct libusb_config_descriptor *cd;
 	const struct libusb_interface_descriptor *id;
+	bool auto_create_lines;
+	char serial_str[64];
 	libusb_device_handle *devh;
+	int line_nr = 0;
 	int i, j, ret;
 
 	ret = libusb_open(dev, &devh);
@@ -540,15 +544,57 @@ _e1_usb_open_device(struct e1_daemon *e1d, struct libusb_device *dev)
 		return ret;
 	}
 
-	intf_data = talloc_zero(e1d->ctx, struct e1_usb_intf_data);
-	intf_data->devh = devh;
+	ret = libusb_get_device_descriptor(dev, &dd);
+	if (ret) {
+		LOGP(DE1D, LOGL_ERROR, "Failed to get device descriptor\n");
+		libusb_close(devh);
+		return ret;
+	}
 
-	intf = e1_intf_new(e1d, -1, intf_data);
-	intf->drv = E1_DRIVER_USB;
+	/* this is actually a synchronous / blocking call, and if we detect a second icE1usb device while the
+	 * first one is running, we might be delaying/blocking any important USB transfers.  However, as we
+	 * still only call this probe function once at start-up and don't support hot-plugging yet, we can get
+	 * away with it. */
+	ret = libusb_get_string_descriptor_ascii(devh, dd.iSerialNumber, (uint8_t *)serial_str, sizeof(serial_str));
+	if (ret < 0) {
+		LOGP(DE1D, LOGL_ERROR, "Failed to get iSerialNumber string descriptor\n");
+		libusb_close(devh);
+		return ret;
+	}
+
+	/* try to find the matching interface config created by the vty */
+	intf = e1d_find_intf_by_usb_serial(e1d, serial_str);
+	if (intf) {
+		LOGP(DE1D, LOGL_INFO, "Configuration for icE1usb serial '%s' found\n", serial_str);
+		auto_create_lines = false;
+		if (intf->drv_data) {
+			LOGP(DE1D, LOGL_ERROR, "New device with serial '%s', but E1 interface %u busy\n",
+			     serial_str, intf->id);
+			libusb_close(devh);
+			return -EBUSY;
+		}
+		intf_data = talloc_zero(e1d->ctx, struct e1_usb_intf_data);
+		intf_data->devh = devh;
+		intf->drv_data = intf_data;
+	} else {
+		LOGP(DE1D, LOGL_NOTICE, "No configuration for icE1usb serial '%s' found, "
+		     "auto-generating it\n", serial_str);
+		auto_create_lines = true;
+		intf_data = talloc_zero(e1d->ctx, struct e1_usb_intf_data);
+		intf_data->devh = devh;
+		intf = e1_intf_new(e1d, -1, intf_data);
+		intf->drv = E1_DRIVER_USB;
+		osmo_talloc_replace_string(intf, &intf->usb.serial_str, serial_str);
+	}
 
 	ret = libusb_get_active_config_descriptor(dev, &cd);
 	if (ret) {
 		LOGP(DE1D, LOGL_ERROR, "Failed to talk to usb device\n");
+		intf_data->devh = NULL;
+		talloc_free(intf_data);
+		if (auto_create_lines)
+			e1_intf_destroy(intf);
+		libusb_close(devh);
 		return ret;
 	}
 
@@ -561,17 +607,26 @@ _e1_usb_open_device(struct e1_daemon *e1d, struct libusb_device *dev)
 		if ((id->bInterfaceClass != 0xff) || (id->bInterfaceSubClass != 0xe1) || (id->bNumEndpoints < 3))
 			continue;
 
+		line = e1_intf_find_line(intf, line_nr);
+		if (line) {
+			OSMO_ASSERT(auto_create_lines == false);
+			if (line->drv_data) {
+				LOGPLI(line, DE1D, LOGL_ERROR, "line busy but we are trying to open it again?\n");
+				goto next_interface;
+			}
+		}
+
 		/* Get interface and set it up */
 		ret = libusb_claim_interface(devh, id->bInterfaceNumber);
 		if (ret) {
 			LOGP(DE1D, LOGL_ERROR, "Failed to claim interface %d\n", id->bInterfaceNumber);
-			return ret;
+			goto next_interface;
 		}
 
 		ret = libusb_set_interface_alt_setting(devh, id->bInterfaceNumber, 1);
 		if (ret) {
 			LOGP(DE1D, LOGL_ERROR, "Failed to set interface %d altsetting\n", id->bInterfaceNumber);
-			return ret;
+			goto next_interface;
 		}
 
 		/* Setup driver data and find endpoints */
@@ -605,10 +660,20 @@ _e1_usb_open_device(struct e1_daemon *e1d, struct libusb_device *dev)
 
 		if (!line_data->ep_in || !line_data->ep_out || !line_data->ep_fb || !line_data->pkt_size) {
 			LOGP(DE1D, LOGL_ERROR, "Failed to use interface %d\n", id->bInterfaceNumber);
-			return -EINVAL;
+			goto next_interface;
 		}
 
-		line = e1_line_new(intf, -1, line_data);
+		if (!line) {
+			if (!auto_create_lines) {
+				LOGPIF(intf, DE1D, LOGL_ERROR, "No configuration for line %d "
+					"iInterface=%d, skipping\n", line_nr, id->bInterfaceNumber);
+				goto next_interface;
+			}
+			line = e1_line_new(intf, line_nr, line_data);
+		} else {
+			OSMO_ASSERT(auto_create_lines == false);
+			line->drv_data = line_data;
+		}
 
 		line_data->flow_in  = e1uf_create(line, e1_usb_xfer_in,  line_data->ep_in,  4, line_data->pkt_size, 4);
 		line_data->flow_out = e1uf_create(line, e1_usb_xfer_out, line_data->ep_out, 4, line_data->pkt_size, 4);
@@ -620,6 +685,9 @@ _e1_usb_open_device(struct e1_daemon *e1d, struct libusb_device *dev)
 
 		if (line_data->ep_int)
 			resubmit_irq(line);
+
+next_interface:
+		line_nr++;
 	}
 
 	return 0;
