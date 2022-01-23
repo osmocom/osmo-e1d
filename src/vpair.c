@@ -67,14 +67,14 @@ vintf_create(struct e1_daemon *e1d, unsigned int num_lines)
 
 	intf_data = talloc_zero(e1d->ctx, struct ve1_intf_data);
 
-	intf = e1_intf_new(e1d, intf_data);
+	intf = e1_intf_new(e1d, -1, intf_data);
 	intf->drv = E1_DRIVER_VPAIR;
 
 	for (i = 0; i < num_lines; i++) {
 		struct ve1_line_data *line_data;
 
 		line_data = talloc_zero(e1d->ctx, struct ve1_line_data);
-		e1_line_new(intf, line_data);
+		e1_line_new(intf, -1, line_data);
 	}
 
 	return intf;

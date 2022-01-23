@@ -166,7 +166,7 @@ struct e1_line *
 e1_intf_find_line(struct e1_intf *intf, uint8_t id);
 
 struct e1_intf *
-e1_intf_new(struct e1_daemon *e1d, void *drv_data);
+e1_intf_new(struct e1_daemon *e1d, int intf_id, void *drv_data);
 
 struct e1_intf *
 e1d_find_intf(struct e1_daemon *e1d, uint8_t id);
@@ -179,7 +179,7 @@ struct e1_line *
 e1_intf_find_line(struct e1_intf *intf, uint8_t id);
 
 struct e1_line *
-e1_line_new(struct e1_intf *intf, void *drv_data);
+e1_line_new(struct e1_intf *intf, int line_id, void *drv_data);
 
 void
 e1_line_destroy(struct e1_line *line);

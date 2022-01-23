@@ -107,10 +107,20 @@ e1_intf_find_line(struct e1_intf *intf, uint8_t id)
 	return NULL;
 }
 
+/* intf_id can be specified as '-1' to mean "auto-allocate intf->id" */
 struct e1_intf *
-e1_intf_new(struct e1_daemon *e1d, void *drv_data)
+e1_intf_new(struct e1_daemon *e1d, int intf_id, void *drv_data)
 {
 	struct e1_intf *intf;
+
+	if (intf_id != -1) {
+		/* ensure non-duplicate interface number */
+		intf = e1d_find_intf(e1d, intf_id);
+		if (intf) {
+			LOGPIF(intf, DE1D, LOGL_ERROR, "Cannot create duplicate interface %d\n", intf_id);
+			return NULL;
+		}
+	}
 
 	intf = talloc_zero(e1d->ctx, struct e1_intf);
 	OSMO_ASSERT(intf);
@@ -121,10 +131,14 @@ e1_intf_new(struct e1_daemon *e1d, void *drv_data)
 	INIT_LLIST_HEAD(&intf->list);
 	INIT_LLIST_HEAD(&intf->lines);
 
-	if (!llist_empty(&e1d->interfaces)) {
-		struct e1_intf *f = llist_last_entry(&e1d->interfaces, struct e1_intf, list);
-		intf->id = f->id + 1;
-	}
+	if (intf_id == -1) {
+		if (!llist_empty(&e1d->interfaces)) {
+			struct e1_intf *f = llist_last_entry(&e1d->interfaces, struct e1_intf, list);
+			intf->id = f->id + 1;
+		} else
+			intf->id = 0;
+	} else
+		intf->id = intf_id;
 
 	llist_add_tail(&intf->list, &e1d->interfaces);
 
@@ -180,10 +194,19 @@ _ts_init(struct e1_ts *ts, struct e1_line *line, int id)
 	ts->fd = -1;
 }
 
+/* line_id can be specified as '-1' to mean "auto-allocate intf->id" */
 struct e1_line *
-e1_line_new(struct e1_intf *intf, void *drv_data)
+e1_line_new(struct e1_intf *intf, int line_id, void *drv_data)
 {
 	struct e1_line *line;
+
+	if (line_id != -1) {
+		line = e1_intf_find_line(intf, line_id);
+		if (line) {
+			LOGPLI(line, DE1D, LOGL_ERROR, "Cannot create duplicate line %d\n", line_id);
+			return NULL;
+		}
+	}
 
 	line = talloc_zero(intf->e1d->ctx, struct e1_line);
 	OSMO_ASSERT(line);
@@ -198,10 +221,14 @@ e1_line_new(struct e1_intf *intf, void *drv_data)
 
 	INIT_LLIST_HEAD(&line->list);
 
-	if (!llist_empty(&intf->lines)) {
-		struct e1_line *l = llist_last_entry(&intf->lines, struct e1_line, list);
-		line->id = l->id + 1;
-	}
+	if (line_id == -1) {
+		if (!llist_empty(&intf->lines)) {
+			struct e1_line *l = llist_last_entry(&intf->lines, struct e1_line, list);
+			line->id = l->id + 1;
+		} else
+			line->id = 0;
+	} else
+		line->id = line_id;
 
 	line->ctrs = rate_ctr_group_alloc(line, &line_ctrg_desc, line->id);
 	OSMO_ASSERT(line->ctrs);

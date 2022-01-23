@@ -543,7 +543,7 @@ _e1_usb_open_device(struct e1_daemon *e1d, struct libusb_device *dev)
 	intf_data = talloc_zero(e1d->ctx, struct e1_usb_intf_data);
 	intf_data->devh = devh;
 
-	intf = e1_intf_new(e1d, intf_data);
+	intf = e1_intf_new(e1d, -1, intf_data);
 	intf->drv = E1_DRIVER_USB;
 
 	ret = libusb_get_active_config_descriptor(dev, &cd);
@@ -608,7 +608,7 @@ _e1_usb_open_device(struct e1_daemon *e1d, struct libusb_device *dev)
 			return -EINVAL;
 		}
 
-		line = e1_line_new(intf, line_data);
+		line = e1_line_new(intf, -1, line_data);
 
 		line_data->flow_in  = e1uf_create(line, e1_usb_xfer_in,  line_data->ep_in,  4, line_data->pkt_size, 4);
 		line_data->flow_out = e1uf_create(line, e1_usb_xfer_out, line_data->ep_out, 4, line_data->pkt_size, 4);
