@@ -38,6 +38,7 @@
 
 #include <osmocom/e1d/proto.h>
 #include "e1d.h"
+#include "usb.h"
 
 struct e1_daemon *vty_e1d;
 
@@ -75,8 +76,20 @@ static const char *intf_serno(const struct e1_intf *intf)
 
 static void vty_dump_intf(struct vty *vty, const struct e1_intf *intf)
 {
+	char buf[128];
+
 	vty_out(vty, "Interface #%u (%s), Driver: %s%s", intf->id, intf_serno(intf),
 		get_value_string(e1_driver_names, intf->drv), VTY_NEWLINE);
+
+	/* TODO: put this behind some call-back */
+	switch (intf->drv) {
+	case E1_DRIVER_USB:
+		e1_usb_intf_gpsdo_state_string(buf, sizeof(buf), intf);
+		vty_out(vty, " GPS-DO: %s%s", buf, VTY_NEWLINE);
+		break;
+	default:
+		break;
+	}
 }
 
 DEFUN(show_intf, show_intf_cmd, "show interface [<0-255>]",

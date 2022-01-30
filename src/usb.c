@@ -30,6 +30,7 @@
 
 #include <osmocom/core/isdnhdlc.h>
 #include <osmocom/core/utils.h>
+#include <osmocom/core/bit32gen.h>
 #include <osmocom/usb/libusb.h>
 
 #include <libusb.h>
@@ -84,6 +85,15 @@ struct e1_usb_line_data {
 
 struct e1_usb_intf_data {
 	libusb_device_handle *devh;
+
+	struct {
+		uint8_t if_num;
+		struct osmo_timer_list poll_timer;
+		struct e1usb_gpsdo_status last_status;
+	} gpsdo;
+
+	/* list of in-progress CTRL operations */
+	struct llist_head ctrl_inprogress;
 };
 
 
@@ -415,7 +425,7 @@ static int resubmit_irq(struct e1_line *line)
 }
 
 // ---------------------------------------------------------------------------
-// Control transfers
+// Control transfers (USB interface == E1 line level)
 // ---------------------------------------------------------------------------
 
 struct e1_usb_ctrl_xfer {
@@ -444,6 +454,10 @@ ctrl_xfer_compl_cb(struct libusb_transfer *xfr)
 	talloc_free(ucx);
 	libusb_free_transfer(xfr);
 }
+
+// ---------------------------------------------------------------------------
+// Control transfers (USB device == E1 interface level)
+// ---------------------------------------------------------------------------
 
 /* generic helper for async transmission of control endpoint requests */
 static int
@@ -518,6 +532,224 @@ e1_usb_ctrl_set_rx_cfg(struct e1_line *line, enum ice1usb_rx_mode mode)
 				      sizeof(rx_cfg));
 }
 
+struct e1_usb_ctrl_xfer_intf {
+	struct e1_intf *intf;
+	struct llist_head list;
+	/* 8 bytes control setup packet, remainder for data */
+	uint8_t buffer[8 + sizeof(struct e1usb_gpsdo_status)];
+};
+
+static void _e1_usb_intf_gpsdo_status_cb(struct e1_intf *intf, const uint8_t *data, size_t len);
+
+static void
+ctrl_xfer_intf_compl_cb(struct libusb_transfer *xfr)
+{
+	struct e1_usb_ctrl_xfer_intf *ucx = xfr->user_data;
+	struct libusb_control_setup *setup;
+
+	switch (xfr->status) {
+	case LIBUSB_TRANSFER_COMPLETED:
+		setup = (struct libusb_control_setup *) ucx->buffer;
+		LOGPIF(ucx->intf, DE1D, LOGL_DEBUG, "CTRL transfer completed successfully: %s\n",
+			osmo_hexdump(ucx->buffer, 8+xfr->actual_length));
+		switch (setup->bRequest) {
+		case ICE1USB_INTF_GET_GPSDO_STATUS:
+			_e1_usb_intf_gpsdo_status_cb(ucx->intf, ucx->buffer+8, xfr->actual_length);
+			break;
+		default:
+			break;
+		}
+		break;
+	default:
+		LOGPIF(ucx->intf, DE1D, LOGL_ERROR, "CTRL transfer completed unsuccessfully %d\n",
+			xfr->status);
+		break;
+	}
+	llist_del(&ucx->list);
+	talloc_free(ucx);
+	libusb_free_transfer(xfr);
+}
+
+
+/* generic helper for async transmission of control endpoint requests */
+static int
+_e1_usb_intf_send_ctrl(struct e1_intf *intf, uint8_t bmReqType, uint8_t bReq, uint16_t wValue,
+		       const uint8_t *data, size_t data_len)
+{
+	struct e1_usb_ctrl_xfer_intf *ucx = talloc_zero(intf, struct e1_usb_ctrl_xfer_intf);
+	struct e1_usb_intf_data *id = (struct e1_usb_intf_data *) intf->drv_data;
+	struct libusb_transfer *xfr;
+	int rc;
+
+	if (!ucx)
+		return -ENOMEM;
+
+	OSMO_ASSERT(sizeof(ucx->buffer) >= 8+data_len);
+	ucx->intf = intf;
+	libusb_fill_control_setup(ucx->buffer, bmReqType, bReq, wValue, id->gpsdo.if_num, data_len);
+	if (data && data_len)
+		memcpy(ucx->buffer+8, data, data_len);
+
+	xfr = libusb_alloc_transfer(0);
+	if (!xfr) {
+		rc = -ENOMEM;
+		goto free_ucx;
+	}
+
+	libusb_fill_control_transfer(xfr, id->devh, ucx->buffer, ctrl_xfer_intf_compl_cb, ucx, 3000);
+	rc = libusb_submit_transfer(xfr);
+	if (rc != 0)
+		goto free_xfr;
+
+	llist_add_tail(&ucx->list, &id->ctrl_inprogress);
+
+	return 0;
+
+free_xfr:
+	libusb_free_transfer(xfr);
+free_ucx:
+	talloc_free(ucx);
+
+	return rc;
+}
+
+int
+e1_usb_ctrl_set_gpsdo_mode(struct e1_intf *intf, enum ice1usb_gpsdo_mode gpsdo_mode)
+{
+	const uint16_t bmReqType = LIBUSB_RECIPIENT_INTERFACE | LIBUSB_REQUEST_TYPE_VENDOR |
+				   LIBUSB_ENDPOINT_OUT;
+	return _e1_usb_intf_send_ctrl(intf, bmReqType, ICE1USB_INTF_SET_GPSDO_MODE, 0,
+				      (uint8_t *)&gpsdo_mode, sizeof(gpsdo_mode));
+}
+
+int
+e1_usb_ctrl_set_gpsdo_tune(struct e1_intf *intf, const struct e1usb_gpsdo_tune *gpsdo_tune)
+{
+	const uint16_t bmReqType = LIBUSB_RECIPIENT_INTERFACE | LIBUSB_REQUEST_TYPE_VENDOR |
+				   LIBUSB_ENDPOINT_OUT;
+	return _e1_usb_intf_send_ctrl(intf, bmReqType, ICE1USB_INTF_SET_GPSDO_TUNE, 0,
+				      (uint8_t *)gpsdo_tune, sizeof(gpsdo_tune));
+}
+
+int
+e1_usb_ctrl_get_gpsdo_status(struct e1_intf *intf)
+{
+	const uint16_t bmReqType = LIBUSB_RECIPIENT_INTERFACE | LIBUSB_REQUEST_TYPE_VENDOR |
+				   LIBUSB_ENDPOINT_IN;
+	return _e1_usb_intf_send_ctrl(intf, bmReqType, ICE1USB_INTF_GET_GPSDO_STATUS, 0,
+				      NULL, sizeof(struct e1usb_gpsdo_status));
+}
+
+// ---------------------------------------------------------------------------
+// GPS-DO
+// ---------------------------------------------------------------------------
+
+static const struct value_string ice1usb_gpsdo_mode_str[] = {
+	{ ICE1USB_GPSDO_MODE_DISABLED,		"DISABLED" },
+	{ ICE1USB_GPSDO_MODE_AUTO,		"AUTO" },
+	{ 0, NULL }
+};
+
+static const struct value_string ice1usb_gpsdo_antenna_state_str[] = {
+	{ ICE1USB_GPSDO_ANT_UNKNOWN,		"UNKNOWN" },
+	{ ICE1USB_GPSDO_ANT_OK,			"OK" },
+	{ ICE1USB_GPSDO_ANT_OPEN,		"OPEN" },
+	{ ICE1USB_GPSDO_ANT_SHORT,		"SHORT" },
+	{ 0, NULL }
+};
+
+static const struct value_string ice1usb_gpsdo_state_str[] = {
+	{ ICE1USB_GPSDO_STATE_DISABLED,		"DISABLED" },
+	{ ICE1USB_GPSDO_STATE_CALIBRATE,	"CALIBRATE" },
+	{ ICE1USB_GPSDO_STATE_HOLD_OVER,	"HOLD_OVER" },
+	{ ICE1USB_GPSDO_STATE_TUNE_COARSE,	"TUNE_COARSE" },
+	{ ICE1USB_GPSDO_STATE_TUNE_FINE,	"TUNE_FINE" },
+	{ 0, NULL }
+};
+
+int
+e1_usb_intf_gpsdo_state_string(char *buf, size_t len, const struct e1_intf *intf)
+{
+	struct e1_usb_intf_data *id = intf->drv_data;
+	struct e1usb_gpsdo_status *last_st = &id->gpsdo.last_status;
+
+	OSMO_ASSERT(intf->drv == E1_DRIVER_USB);
+
+	return snprintf(buf, len, "mode=%s, fix=%s, state=%s antenna=%s, tune=%u/%u, freq_est=%u",
+			get_value_string(ice1usb_gpsdo_mode_str, last_st->mode),
+			last_st->valid_fix ? "TRUE" : "FALSE",
+			get_value_string(ice1usb_gpsdo_state_str, last_st->state),
+			get_value_string(ice1usb_gpsdo_antenna_state_str, last_st->antenna_state),
+			libusb_le16_to_cpu(last_st->tune.coarse), libusb_le16_to_cpu(last_st->tune.fine),
+			osmo_load32le(&last_st->freq_est));
+}
+
+static void
+_e1_usb_intf_gpsdo_status_cb(struct e1_intf *intf, const uint8_t *data, size_t len)
+{
+	struct e1_usb_intf_data *id = intf->drv_data;
+	struct e1usb_gpsdo_status *last_st = &id->gpsdo.last_status;
+	const struct e1usb_gpsdo_status *st;
+
+	if (len < sizeof(*st)) {
+		LOGPIF(intf, DE1D, LOGL_ERROR, "GPSDO status %zu < %zu!\n", len, sizeof(*st));
+		return;
+	}
+	st = (const struct e1usb_gpsdo_status *) data;
+
+	if (st->state != last_st->state) {
+		LOGPIF(intf, DE1D, LOGL_NOTICE, "GPSDO state change: %s -> %s\n",
+			get_value_string(ice1usb_gpsdo_state_str, last_st->state),
+			get_value_string(ice1usb_gpsdo_state_str, st->state));
+	}
+
+	if (st->antenna_state != last_st->antenna_state) {
+		int level = LOGL_NOTICE;
+		switch (st->antenna_state) {
+		case ICE1USB_GPSDO_ANT_OPEN:
+		case ICE1USB_GPSDO_ANT_SHORT:
+			level = LOGL_ERROR;
+			break;
+		default:
+			level = LOGL_NOTICE;
+		}
+		LOGPIF(intf, DE1D, level, "GPS antenna status change: %s -> %s\n",
+			get_value_string(ice1usb_gpsdo_antenna_state_str, last_st->antenna_state),
+			get_value_string(ice1usb_gpsdo_antenna_state_str, st->antenna_state));
+	}
+
+	if (st->valid_fix != last_st->valid_fix) {
+		if (st->valid_fix)
+			LOGPIF(intf, DE1D, LOGL_NOTICE, "GPS Fix achieved\n");
+		else
+			LOGPIF(intf, DE1D, LOGL_ERROR, "GPS Fix LOST\n");
+	}
+
+	/* update our state */
+	memcpy(last_st, st, sizeof(*last_st));
+}
+
+static void
+_e1_usb_gpsdo_poll_cb(void *data)
+{
+	struct e1_intf *intf = (struct e1_intf *) data;
+	struct e1_usb_intf_data *id = intf->drv_data;
+
+	/* issue a control endpoint request, further processing is when it completes */
+	e1_usb_ctrl_get_gpsdo_status(intf);
+
+	osmo_timer_schedule(&id->gpsdo.poll_timer, 1, 0);
+}
+
+static void
+_e1_usb_gpsdo_init(struct e1_intf *intf)
+{
+	struct e1_usb_intf_data *id = intf->drv_data;
+
+	osmo_timer_setup(&id->gpsdo.poll_timer, &_e1_usb_gpsdo_poll_cb, intf);
+	osmo_timer_schedule(&id->gpsdo.poll_timer, 1, 0);
+}
+
 // ---------------------------------------------------------------------------
 // Init / Probing
 // ---------------------------------------------------------------------------
@@ -586,6 +818,8 @@ _e1_usb_open_device(struct e1_daemon *e1d, struct libusb_device *dev)
 		intf->drv = E1_DRIVER_USB;
 		osmo_talloc_replace_string(intf, &intf->usb.serial_str, serial_str);
 	}
+
+	INIT_LLIST_HEAD(&intf_data->ctrl_inprogress);
 
 	ret = libusb_get_active_config_descriptor(dev, &cd);
 	if (ret) {
@@ -688,6 +922,20 @@ _e1_usb_open_device(struct e1_daemon *e1d, struct libusb_device *dev)
 
 next_interface:
 		line_nr++;
+	}
+
+	/* find the GPS-DO interface (if any) */
+	for (i = 0; i < cd->bNumInterfaces; i++) {
+		if (cd->interface[i].num_altsetting != 1)
+			continue;
+
+		id = &cd->interface[i].altsetting[0];
+		if ((id->bInterfaceClass == 0xff) && (id->bInterfaceSubClass == 0xe1) &&
+		    (id->bInterfaceProtocol == 0xd0)) {
+			intf_data->gpsdo.if_num = id->bInterfaceNumber;
+			_e1_usb_gpsdo_init(intf);
+			break;
+		}
 	}
 
 	return 0;
