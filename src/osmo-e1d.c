@@ -175,6 +175,7 @@ int main(int argc, char *argv[])
 	vty_init(&vty_info);
 	logging_vty_add_cmds();
 	e1d_vty_init(e1d);
+	rate_ctr_init(e1d);
 
 	handle_options(argc, argv);
 
