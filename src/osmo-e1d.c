@@ -1,7 +1,8 @@
 /*
  * osmo-e1d.c
  *
- * (C) 2019 by Sylvain Munaut <tnt@246tNt.com>
+ * (C) 2019-2022 by Sylvain Munaut <tnt@246tNt.com>
+ * (C) 2019-2022 by Harald Welte <laforge@osmocom.org>
  *
  * All Rights Reserved
  *
@@ -83,7 +84,7 @@ static struct vty_app_info vty_info = {
 	.name = "osmo-e1d",
 	.version = PACKAGE_VERSION,
 	.copyright =
-	"(C) 2019 by Sylvain Munaut <tnt@246tNt.com>\r\n",
+	"(C) 2019-2022 by Sylvain Munaut, Harald Welte and contributors\r\n",
 	"License GPLv2+: GNU GPL version 2 or later <http://gnu.org/licenses/gpl-2.0.html>\r\n"
 	"This is free software: you are free to change and redistribute it.\r\n"
 	"There is NO WARRANTY, to the extent permitted by law.\r\n",
