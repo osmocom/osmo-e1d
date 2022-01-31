@@ -18,4 +18,4 @@ int e1_usb_ctrl_get_gpsdo_status(struct e1_intf *intf);
 
 int e1_usb_intf_gpsdo_state_string(char *buf, size_t len, const struct e1_intf *intf);
 
-int e1_usb_probe(struct e1_daemon *e1d);
+int e1_usb_init(struct e1_daemon *e1d);

@@ -213,7 +213,7 @@ int main(int argc, char *argv[])
 	}
 
 	/* probe devices */
-	rv = e1_usb_probe(e1d);
+	rv = e1_usb_init(e1d);
 	if (rv != 0) {
 		LOGP(DE1D, LOGL_ERROR, "Failed to prove usb devices\n");
 	}

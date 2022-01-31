@@ -842,6 +842,7 @@ _e1_usb_open_device(struct e1_daemon *e1d, struct libusb_device *dev, bool is_tr
 		return ret;
 	}
 
+	/* non-blocking */
 	ret = libusb_get_device_descriptor(dev, &dd);
 	if (ret) {
 		LOGP(DE1D, LOGL_ERROR, "Failed to get device descriptor: %s\n", libusb_strerror(ret));
@@ -887,6 +888,8 @@ _e1_usb_open_device(struct e1_daemon *e1d, struct libusb_device *dev, bool is_tr
 
 	/* we have prior knowledge that the e1-tracer firmware configuration 2 is the e1d compatible mode. */
 	if (is_tracer) {
+		/* FIXME: this is a blocking call that may sleep, and hence we're blocking all other
+		 * processing meanwhile! */
 		if (libusb_set_configuration(devh, 2) != LIBUSB_SUCCESS) {
 			LOGP(DE1D, LOGL_ERROR, "Cannot set configuration 2 of e1-tracer device. Maybe too old firmware?\n");
 			libusb_close(devh);
@@ -896,6 +899,7 @@ _e1_usb_open_device(struct e1_daemon *e1d, struct libusb_device *dev, bool is_tr
 
 	INIT_LLIST_HEAD(&intf_data->ctrl_inprogress);
 
+	/* non-blocking */
 	ret = libusb_get_active_config_descriptor(dev, &cd);
 	if (ret) {
 		LOGP(DE1D, LOGL_ERROR, "Failed to talk to %s usb device: %s\n", hwname, libusb_strerror(ret));
@@ -991,6 +995,9 @@ _e1_usb_open_device(struct e1_daemon *e1d, struct libusb_device *dev, bool is_tr
 			goto next_interface;
 		}
 
+
+		/* FIXME: this is a blocking call that may sleep, and hence we're blocking all other
+		 * processing meanwhile! */
 		ret = libusb_set_interface_alt_setting(devh, id->bInterfaceNumber, 1);
 		if (ret) {
 			LOGP(DE1D, LOGL_ERROR, "Failed to set interface %d altsetting:%s\n", id->bInterfaceNumber,
@@ -1038,12 +1045,117 @@ next_interface:
 	return 0;
 }
 
-int
-e1_usb_probe(struct e1_daemon *e1d)
+static int
+_libusb_hotplug_cb(libusb_context *ctx, libusb_device *device, libusb_hotplug_event event, void *user_data)
 {
-	struct libusb_device **dev_list;
-	ssize_t n_dev;
-	int i, ret;
+	struct libusb_device_descriptor desc;
+	struct e1_daemon *e1d = user_data;
+	int ret;
+
+	switch (event) {
+	case LIBUSB_HOTPLUG_EVENT_DEVICE_ARRIVED:
+		ret = libusb_get_device_descriptor(device, &desc);
+		if (ret)
+			break;
+
+		/* a bit  redundant as we register the call-back only for those two, but
+		 * in the future we might support more hardware and extend the checks here
+		 * and drop the matching in the callback registration */
+		if (desc.idVendor != USB_VID)
+			break;
+
+		LOGP(DE1D, LOGL_NOTICE, "HOTPLUG: USB Device plugged in\n");
+
+		switch (desc.idProduct) {
+		case USB_PID:
+			_e1_usb_open_device(e1d, device, false);
+			break;
+		case USB_PID_TRACER:
+			_e1_usb_open_device(e1d, device, true);
+			break;
+		default:
+			break;
+		}
+		break;
+	case LIBUSB_HOTPLUG_EVENT_DEVICE_LEFT:
+		LOGP(DE1D, LOGL_NOTICE, "HOTPLUG: USB Device removed\n");
+		/* TODO: iterate over list of interfaces, check for driver + usb-dev, ... */
+		break;
+	}
+
+	return 0;
+}
+
+/***********************************************************************
+ * BEGIN libosmocore <= 1.6.0 workaround
+ ***********************************************************************/
+
+#include <poll.h>
+
+static int _osmo_usb_fd_cb(struct osmo_fd *ofd, unsigned int what)
+{
+	libusb_context *luctx = ofd->data;
+
+	/* we assume that we're running Linux v2.6.27 with timerfd support here
+	 * and hence don't have to perform manual timeout handling.  See
+	 * "Notes on time-based events" at
+	 * http://libusb.sourceforge.net/api-1.0/group__libusb__poll.html */
+	struct timeval zero_tv = { 0, 0 };
+	libusb_handle_events_timeout(luctx, &zero_tv);
+
+	return 0;
+}
+
+static void _osmo_usb_added_cb(int fd, short events, void *user_data)
+{
+	struct osmo_fd *ofd = talloc_zero(OTC_GLOBAL, struct osmo_fd);
+	libusb_context *luctx = user_data;
+	unsigned int when = 0;
+	int rc;
+
+	LOGP(DLINP, LOGL_ERROR, "Adding fd=%u, events=0x%02x\n", fd, events);
+
+	if (events & POLLIN)
+		when |= OSMO_FD_READ;
+	if (events & POLLOUT)
+		when |= OSMO_FD_WRITE;
+
+	osmo_fd_setup(ofd, fd, when, _osmo_usb_fd_cb, luctx, 0);
+	rc = osmo_fd_register(ofd);
+	if (rc)
+		LOGP(DLINP, LOGL_ERROR, "osmo_fd_register() failed with rc=%d\n", rc);
+}
+
+/* work around a bug in all libosmocore versions <= 1.6.0 caused by misundertanding strange API
+ * requirements of libusb. */
+static void libosmocore_160_workaround(void)
+{
+	const struct libusb_pollfd **pfds;
+
+	/* get the initial file descriptors which were created even before during libusb_init() */
+	pfds = libusb_get_pollfds(g_usb);
+	if (pfds) {
+		const struct libusb_pollfd **pfds2 = pfds;
+		const struct libusb_pollfd *pfd;
+
+		/* synthesize 'add' call-backs. not sure why libusb doesn't do that by itself? */
+		for (pfd = *pfds2; pfd; pfd = *++pfds2) {
+			if (!osmo_fd_get_by_fd(pfd->fd))
+				_osmo_usb_added_cb(pfd->fd, pfd->events, g_usb);
+		}
+		libusb_free_pollfds(pfds);
+	}
+}
+
+/***********************************************************************
+ * END libosmocore <= 1.6.0 workaround
+ ***********************************************************************/
+
+int
+e1_usb_init(struct e1_daemon *e1d)
+{
+	int ret;
+	int events = LIBUSB_HOTPLUG_EVENT_DEVICE_ARRIVED | LIBUSB_HOTPLUG_EVENT_DEVICE_LEFT;
 
 	if (!g_usb) {
 		ret = osmo_libusb_init(&g_usb);
@@ -1051,37 +1163,32 @@ e1_usb_probe(struct e1_daemon *e1d)
 			LOGP(DE1D, LOGL_ERROR, "Failed to initialize libusb\n");
 			return -EIO;
 		}
+		libosmocore_160_workaround();
 	}
 
-	n_dev = libusb_get_device_list(g_usb, &dev_list);
-	if (n_dev < 0) {
-		LOGP(DE1D, LOGL_ERROR, "Failed to list devices\n");
-		return -EIO;
-	}
-
-	for (i = 0; i < n_dev; i++) {
-		struct libusb_device_descriptor desc;
-
-		ret = libusb_get_device_descriptor(dev_list[i], &desc);
-		if (ret)
-			continue;
-
-		if (desc.idVendor != USB_VID)
-			continue;
-
-		switch (desc.idProduct) {
-		case USB_PID:
-			_e1_usb_open_device(e1d, dev_list[i], false);
-			break;
-		case USB_PID_TRACER:
-			_e1_usb_open_device(e1d, dev_list[i], true);
-			break;
-		default:
-			continue;
+	if (libusb_has_capability(LIBUSB_CAP_HAS_HOTPLUG)) {
+		ret = libusb_hotplug_register_callback(g_usb, events, LIBUSB_HOTPLUG_ENUMERATE, LIBUSB_HOTPLUG_MATCH_ANY, LIBUSB_HOTPLUG_MATCH_ANY,
+							LIBUSB_HOTPLUG_MATCH_ANY, _libusb_hotplug_cb, e1d, NULL);
+		if (ret != LIBUSB_SUCCESS) {
+			LOGP(DE1D, LOGL_ERROR, "Failed to register USB hot plug call-back\n");
+			return -EIO;
 		}
-	}
+	} else {
+		/* no hot-plug capability, fall back to iterating devices once */
+		struct libusb_device **dev_list;
+		ssize_t n_dev, i;
 
-	libusb_free_device_list(dev_list, 1);
+		n_dev = libusb_get_device_list(g_usb, &dev_list);
+		if (n_dev < 0) {
+			LOGP(DE1D, LOGL_ERROR, "Failed to list devices\n");
+			return -EIO;
+		}
+
+		for (i = 0; i < n_dev; i++)
+			_libusb_hotplug_cb(g_usb, dev_list[i], LIBUSB_HOTPLUG_EVENT_DEVICE_ARRIVED, e1d);
+
+		libusb_free_device_list(dev_list, 1);
+	}
 
 	return 0;
 }
