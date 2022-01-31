@@ -237,8 +237,10 @@ _e1uf_xfr(struct libusb_transfer *xfr)
 	);
 
 	rv = libusb_submit_transfer(xfr);
-	if (rv)
-		LOGPLI(flow->line, DE1D, LOGL_ERROR, "Failed to resubmit buffer for transfer\n");
+	if (rv) {
+		LOGPLI(flow->line, DE1D, LOGL_ERROR, "EP %02x Failed to resubmit buffer for transfer: %s\n",
+		       flow->ep, libusb_strerror(rv));
+	}
 }
 
 static struct e1_usb_flow *
@@ -307,9 +309,11 @@ e1uf_start(struct e1_usb_flow *flow)
 		);
 
 		rv = libusb_submit_transfer(xfr);
-
-		if (rv)
+		if (rv) {
+			LOGPLI(flow->line, DE1D, LOGL_ERROR, "EP %02x: Error submitting transfer %d: %s\n",
+			       flow->ep, i, libusb_strerror(rv));
 			return rv;
+		}
 
 		flow->entries[i].xfr = xfr;
 	}
@@ -418,10 +422,17 @@ static int resubmit_irq(struct e1_line *line)
 	struct e1_usb_line_data *ld = (struct e1_usb_line_data *) line->drv_data;
 	struct e1_usb_intf_data *id = (struct e1_usb_intf_data *) line->intf->drv_data;
 	struct libusb_transfer *xfr = libusb_alloc_transfer(0);
+	int rv;
 
 	libusb_fill_interrupt_transfer(xfr, id->devh, ld->ep_int, ld->irq.buf, sizeof(ld->irq.buf),
 					interrupt_ep_cb, line, 0);
-	return libusb_submit_transfer(xfr);
+	rv = libusb_submit_transfer(xfr);
+	if (rv != LIBUSB_SUCCESS) {
+		LOGPLI(line, DE1D, LOGL_ERROR, "EP %02x: Error submitting IRQ transfer: %s\n",
+			ld->ep_int, libusb_strerror(rv));
+	}
+
+	return rv;
 }
 
 // ---------------------------------------------------------------------------
@@ -487,8 +498,11 @@ _e1_usb_line_send_ctrl(struct e1_line *line, uint8_t bmReqType, uint8_t bReq, ui
 
 	libusb_fill_control_transfer(xfr, id->devh, ucx->buffer, ctrl_xfer_compl_cb, ucx, 3000);
 	rc = libusb_submit_transfer(xfr);
-	if (rc != 0)
+	if (rc != 0) {
+		LOGPLI(line, DE1D, LOGL_ERROR, "Error submitting control transfer: %s\n",
+			libusb_strerror(rc));
 		goto free_xfr;
+	}
 
 	llist_add_tail(&ucx->list, &ld->ctrl_inprogress);
 
@@ -598,8 +612,11 @@ _e1_usb_intf_send_ctrl(struct e1_intf *intf, uint8_t bmReqType, uint8_t bReq, ui
 
 	libusb_fill_control_transfer(xfr, id->devh, ucx->buffer, ctrl_xfer_intf_compl_cb, ucx, 3000);
 	rc = libusb_submit_transfer(xfr);
-	if (rc != 0)
+	if (rc != 0) {
+		LOGPIF(intf, DE1D, LOGL_ERROR, "Error submitting control transfer: %s\n",
+			libusb_strerror(rc));
 		goto free_xfr;
+	}
 
 	llist_add_tail(&ucx->list, &id->ctrl_inprogress);
 
@@ -772,13 +789,13 @@ _e1_usb_open_device(struct e1_daemon *e1d, struct libusb_device *dev)
 
 	ret = libusb_open(dev, &devh);
 	if (ret) {
-		LOGP(DE1D, LOGL_ERROR, "Failed to open usb device\n");
+		LOGP(DE1D, LOGL_ERROR, "Failed to open usb device: %s\n", libusb_strerror(ret));
 		return ret;
 	}
 
 	ret = libusb_get_device_descriptor(dev, &dd);
 	if (ret) {
-		LOGP(DE1D, LOGL_ERROR, "Failed to get device descriptor\n");
+		LOGP(DE1D, LOGL_ERROR, "Failed to get device descriptor: %s\n", libusb_strerror(ret));
 		libusb_close(devh);
 		return ret;
 	}
@@ -789,7 +806,7 @@ _e1_usb_open_device(struct e1_daemon *e1d, struct libusb_device *dev)
 	 * away with it. */
 	ret = libusb_get_string_descriptor_ascii(devh, dd.iSerialNumber, (uint8_t *)serial_str, sizeof(serial_str));
 	if (ret < 0) {
-		LOGP(DE1D, LOGL_ERROR, "Failed to get iSerialNumber string descriptor\n");
+		LOGP(DE1D, LOGL_ERROR, "Failed to get iSerialNumber string descriptor: %s\n", libusb_strerror(ret));
 		libusb_close(devh);
 		return ret;
 	}
@@ -823,7 +840,7 @@ _e1_usb_open_device(struct e1_daemon *e1d, struct libusb_device *dev)
 
 	ret = libusb_get_active_config_descriptor(dev, &cd);
 	if (ret) {
-		LOGP(DE1D, LOGL_ERROR, "Failed to talk to usb device\n");
+		LOGP(DE1D, LOGL_ERROR, "Failed to talk to usb device: %s\n", libusb_strerror(ret));
 		intf_data->devh = NULL;
 		talloc_free(intf_data);
 		if (auto_create_lines)
@@ -853,13 +870,15 @@ _e1_usb_open_device(struct e1_daemon *e1d, struct libusb_device *dev)
 		/* Get interface and set it up */
 		ret = libusb_claim_interface(devh, id->bInterfaceNumber);
 		if (ret) {
-			LOGP(DE1D, LOGL_ERROR, "Failed to claim interface %d\n", id->bInterfaceNumber);
+			LOGP(DE1D, LOGL_ERROR, "Failed to claim interface %d:%s\n", id->bInterfaceNumber,
+			     libusb_strerror(ret));
 			goto next_interface;
 		}
 
 		ret = libusb_set_interface_alt_setting(devh, id->bInterfaceNumber, 1);
 		if (ret) {
-			LOGP(DE1D, LOGL_ERROR, "Failed to set interface %d altsetting\n", id->bInterfaceNumber);
+			LOGP(DE1D, LOGL_ERROR, "Failed to set interface %d altsetting:%s\n", id->bInterfaceNumber,
+			     libusb_strerror(ret));
 			goto next_interface;
 		}
 
