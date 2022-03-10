@@ -168,11 +168,13 @@ int e1oip_rcvmsg_tdm_data(struct e1oip_line *iline, struct msgb *msg)
 	struct octoi_peer *peer = iline->peer;
 	const struct e1oip_tdm_hdr *e1th;
 	uint16_t frame_nr;
+	uint32_t fn32;
 	uint32_t ts_mask;
 	uint8_t idx2ts[BYTES_PER_FRAME];
 	unsigned int n_frames;
 	uint8_t frame_buf[BYTES_PER_FRAME];
 	unsigned int num_ts;
+	uint16_t exp_next_seq = iline->e1t.next_fn32 & 0xffff;
 	struct timespec ts;
 
 	/* update the timestamp at which we last received data from this peer */
@@ -191,10 +193,33 @@ int e1oip_rcvmsg_tdm_data(struct e1oip_line *iline, struct msgb *msg)
 	frame_nr = ntohs(e1th->frame_nr);
 	ts_mask = ntohl(e1th->ts_mask);
 
-	if (frame_nr != iline->e1t.next_seq) {
-		LOGPEER(peer, LOGL_NOTICE, "RxIP: frame_nr=%u, but expected %u: packet loss? "
-		       "or re-ordering?\n", frame_nr, iline->e1t.next_seq);
-		/* FIXME: locally substitute frames? */
+	if (frame_nr != exp_next_seq) {
+		int delta = frame_nr - exp_next_seq;
+		bool re_ordering;
+		if (delta > 0 && delta < 5 * iline->cfg.batching_factor) {
+			/* assume re-ordering */
+			re_ordering = true;
+		} else {
+			/* assume packet loss */
+			re_ordering = false;
+		}
+
+		LOGPEER(peer, LOGL_NOTICE, "RxIP: frame_nr=%u, but expected %u: delta=%d - assuming %s\n",
+			frame_nr, exp_next_seq, delta, re_ordering ? "re-ordering" : "packet loss");
+
+		fn32 = (iline->e1t.next_fn32 & 0xffff0000) + frame_nr;
+		if (fn32 > iline->e1t.next_fn32 + 8000) {
+			/* more than 1s in the future: was this a wrap-around? */
+			fn32 = ((iline->e1t.next_fn32 & 0xffff0000) - 0x10000) + frame_nr;
+			if (fn32 < iline->e1t.next_fn32 - 8000) {
+				/* also no match: give up */
+				LOGPEER(peer, LOGL_NOTICE, "RxIP: frame_nr=%u at exp_next_fn32=%u; "
+					"received frame outside +/- 1s window of expected frame\n",
+					frame_nr, iline->e1t.next_fn32);
+			}
+		}
+	} else {
+		fn32 = iline->e1t.next_fn32;
 	}
 
 	/* compute E1oIP idx to timeslot table */
@@ -223,13 +248,15 @@ int e1oip_rcvmsg_tdm_data(struct e1oip_line *iline, struct msgb *msg)
 			frame_buf[ts_nr] = e1th->data[i*num_ts + j];
 		}
 		/* FIXME: what to do about TS0? */
-		frame_fifo_in(&iline->e1t.fifo, frame_buf);
+		frame_rifo_in(&iline->e1t.rifo, frame_buf, fn32+i);
 	}
 	/* update local state */
 	memcpy(iline->e1t.last_frame, frame_buf, BYTES_PER_FRAME);
-	iline->e1t.next_seq = frame_nr + n_frames;
+	/* FIXME: only in some cases */
+	//if (fn32 >= iline->e1t.next_fn32I
+	iline->e1t.next_fn32 = fn32 + n_frames;
 
-	iline_stat_set(iline, LINE_STAT_E1oIP_E1T_FIFO, frame_fifo_frames(&iline->e1t.fifo));
+	//iline_stat_set(iline, LINE_STAT_E1oIP_E1T_FIFO, frame_fifo_frames(&iline->e1t.fifo));
 
 	return 0;
 }
@@ -258,7 +285,7 @@ struct e1oip_line *e1oip_line_alloc(struct octoi_peer *peer)
 	frame_fifo_init(&iline->e1o.fifo, iline->cfg.batching_factor, fifo_threshold_cb, iline);
 	memset(&iline->e1o.last_frame, 0xff, sizeof(iline->e1o.last_frame));
 
-	frame_fifo_init(&iline->e1t.fifo, 0, NULL, iline);
+	frame_rifo_init(&iline->e1t.rifo);
 	memset(&iline->e1t.last_frame, 0xff, sizeof(iline->e1o.last_frame));
 
 	iline->peer = peer;

@@ -11,6 +11,7 @@ lib_LTLIBRARIES = libosmo-octoi.la
 
 libosmo_octoi_la_SOURCES = \
 	frame_fifo.c \
+	frame_rifo.c \
 	e1oip.c \
 	octoi.c \
 	octoi_sock.c \
@@ -28,6 +29,7 @@ libosmo_octoi_la_LIBADD = $(LIBOSMOCORE_LIBS) $(LIBOSMOVTY_LIBS)
 noinst_HEADERS = \
 	e1oip.h \
 	frame_fifo.h \
+	frame_rifo.h \
 	octoi.h \
 	octoi_fsm.h \
 	octoi_sock.h \

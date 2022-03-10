@@ -1,0 +1,8 @@
+AT_INIT
+AT_BANNER([Regression tests.])
+
+AT_SETUP([rifo])
+AT_KEYWORDS([rifo])
+cat $abs_srcdir/rifo/rifo_test.ok > expout
+AT_CHECK([$abs_top_builddir/tests/rifo/rifo_test], [], [expout], [ignore])
+AT_CLEANUP

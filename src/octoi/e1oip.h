@@ -7,6 +7,7 @@
 #include <osmocom/octoi/e1oip_proto.h>
 
 #include "frame_fifo.h"
+#include "frame_rifo.h"
 
 #define iline_ctr_add(iline, idx, add) rate_ctr_add(rate_ctr_group_get_ctr((iline)->ctrs, idx), add)
 #define iline_stat_set(iline, idx, add) \
@@ -47,9 +48,9 @@ struct e1oip_line {
 
 	/* E1 terminated side (E1<-IP) */
 	struct {
-		struct frame_fifo fifo;
+		struct frame_rifo rifo;
 		uint8_t last_frame[BYTES_PER_FRAME];	/* last frame on the E1 side */
-		uint16_t next_seq;		/* next expected sequence nr */
+		uint32_t next_fn32;			/* next expected frame number */
 	} e1t;
 
 	/* TODO: statistics (RTT, frame loss, std deviation, alarms */

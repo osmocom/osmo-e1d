@@ -1,5 +1,8 @@
 #pragma once
 
+#include <stdint.h>
+#include <stddef.h>
+
 #define BYTES_PER_FRAME		32
 #define FRAMES_PER_FIFO		800
 

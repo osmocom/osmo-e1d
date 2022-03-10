@@ -34,3 +34,11 @@ src/osmo-e1d
 src/osmo-e1d-pipe
 contrib/e1-prbs-test/e1-prbs-test
 contrib/e1-prbs-test/ice40-e1-prbs-check
+
+tests/atconfig
+tests/atlocal
+tests/package.m4
+tests/testsuite
+tests/testsuite.log
+tests/testsuite.dir
+tests/*/*_test
