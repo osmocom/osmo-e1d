@@ -104,7 +104,7 @@ struct e1_usb_flow_entry {
 	struct libusb_transfer *xfr;
 };
 
-typedef int (*xfer_cb_t)(struct e1_usb_flow *flow, uint8_t *buf, int size);
+typedef int (*xfer_cb_t)(struct e1_usb_flow *flow, uint8_t *buf, int len);
 
 struct e1_usb_flow {
 	struct e1_line *line;
@@ -124,22 +124,22 @@ struct e1_usb_flow {
 // ---------------------------------------------------------------------------
 
 static int
-e1_usb_xfer_in(struct e1_usb_flow *flow, uint8_t *buf, int size)
+e1_usb_xfer_in(struct e1_usb_flow *flow, uint8_t *buf, int len)
 {
-	if (size == 0)
+	if (len == 0)
 		return 0;
-	return e1_line_demux_in(flow->line, buf + 4, size - 4, buf[3] & 0xf);
+	return e1_line_demux_in(flow->line, buf + 4, len - 4, buf[3] & 0xf);
 }
 
 static int
-e1_usb_xfer_out(struct e1_usb_flow *flow, uint8_t *buf, int size)
+e1_usb_xfer_out(struct e1_usb_flow *flow, uint8_t *buf, int len)
 {
 	struct e1_line *line = flow->line;
 	struct e1_usb_line_data *ld = (struct e1_usb_line_data *) line->drv_data;
 	int fm, fts;
 
-	if (size <= 0) {
-		LOGPLI(line, DXFR, LOGL_ERROR, "OUT ERROR: %d\n", size);
+	if (len <= 0) {
+		LOGPLI(line, DXFR, LOGL_ERROR, "OUT ERROR: %d\n", len);
 		return -1;
 	}
 
@@ -161,15 +161,15 @@ e1_usb_xfer_out(struct e1_usb_flow *flow, uint8_t *buf, int size)
 }
 
 static int
-e1_usb_xfer_fb(struct e1_usb_flow *flow, uint8_t *buf, int size)
+e1_usb_xfer_fb(struct e1_usb_flow *flow, uint8_t *buf, int len)
 {
 	struct e1_usb_line_data *ld = (struct e1_usb_line_data *) flow->line->drv_data;
 
-	if (size < 0) {
+	if (len < 0) {
 		LOGPLI(flow->line, DE1D, LOGL_ERROR, "Feedback transfer error\n");
 		return 0;
-	} else if (size != 3) {
-		LOGPLI(flow->line, DE1D, LOGL_ERROR, "Feedback packet invalid size (%d)\n", size);
+	} else if (len != 3) {
+		LOGPLI(flow->line, DE1D, LOGL_ERROR, "Feedback packet invalid len (%d)\n", len);
 		return 0;
 	}
 
