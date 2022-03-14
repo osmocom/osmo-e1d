@@ -106,7 +106,8 @@ struct e1_usb_flow_entry {
 	struct libusb_transfer *xfr;
 };
 
-typedef int (*xfer_cb_t)(struct e1_usb_flow *flow, uint8_t *buf, int len);
+/* len == actual length, size == underlying size of buffer */
+typedef int (*xfer_cb_t)(struct e1_usb_flow *flow, uint8_t *buf, int len, size_t size);
 
 struct e1_usb_flow {
 	struct e1_line *line;
@@ -126,7 +127,7 @@ struct e1_usb_flow {
 // ---------------------------------------------------------------------------
 
 static int
-e1_usb_xfer_in(struct e1_usb_flow *flow, uint8_t *buf, int len)
+e1_usb_xfer_in(struct e1_usb_flow *flow, uint8_t *buf, int len, size_t size)
 {
 	if (len == 0)
 		return 0;
@@ -134,7 +135,7 @@ e1_usb_xfer_in(struct e1_usb_flow *flow, uint8_t *buf, int len)
 }
 
 static int
-e1_usb_xfer_out(struct e1_usb_flow *flow, uint8_t *buf, int len)
+e1_usb_xfer_out(struct e1_usb_flow *flow, uint8_t *buf, int len, size_t size)
 {
 	struct e1_line *line = flow->line;
 	struct e1_usb_line_data *ld = (struct e1_usb_line_data *) line->drv_data;
@@ -163,7 +164,7 @@ e1_usb_xfer_out(struct e1_usb_flow *flow, uint8_t *buf, int len)
 }
 
 static int
-e1_usb_xfer_fb(struct e1_usb_flow *flow, uint8_t *buf, int len)
+e1_usb_xfer_fb(struct e1_usb_flow *flow, uint8_t *buf, int len, size_t size)
 {
 	struct e1_usb_line_data *ld = (struct e1_usb_line_data *) flow->line->drv_data;
 
@@ -218,7 +219,8 @@ _e1uf_xfr(struct libusb_transfer *xfr)
 			}
 			flow->cb(flow,
 				libusb_get_iso_packet_buffer_simple(xfr, j),
-				(iso_pd->status == LIBUSB_TRANSFER_COMPLETED) ?  (int)iso_pd->actual_length : -1
+				(iso_pd->status == LIBUSB_TRANSFER_COMPLETED) ?  (int)iso_pd->actual_length : -1,
+				iso_pd->length
 			);
 			len += (iso_pd->length = flow->size);
 		}
@@ -229,7 +231,7 @@ _e1uf_xfr(struct libusb_transfer *xfr)
 				LOGPLI(flow->line, DE1D, LOGL_ERROR, "OUT EP %02x ISO packet %d failed with status %s\n",
 					flow->ep, j, get_value_string(libusb_status_str, iso_pd->status));
 			}
-			len += (iso_pd->length = flow->cb(flow, &xfr->buffer[len], flow->size));
+			len += (iso_pd->length = flow->cb(flow, &xfr->buffer[len], flow->size, flow->size));
 		}
 	}
 
@@ -302,7 +304,7 @@ e1uf_start(struct e1_usb_flow *flow)
 				len += (xfr->iso_packet_desc[j].length = flow->size);
 		} else {
 			for (j = 0; j < flow->ppx; j++)
-				len += (xfr->iso_packet_desc[j].length = flow->cb(flow, &flow->entries[i].buf[len], flow->size));
+				len += (xfr->iso_packet_desc[j].length = flow->cb(flow, &flow->entries[i].buf[len], flow->size, flow->size));
 		}
 
 		libusb_fill_iso_transfer(xfr, id->devh, flow->ep,
