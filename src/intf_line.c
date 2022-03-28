@@ -275,6 +275,3 @@ e1_line_destroy(struct e1_line *line)
 
 	talloc_free(line);
 }
-
-
-
