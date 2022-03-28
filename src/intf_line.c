@@ -247,7 +247,7 @@ e1_line_new(struct e1_intf *intf, int line_id, void *drv_data)
 	} else
 		line->id = line_id;
 
-	line->ctrs = rate_ctr_group_alloc(line, &line_ctrg_desc, line->id);
+	line->ctrs = rate_ctr_group_alloc(line, &line_ctrg_desc, intf->id << 8 | line->id);
 	OSMO_ASSERT(line->ctrs);
 
 	osmo_timer_setup(&line->ts0.timer, _ts0_tmr_cb, line);
