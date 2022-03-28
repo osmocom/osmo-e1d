@@ -76,7 +76,7 @@ _e1_tx_hdlcfs(struct e1_ts *ts, uint8_t *buf, int len)
 			if (rv > 0) {
 				if (rv > (int)sizeof(ts->hdlc.tx_buf)) {
 					LOGPTS(ts, DXFR, LOGL_ERROR, "Truncated message: Client tried to "
-						"send %d bytes but our buffer is limited to %lu\n",
+						"send %d bytes but our buffer is limited to %zu\n",
 						rv, sizeof(ts->hdlc.tx_buf));
 					rv = sizeof(ts->hdlc.tx_buf);
 				}
