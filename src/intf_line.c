@@ -100,6 +100,9 @@ e1d_find_intf_by_usb_serial(struct e1_daemon *e1d, const char *serial_str)
 {
 	struct e1_intf *intf;
 
+	if (!serial_str)
+		return NULL;
+
 	llist_for_each_entry(intf, &e1d->interfaces, list)
 		if (intf->usb.serial_str && !strcmp(intf->usb.serial_str, serial_str))
 			return intf;
