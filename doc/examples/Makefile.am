@@ -1,6 +1,8 @@
 OSMOCONF_FILES = \
 	osmo-e1d.cfg \
 	osmo-e1d-vpair.cfg \
+	osmo-e1d-octoi-client.cfg \
+	osmo-e1d-octoi-server.cfg \
 	$(NULL)
 
 osmoconfdir = $(sysconfdir)/osmocom
