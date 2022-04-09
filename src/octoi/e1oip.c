@@ -98,7 +98,7 @@ static void fifo_threshold_cb(struct frame_fifo *fifo, unsigned int frames, void
 		rc = frame_fifo_out(&iline->e1o.fifo, buf[i]);
 		if (rc < 0) {
 			/* this situation cannot really happen: The FIFO called us that
-			 * a certain threshold is reached, ubt now it cannot provide
+			 * a certain threshold is reached, but now it cannot provide
 			 * frames? */
 			LOGPEER(iline->peer, LOGL_ERROR,
 				"frame_fifo_out failure for frame %u/%u\n", iline->e1o.next_seq + i, i);

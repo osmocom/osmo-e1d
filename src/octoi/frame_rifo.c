@@ -106,14 +106,16 @@ void frame_rifo_init(struct frame_rifo *rifo)
  *  \param rifo The RIFO to which we want to put (append) multiple frames
  *  \param frame Pointer to memory containing the frame data
  *  \param fn Absolute frame number at which to insert the frame.
- *  \returns 0 on success; -1 on error (overflow */
+ *  \returns 0 on success; -1 on error (overflow) */
 int frame_rifo_in(struct frame_rifo *rifo, const uint8_t *frame, uint32_t fn)
 {
 	uint32_t bucket;
 	uint8_t *dst;
 
-	if (fn > frame_rifo_max_in_fn(rifo))
+	if (fn > frame_rifo_max_in_fn(rifo) && fn < frame_rifo_min_in_fn(rifo))
+	{
 		return -ERANGE;
+	}
 
 	bucket = bucket_for_fn(rifo, fn);
 	dst = rifo->buf + bucket * BYTES_PER_FRAME;

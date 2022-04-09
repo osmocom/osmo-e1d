@@ -19,6 +19,13 @@ static inline uint32_t frame_rifo_max_in_fn(const struct frame_rifo *ff)
 	return ff->next_out_fn + FRAMES_PER_FIFO - 1;
 }
 
+/* minimum frame number we currently can store in the rifo */
+static inline uint32_t frame_rifo_min_in_fn(const struct frame_rifo *ff)
+{
+	return ff->next_out_fn - 1;
+}
+
+
 void frame_rifo_init(struct frame_rifo *rifo);
 
 /* number of frames currently available in FIFO */
