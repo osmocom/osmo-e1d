@@ -170,15 +170,24 @@ static void vty_dump_line(struct vty *vty, const struct e1_line *line)
 		line->ts0.cur_errmask & E1L_TS0_RX_CRC4_ERR ? " [REMOTE-CRC-ERROR]" : "",
 		VTY_NEWLINE);
 
-	for (tn = 0; tn < ARRAY_SIZE(line->ts); tn++) {
-		const struct e1_ts *ts = &line->ts[tn];
-		vty_out(vty, " TS%02u: Mode %s, FD %d, Peer PID %d%s",
-			ts->id, get_value_string(e1_ts_mode_names, ts->mode),
-			ts->fd, get_remote_pid(ts->fd), VTY_NEWLINE);
+	switch (line->mode) {
+	case E1_LINE_MODE_CHANNELIZED:
+		for (tn = 0; tn < ARRAY_SIZE(line->ts); tn++) {
+			const struct e1_ts *ts = &line->ts[tn];
+			vty_out(vty, " TS%02u: Mode %s, FD %d, Peer PID %d%s",
+				ts->id, get_value_string(e1_ts_mode_names, ts->mode),
+				ts->fd, get_remote_pid(ts->fd), VTY_NEWLINE);
+		}
+		break;
+	case E1_LINE_MODE_SUPERCHANNEL:
+		vty_out(vty, " SC: Mode %s, FD %d, Peer PID %d%s",
+			get_value_string(e1_ts_mode_names, line->superchan.mode),
+			line->superchan.fd, get_remote_pid(line->superchan.fd), VTY_NEWLINE);
+		break;
+	case E1_LINE_MODE_E1OIP:
+		/* TODO: dump some information about E1oIP */
+		break;
 	}
-	vty_out(vty, " SC: Mode %s, FD %d, Peer PID %d%s",
-		get_value_string(e1_ts_mode_names, line->superchan.mode),
-		line->superchan.fd, get_remote_pid(line->superchan.fd), VTY_NEWLINE);
 
 	vty_out_rate_ctr_group(vty, " ", line->ctrs);
 }
