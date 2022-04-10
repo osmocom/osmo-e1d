@@ -359,9 +359,13 @@ DEFUN(show_server, show_server_cmd,
 	SHOW_STR "Display information about the OCTOI Server\n")
 {
 	struct octoi_server *srv = g_octoi->server;
-	struct octoi_sock *sock = srv->sock;
 
-	vty_show_octoi_sock(vty, sock);
+	if (!srv) {
+		vty_out(vty, "%% No OCTOI server present%s", VTY_NEWLINE);
+		return CMD_WARNING;
+	}
+
+	vty_show_octoi_sock(vty, srv->sock);
 
 	return CMD_SUCCESS;
 }
