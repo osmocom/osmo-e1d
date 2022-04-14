@@ -125,6 +125,46 @@ static void too_old_frames(void)
 	}
 }
 
+static void bound_check(void)
+{
+	uint8_t frame[32];
+	struct frame_rifo rifo;
+	frame_rifo_init(&rifo);
+	rifo.next_out_fn = init_next_out_fn;
+
+	printf("\nTEST: %s, starting at FN: %u\n", __func__, init_next_out_fn);
+
+	// Put 1 frame and get it
+	memset(frame, 0xa5, sizeof(frame));
+	frame_rifo_in(&rifo, frame, init_next_out_fn);
+	frame_rifo_out(&rifo, frame);
+
+	// Put 11 frames at absolute frame numbers 791-801
+	const uint8_t in[] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
+	for (int i = 0; i < sizeof(in); i++) {
+		memset(frame, in[i], sizeof(frame));
+		rifo_in(&rifo, frame, init_next_out_fn + in[i] + 791);
+	}
+
+	// Add frame at start offset
+	memset(frame, 0xa5, sizeof(frame));
+	rifo_in(&rifo, frame, init_next_out_fn);
+
+	// Skip the first 790 frames
+	for (int i = 0; i < 790; i++) {
+		memset(frame, 0xff, sizeof(frame));
+		// Note: frame_rifo_out instead of rifo_out
+		// (just to ignore the output)
+		frame_rifo_out(&rifo, frame);
+	}
+
+	// Try to read the 10 real frames
+	for (int i = 0; i < 10; i++) {
+		memset(frame, 0xff, sizeof(frame));
+		rifo_out(&rifo, frame);
+	}
+}
+
 void run_all_tests(void)
 {
 	missing_frames(0);
@@ -132,6 +172,7 @@ void run_all_tests(void)
 	reordered_in();
 	correct_order();
 	too_old_frames();
+	bound_check();
 }
 
 int main(int argc, char **argv)
