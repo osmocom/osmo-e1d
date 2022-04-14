@@ -112,7 +112,7 @@ int frame_rifo_in(struct frame_rifo *rifo, const uint8_t *frame, uint32_t fn)
 	uint32_t bucket;
 	uint8_t *dst;
 
-	if (fn > frame_rifo_max_in_fn(rifo) && fn < frame_rifo_min_in_fn(rifo))
+	if (!frame_rifo_fn_in_range(rifo, fn))
 	{
 		return -ERANGE;
 	}

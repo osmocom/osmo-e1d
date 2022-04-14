@@ -13,16 +13,11 @@ struct frame_rifo {
 				   indexed by physical offset in buf */
 };
 
-/* maximum frame number we currently can store in the rifo */
-static inline uint32_t frame_rifo_max_in_fn(const struct frame_rifo *ff)
+/* can this frame number be stores in the rifo */
+static inline bool frame_rifo_fn_in_range(const struct frame_rifo *ff, uint32_t fn)
 {
-	return ff->next_out_fn + FRAMES_PER_FIFO - 1;
-}
-
-/* minimum frame number we currently can store in the rifo */
-static inline uint32_t frame_rifo_min_in_fn(const struct frame_rifo *ff)
-{
-	return ff->next_out_fn - 1;
+	uint32_t d = fn - ff->next_out_fn;
+	return d < FRAMES_PER_FIFO;
 }
 
 
