@@ -2,7 +2,7 @@
  * frame_rifo.c
  *
  * This is for the IP -> E1 direction, where IP packets may arrive with
- * re-ordering.  So this "Random [order] In, First Out' is reconstructing
+ * re-ordering.  So this "Random [order] In, First Out" is reconstructing
  * the original order.
  *
  * (C) 2022 by Harald Welte <laforge@osmocom.org>

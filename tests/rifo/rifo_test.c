@@ -146,5 +146,4 @@ int main(int argc, char **argv)
 	// re-run all tests at the edge of a framenumber rollover
 	init_next_out_fn = 0xFFFFFFFF - 5;
 	run_all_tests();
-
 }
