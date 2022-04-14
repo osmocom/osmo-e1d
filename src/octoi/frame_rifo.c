@@ -47,7 +47,7 @@ static inline uint32_t bucket_for_fn(const struct frame_rifo *rifo, uint32_t fn)
 {
 	uint32_t next_out_bucket = (rifo->next_out - rifo->buf) / BYTES_PER_FRAME;
 	/* offset in frames compared to next_out */
-	uint32_t offset = fn - rifo->next_out_fn % FRAMES_PER_FIFO;
+	uint32_t offset = (fn - rifo->next_out_fn) % FRAMES_PER_FIFO;
 	return (next_out_bucket + offset) % FRAMES_PER_FIFO;
 }
 
