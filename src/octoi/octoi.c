@@ -118,6 +118,12 @@ void octoi_peer_e1t_out(struct octoi_peer *peer, uint8_t *buf, int fts)
 	if (!peer->tdm_permitted)
 		return;
 
+	if (!iline->e1t.primed_rx_tdm) {
+		if (frame_rifo_frames(&iline->e1t.rifo) > iline->cfg.prefill_frame_count)
+			iline->e1t.primed_rx_tdm = true;
+		return;
+	}
+
 	for (int i = 0; i < fts; i++) {
 		uint8_t *cur = buf + BYTES_PER_FRAME*i;
 		rc = frame_rifo_out(&iline->e1t.rifo, cur);

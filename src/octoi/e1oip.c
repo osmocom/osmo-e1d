@@ -286,7 +286,7 @@ struct e1oip_line *e1oip_line_alloc(struct octoi_peer *peer)
 	e1oip_line_set_name(iline, peer->name);
 
 	iline->cfg.batching_factor = 32;
-	iline->cfg.prefill_frame_count = 400; /* 50ms */
+	iline->cfg.prefill_frame_count = 200; /* 25ms */
 
 	e1oip_line_reset(iline);
 
@@ -305,6 +305,7 @@ void e1oip_line_reset(struct e1oip_line *iline)
 	frame_rifo_init(&iline->e1t.rifo);
 	memset(&iline->e1t.last_frame, 0xff, sizeof(iline->e1t.last_frame));
 	iline->e1t.next_fn32 = 0;
+	iline->e1t.primed_rx_tdm = false;
 }
 
 void e1oip_line_destroy(struct e1oip_line *iline)

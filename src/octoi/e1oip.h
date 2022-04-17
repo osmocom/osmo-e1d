@@ -53,6 +53,7 @@ struct e1oip_line {
 		struct frame_rifo rifo;
 		uint8_t last_frame[BYTES_PER_FRAME];	/* last frame on the E1 side */
 		uint32_t next_fn32;			/* next expected frame number */
+		bool primed_rx_tdm;			/* Was RX RIFO primed */
 	} e1t;
 
 	/* TODO: statistics (RTT, frame loss, std deviation, alarms */
