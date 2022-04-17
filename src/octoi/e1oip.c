@@ -261,8 +261,13 @@ int e1oip_rcvmsg_tdm_data(struct e1oip_line *iline, struct msgb *msg)
 	return 0;
 }
 
-/* TODO: more meaningful identifiers? */
 static int g_ctr_idx = 0;
+
+void e1oip_line_set_name(struct e1oip_line *iline, const char *name)
+{
+	rate_ctr_group_set_name(iline->ctrs, name);
+	osmo_stat_item_group_set_name(iline->stats, name);
+}
 
 struct e1oip_line *e1oip_line_alloc(struct octoi_peer *peer)
 {
@@ -278,6 +283,7 @@ struct e1oip_line *e1oip_line_alloc(struct octoi_peer *peer)
 
 	iline->ctrs = rate_ctr_group_alloc(iline, &iline_ctrg_desc, ctr_idx);
 	iline->stats = osmo_stat_item_group_alloc(iline, &iline_stats_desc, ctr_idx);
+	e1oip_line_set_name(iline, peer->name);
 
 	iline->cfg.batching_factor = 32;
 	iline->cfg.prefill_frame_count = 400; /* 50ms */

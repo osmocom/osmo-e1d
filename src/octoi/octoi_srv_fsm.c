@@ -114,6 +114,7 @@ static void srv_st_init(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 				goto reject;
 			}
 			osmo_talloc_replace_string(st->peer, &st->peer->name, acc->user_id);
+			e1oip_line_set_name(st->peer->iline, acc->user_id);
 			osmo_fsm_inst_state_chg(fi, SRV_ST_ACCEPTED, 0, 0);
 			octoi_tx_service_ack(st->peer, st->service, "TODO-SRV", PACKAGE_NAME,
 						PACKAGE_VERSION, st->capability_flags);

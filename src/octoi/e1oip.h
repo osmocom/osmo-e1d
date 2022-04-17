@@ -57,6 +57,7 @@ struct e1oip_line {
 };
 
 struct e1oip_line *e1oip_line_alloc(struct octoi_peer *peer);
+void e1oip_line_set_name(struct e1oip_line *line, const char *name);
 void e1oip_line_destroy(struct e1oip_line *iline);
 
 int e1oip_rcvmsg_tdm_data(struct e1oip_line *iline, struct msgb *msg);
