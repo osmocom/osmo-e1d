@@ -217,6 +217,7 @@ struct e1_line *
 e1_line_new(struct e1_intf *intf, int line_id, void *drv_data)
 {
 	struct e1_line *line;
+	char name[32];
 
 	if (line_id != -1) {
 		line = e1_intf_find_line(intf, line_id);
@@ -250,6 +251,8 @@ e1_line_new(struct e1_intf *intf, int line_id, void *drv_data)
 
 	line->ctrs = rate_ctr_group_alloc(line, &line_ctrg_desc, intf->id << 8 | line->id);
 	OSMO_ASSERT(line->ctrs);
+	snprintf(name, sizeof(name), "I%u:L%u", intf->id, line->id);
+	rate_ctr_group_set_name(line->ctrs, name);
 
 	llist_add_tail(&line->list, &intf->lines);
 
