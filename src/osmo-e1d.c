@@ -41,6 +41,7 @@
 #include <osmocom/vty/logging.h>
 #include <osmocom/vty/stats.h>
 #include <osmocom/vty/misc.h>
+#include <osmocom/vty/cpu_sched_vty.h>
 
 #include <osmocom/e1d/proto_srv.h>
 #include <osmocom/e1d/proto.h>
@@ -186,6 +187,7 @@ int main(int argc, char *argv[])
 	osmo_stats_vty_add_cmds();
 	osmo_talloc_vty_add_cmds();
 	osmo_fsm_vty_add_cmds();
+	osmo_cpu_sched_vty_init(e1d);
 
 	handle_options(argc, argv);
 
