@@ -122,6 +122,7 @@ int frame_rifo_in(struct frame_rifo *rifo, const uint8_t *frame, uint32_t fn)
 	OSMO_ASSERT(dst + BYTES_PER_FRAME <= RIFO_BUF_END(rifo));
 	memcpy(dst, frame, BYTES_PER_FRAME);
 	bucket_bit_set(rifo, bucket);
+	rifo->last_in_fn = fn;
 
 	return 0;
 }
@@ -147,9 +148,13 @@ int frame_rifo_out(struct frame_rifo *rifo, uint8_t *out)
 
 	/* advance by one frame */
 	rifo->next_out += BYTES_PER_FRAME;
-	rifo->next_out_fn += 1;
 	if (rifo->next_out >= RIFO_BUF_END(rifo))
 		rifo->next_out -= sizeof(rifo->buf);
+
+	rifo->next_out_fn += 1;
+	/* make sure that frame_rifo_depth() doing last_in - next_out won't overflow */
+	if (rifo->next_out_fn == rifo->last_in_fn + 1)
+		rifo->last_in_fn = rifo->next_out_fn;
 
 	return rc;
 }

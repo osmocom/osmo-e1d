@@ -256,7 +256,7 @@ int e1oip_rcvmsg_tdm_data(struct e1oip_line *iline, struct msgb *msg)
 	//if (fn32 >= iline->e1t.next_fn32I
 	iline->e1t.next_fn32 = fn32 + n_frames;
 
-	//iline_stat_set(iline, LINE_STAT_E1oIP_E1T_FIFO, frame_fifo_frames(&iline->e1t.fifo));
+	iline_stat_set(iline, LINE_STAT_E1oIP_E1T_FIFO, frame_rifo_depth(&iline->e1t.rifo));
 
 	return 0;
 }

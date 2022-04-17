@@ -7,6 +7,7 @@ struct frame_rifo {
 
 	uint8_t buf[BYTES_PER_FRAME * FRAMES_PER_FIFO];
 
+	uint32_t last_in_fn;	/* frame number of most recently inserted frame */
 	uint32_t next_out_fn;	/* frame number of next output frame */
 	uint8_t bitvec[FRAMES_PER_FIFO/8];
 				/* bit-vector of occupied (data received) slots in FIFO,
@@ -20,6 +21,11 @@ static inline bool frame_rifo_fn_in_range(const struct frame_rifo *ff, uint32_t 
 	return d < FRAMES_PER_FIFO;
 }
 
+/* current depth of RIFO */
+static inline unsigned int frame_rifo_depth(struct frame_rifo *rifo)
+{
+	return rifo->last_in_fn - rifo->next_out_fn;
+}
 
 void frame_rifo_init(struct frame_rifo *rifo);
 
