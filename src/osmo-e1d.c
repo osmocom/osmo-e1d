@@ -37,6 +37,7 @@
 #include <osmocom/core/application.h>
 #include <osmocom/core/msgb.h>
 #include <osmocom/core/select.h>
+#include <osmocom/core/stats.h>
 #include <osmocom/vty/telnet_interface.h>
 #include <osmocom/vty/logging.h>
 #include <osmocom/vty/stats.h>
@@ -183,6 +184,7 @@ int main(int argc, char *argv[])
 	e1d_vty_init(e1d);
 	octoi_init(g_e1d_ctx, e1d, &e1d_octoi_ops);
 	rate_ctr_init(e1d);
+	osmo_stats_init(e1d);
 	osmo_stat_item_init(e1d);
 	osmo_stats_vty_add_cmds();
 	osmo_talloc_vty_add_cmds();
