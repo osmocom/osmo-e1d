@@ -127,5 +127,5 @@ void octoi_peer_e1t_out(struct octoi_peer *peer, uint8_t *buf, int fts)
 			memcpy(cur, iline->e1t.last_frame, BYTES_PER_FRAME);
 		}
 	}
-	//iline_stat_set(iline, LINE_STAT_E1oIP_E1T_FIFO, frame_fifo_frames(&iline->e1t.fifo));
+	iline_stat_set(iline, LINE_STAT_E1oIP_E1T_FIFO, frame_rifo_depth(&iline->e1t.rifo));
 }
