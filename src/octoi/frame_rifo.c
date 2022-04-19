@@ -132,14 +132,19 @@ int frame_rifo_in(struct frame_rifo *rifo, const uint8_t *frame, uint32_t fn)
 /*! pull one frames out of the RIFO.
  *  \param rifo The RIFO from which we want to pull frames
  *  \param out Caller-allocated output buffer
- *  \returns 0 on success; -1 on error (no frame available) */
+ *  \returns 0 on success; -1 if no frame available; -2 if RIFO depth == 0 */
 int frame_rifo_out(struct frame_rifo *rifo, uint8_t *out)
 {
 	uint32_t next_out_bucket = (rifo->next_out - rifo->buf) / BYTES_PER_FRAME;
 	bool bucket_bit = bucket_bit_get(rifo, next_out_bucket);
 	int rc = 0;
 
-	if (!bucket_bit) {
+	if (frame_rifo_depth(rifo) == 0) {
+		/* if we don't have any RIFO depth at all, our jitter buffer has
+		 * run empty and most likely there is some fundamental clock sync problem
+		 * somewhere.  */
+		rc = -2;
+	} else if (!bucket_bit) {
 		/* caller is supposed to copy/duplicate previous frame */
 		rc = -1;
 	} else {

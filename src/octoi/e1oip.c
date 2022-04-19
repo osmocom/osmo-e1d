@@ -44,7 +44,8 @@
 #include "e1oip.h"
 
 static const struct rate_ctr_desc iline_ctr_description[] = {
-	[LINE_CTR_E1oIP_UNDERRUN] = { "e1oip:underrun", "Frames missing/substituted in IP->E1 direction"},
+	[LINE_CTR_E1oIP_UNDERRUN] = { "e1oip:underrun", "Frames underrun / slipped in IP->E1 direction"},
+	[LINE_CTR_E1oIP_SUBSTITUTED] = { "e1oip:substituted", "Frames substituted in IP->E1 direction"},
 	[LINE_CTR_E1oIP_OVERFLOW] = { "e1oip:overflow", "Frames overflowed in IP->E1 direction"},
 	[LINE_CTR_E1oIP_RX_OUT_OF_ORDER] = { "e1oip:rx:pkt_out_of_order", "Packets out-of-order in IP->E1 direction"},
 	[LINE_CTR_E1oIP_RX_OUT_OF_WIN] = { "e1oip:rx:pkt_out_of_win", "Packets out-of-rx-window in IP->E1 direction"},
