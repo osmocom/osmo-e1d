@@ -169,6 +169,9 @@ static void srv_st_accepted_onenter(struct osmo_fsm_inst *fi, uint32_t prev_stat
 {
 	struct srv_state *st = fi->priv;
 
+	/* reset RIFO/FIFO etc. */
+	e1oip_line_reset(st->peer->iline);
+
 	st->peer->tdm_permitted = true;
 	osmo_timer_schedule(&st->rx_alive_timer, 3, 0);
 }
