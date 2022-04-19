@@ -28,6 +28,7 @@
 #include <osmocom/core/isdnhdlc.h>
 #include <osmocom/core/linuxlist.h>
 #include <osmocom/core/rate_ctr.h>
+#include <osmocom/core/stat_item.h>
 #include <osmocom/core/timer.h>
 #include <osmocom/vty/command.h>
 
@@ -45,6 +46,8 @@ enum e1d_vty_node {
 };
 
 #define line_ctr_add(line, idx, add) rate_ctr_add(rate_ctr_group_get_ctr((line)->ctrs, idx), add)
+#define line_stat_set(line, idx, add) \
+	osmo_stat_item_set(osmo_stat_item_group_get_item((line)->stats, idx), add)
 
 enum e1d_line_ctr {
 	LINE_CTR_LOS,
@@ -56,6 +59,14 @@ enum e1d_line_ctr {
 	LINE_CTR_RX_REMOTE_A,
 	LINE_CTR_FRAMES_MUXED_E1T,
 	LINE_CTR_FRAMES_DEMUXED_E1O,
+};
+
+enum e1d_line_stat_item {
+	LINE_GPSDO_STATE,
+	LINE_GPSDO_ANTENNA,
+	LINE_GPSDO_TUNE_COARSE,
+	LINE_GPSDO_TUNE_FINE,
+	LINE_GPSDO_FREQ_EST,
 };
 
 enum e1_ts_mode {
@@ -118,6 +129,7 @@ struct e1_line {
 
 	void *drv_data;
 	struct rate_ctr_group *ctrs;
+	struct osmo_stat_item_group *stats;
 
 	/* timeslots for channelized mode */
 	struct e1_ts ts[32];

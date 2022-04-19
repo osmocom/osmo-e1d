@@ -707,6 +707,7 @@ _e1_usb_intf_gpsdo_status_cb(struct e1_intf *intf, const uint8_t *data, size_t l
 	struct e1_usb_intf_data *id = intf->drv_data;
 	struct e1usb_gpsdo_status *last_st = &id->gpsdo.last_status;
 	const struct e1usb_gpsdo_status *st;
+	struct e1_line *line;
 
 	if (len < sizeof(*st)) {
 		LOGPIF(intf, DE1D, LOGL_ERROR, "GPSDO status %zu < %zu!\n", len, sizeof(*st));
@@ -740,6 +741,15 @@ _e1_usb_intf_gpsdo_status_cb(struct e1_intf *intf, const uint8_t *data, size_t l
 			LOGPIF(intf, DE1D, LOGL_NOTICE, "GPS Fix achieved\n");
 		else
 			LOGPIF(intf, DE1D, LOGL_ERROR, "GPS Fix LOST\n");
+	}
+
+	/* update stat_items for statsd / monitoring */
+	llist_for_each_entry(line, &intf->lines, list) {
+		line_stat_set(line, LINE_GPSDO_STATE, st->state);
+		line_stat_set(line, LINE_GPSDO_ANTENNA, st->antenna_state);
+		line_stat_set(line, LINE_GPSDO_TUNE_COARSE, libusb_le16_to_cpu(st->tune.coarse));
+		line_stat_set(line, LINE_GPSDO_TUNE_FINE, libusb_le16_to_cpu(st->tune.fine));
+		line_stat_set(line, LINE_GPSDO_FREQ_EST, osmo_load32le(&st->freq_est));
 	}
 
 	/* update our state */

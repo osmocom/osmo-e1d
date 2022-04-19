@@ -35,6 +35,7 @@
 #include <osmocom/core/utils.h>
 #include <osmocom/core/stats.h>
 #include <osmocom/core/rate_ctr.h>
+#include <osmocom/core/stat_item.h>
 #include <osmocom/core/timer.h>
 #include <osmocom/e1d/proto.h>
 
@@ -67,6 +68,23 @@ static const struct rate_ctr_group_desc line_ctrg_desc = {
 	.num_ctr = ARRAY_SIZE(line_ctr_description),
 	.ctr_desc = line_ctr_description,
 };
+
+static const struct osmo_stat_item_desc line_stat_description[] = {
+	[LINE_GPSDO_STATE]	= { "gpsdo:state", "GPSDO State" },
+	[LINE_GPSDO_ANTENNA]	= { "gpsdo:antenna", "GSPDO Antenna State" },
+	[LINE_GPSDO_TUNE_COARSE]= { "gpsdo:tune:coarse", "GSPDO Coarse Tuning" },
+	[LINE_GPSDO_TUNE_FINE]	= { "gpsdo:tune:fine", "GSPDO Fine Tuning" },
+	[LINE_GPSDO_FREQ_EST]	= { "gpsdo:freq_est", "GSPDO Frequency Estimate" },
+};
+
+static const struct osmo_stat_item_group_desc line_stats_desc = {
+	.group_name_prefix = "e1d_line",
+	.group_description = "Stat items for E1 line",
+	.class_id = OSMO_STATS_CLASS_GLOBAL,
+	.num_items = ARRAY_SIZE(line_stat_description),
+	.item_desc = line_stat_description,
+};
+
 
 /* watchdog timer, called once per second to check if we still receive data on the line */
 static void line_watchdog_cb(void *data)
@@ -253,8 +271,13 @@ e1_line_new(struct e1_intf *intf, int line_id, void *drv_data)
 
 	line->ctrs = rate_ctr_group_alloc(line, &line_ctrg_desc, intf->id << 8 | line->id);
 	OSMO_ASSERT(line->ctrs);
+
+	line->stats = osmo_stat_item_group_alloc(line, &line_stats_desc, intf->id << 8 | line->id);
+	OSMO_ASSERT(line->stats);
+
 	snprintf(name, sizeof(name), "I%u:L%u", intf->id, line->id);
 	rate_ctr_group_set_name(line->ctrs, name);
+	osmo_stat_item_group_set_name(line->stats, name);
 
 	llist_add_tail(&line->list, &intf->lines);
 
