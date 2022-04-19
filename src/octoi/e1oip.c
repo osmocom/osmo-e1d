@@ -47,6 +47,7 @@ static const struct rate_ctr_desc iline_ctr_description[] = {
 	[LINE_CTR_E1oIP_UNDERRUN] = { "e1oip:underrun", "Frames missing/substituted in IP->E1 direction"},
 	[LINE_CTR_E1oIP_OVERFLOW] = { "e1oip:overflow", "Frames overflowed in IP->E1 direction"},
 	[LINE_CTR_E1oIP_RX_OUT_OF_ORDER] = { "e1oip:rx:pkt_out_of_order", "Packets out-of-order in IP->E1 direction"},
+	[LINE_CTR_E1oIP_RX_OUT_OF_WIN] = { "e1oip:rx:pkt_out_of_win", "Packets out-of-rx-window in IP->E1 direction"},
 };
 
 static const struct rate_ctr_group_desc iline_ctrg_desc = {
@@ -167,10 +168,12 @@ static unsigned int ts_mask2idx(uint8_t *out, uint32_t ts_mask)
 /* An E1OIP_MSGT_TDM_DATA message was received from a remote IP peer */
 int e1oip_rcvmsg_tdm_data(struct e1oip_line *iline, struct msgb *msg)
 {
+	const int WIN = 8000;
 	struct octoi_peer *peer = iline->peer;
 	const struct e1oip_tdm_hdr *e1th;
 	uint16_t frame_nr;
 	uint32_t fn32;
+	bool update_next;
 	uint32_t ts_mask;
 	uint8_t idx2ts[BYTES_PER_FRAME];
 	unsigned int n_frames;
@@ -196,33 +199,28 @@ int e1oip_rcvmsg_tdm_data(struct e1oip_line *iline, struct msgb *msg)
 	ts_mask = ntohl(e1th->ts_mask);
 
 	if (frame_nr != exp_next_seq) {
-		int delta = frame_nr - exp_next_seq;
-		bool re_ordering;
-		if (delta > 0 && delta < 5 * iline->cfg.batching_factor) {
-			/* assume re-ordering */
-			re_ordering = true;
-		} else {
-			/* assume packet loss */
-			re_ordering = false;
+		uint16_t frame_nr_ofs;
+
+		LOGPEER(peer, LOGL_NOTICE, "RxIP: frame_nr=%u, but expected %u\n",
+			frame_nr, exp_next_seq);
+
+		frame_nr_ofs = frame_nr - (exp_next_seq - WIN);
+		if (frame_nr_ofs > (2 * WIN)) {
+			/* Outside window, throw packet away */
+			LOGPEER(peer, LOGL_NOTICE, "RxIP: frame_nr=%u at exp_next_fn32=%u; "
+				"received frame outside +/- 1s window of expected frame\n",
+				frame_nr, iline->e1t.next_fn32);
+			iline_ctr_add(iline, LINE_CTR_E1oIP_RX_OUT_OF_WIN, 1);
+			return -EINVAL;
 		}
 
 		iline_ctr_add(iline, LINE_CTR_E1oIP_RX_OUT_OF_ORDER, 1);
-		LOGPEER(peer, LOGL_NOTICE, "RxIP: frame_nr=%u, but expected %u: delta=%d - assuming %s\n",
-			frame_nr, exp_next_seq, delta, re_ordering ? "re-ordering" : "packet loss");
 
-		fn32 = (iline->e1t.next_fn32 & 0xffff0000) + frame_nr;
-		if (fn32 > iline->e1t.next_fn32 + 8000) {
-			/* more than 1s in the future: was this a wrap-around? */
-			fn32 = ((iline->e1t.next_fn32 & 0xffff0000) - 0x10000) + frame_nr;
-			if (fn32 < iline->e1t.next_fn32 - 8000) {
-				/* also no match: give up */
-				LOGPEER(peer, LOGL_NOTICE, "RxIP: frame_nr=%u at exp_next_fn32=%u; "
-					"received frame outside +/- 1s window of expected frame\n",
-					frame_nr, iline->e1t.next_fn32);
-			}
-		}
+		fn32 = iline->e1t.next_fn32 + frame_nr_ofs - WIN;
+		update_next = frame_nr_ofs >= WIN;
 	} else {
 		fn32 = iline->e1t.next_fn32;
+		update_next = true;
 	}
 
 	/* compute E1oIP idx to timeslot table */
@@ -255,9 +253,8 @@ int e1oip_rcvmsg_tdm_data(struct e1oip_line *iline, struct msgb *msg)
 	}
 	/* update local state */
 	memcpy(iline->e1t.last_frame, frame_buf, BYTES_PER_FRAME);
-	/* FIXME: only in some cases */
-	//if (fn32 >= iline->e1t.next_fn32I
-	iline->e1t.next_fn32 = fn32 + n_frames;
+	if (update_next)
+		iline->e1t.next_fn32 = fn32 + n_frames;
 
 	iline_stat_set(iline, LINE_STAT_E1oIP_E1T_FIFO, frame_rifo_depth(&iline->e1t.rifo));
 
