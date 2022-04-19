@@ -218,6 +218,8 @@ e1_line_mux_out(struct e1_line *line, uint8_t *buf, int fts)
 		OSMO_ASSERT(0);
 	}
 
+	line_ctr_add(line, LINE_CTR_FRAMES_MUXED_E1T, fts);
+
 	return tsz;
 }
 
@@ -420,6 +422,8 @@ e1_line_demux_in(struct e1_line *line, const uint8_t *buf, int size, int frame_b
 
 	if (frame_base >= 0)
 		_e1_line_demux_in_ts0(line, buf, ftr, frame_base);
+
+	line_ctr_add(line, LINE_CTR_FRAMES_DEMUXED_E1O, ftr);
 
 	switch (line->mode) {
 	case E1_LINE_MODE_CHANNELIZED:

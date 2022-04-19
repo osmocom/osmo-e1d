@@ -56,6 +56,8 @@ static const struct rate_ctr_desc line_ctr_description[] = {
 	[LINE_CTR_TX_UNFL] =	{ "tx:underflow",		"E1 Tx Underflow" },
 	[LINE_CTR_RX_REMOTE_E] ={ "rx:remote_crc_errors",	"Rx Frames Reporting Remote CRC Error"},
 	[LINE_CTR_RX_REMOTE_A] ={ "rx:remote_alarm",		"Rx Frames Reporting Remote Alarm"},
+	[LINE_CTR_FRAMES_MUXED_E1T] = { "tx:frames_muxed",	"E1 Tx Frames multiplexed" },
+	[LINE_CTR_FRAMES_DEMUXED_E1O] = { "rx:frames_demuxed",	"E1 Rx Frames demultiplexed" },
 };
 
 static const struct rate_ctr_group_desc line_ctrg_desc = {
