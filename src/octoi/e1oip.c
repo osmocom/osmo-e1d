@@ -22,6 +22,7 @@
 #include <errno.h>
 #include <unistd.h>
 #include <stdint.h>
+#include <inttypes.h>
 #include <string.h>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -45,6 +46,7 @@
 static const struct rate_ctr_desc iline_ctr_description[] = {
 	[LINE_CTR_E1oIP_UNDERRUN] = { "e1oip:underrun", "Frames missing/substituted in IP->E1 direction"},
 	[LINE_CTR_E1oIP_OVERFLOW] = { "e1oip:overflow", "Frames overflowed in IP->E1 direction"},
+	[LINE_CTR_E1oIP_RX_OUT_OF_ORDER] = { "e1oip:rx:pkt_out_of_order", "Packets out-of-order in IP->E1 direction"},
 };
 
 static const struct rate_ctr_group_desc iline_ctrg_desc = {
@@ -204,6 +206,7 @@ int e1oip_rcvmsg_tdm_data(struct e1oip_line *iline, struct msgb *msg)
 			re_ordering = false;
 		}
 
+		iline_ctr_add(iline, LINE_CTR_E1oIP_RX_OUT_OF_ORDER, 1);
 		LOGPEER(peer, LOGL_NOTICE, "RxIP: frame_nr=%u, but expected %u: delta=%d - assuming %s\n",
 			frame_nr, exp_next_seq, delta, re_ordering ? "re-ordering" : "packet loss");
 

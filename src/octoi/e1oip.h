@@ -16,6 +16,7 @@
 enum e1oip_line_ctr {
 	LINE_CTR_E1oIP_UNDERRUN,
 	LINE_CTR_E1oIP_OVERFLOW,
+	LINE_CTR_E1oIP_RX_OUT_OF_ORDER,
 };
 
 enum e1oip_line_stat {
