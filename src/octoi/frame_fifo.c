@@ -34,12 +34,6 @@
  * Frame FIFO
  ***********************************************************************/
 
-void fifo_dump(struct frame_fifo *fifo)
-{
-	printf("buf=%p, size=%zu, next_in=%lu, next_out=%lu\n", fifo->buf, sizeof(fifo->buf),
-		fifo->next_in - fifo->buf, fifo->next_out - fifo->buf);
-}
-
 /*! Initialize a frame FIFO.
  *  \param fifo Caller-allocated memory for FIFO data structure
  *  \param threshold After how many available frames shall we call threshold_cb

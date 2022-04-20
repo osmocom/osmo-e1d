@@ -84,12 +84,6 @@ static bool bucket_bit_get(struct frame_rifo *rifo, uint32_t bucket_nr)
 	return rifo->bitvec[byte] & (1 << bit);
 }
 
-void rifo_dump(struct frame_rifo *rifo)
-{
-	printf("buf=%p, size=%zu, next_out=%lu, next_out_fn=%u\n", rifo->buf, sizeof(rifo->buf),
-		rifo->next_out - rifo->buf, rifo->next_out_fn);
-}
-
 /*! Initialize a frame RIFO.
  *  \param rifo Caller-allocated memory for RIFO data structure */
 void frame_rifo_init(struct frame_rifo *rifo)
