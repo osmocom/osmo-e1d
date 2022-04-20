@@ -34,6 +34,7 @@ enum octoi_client_fsm_state {
 	CLNT_ST_ACCEPTED,
 	CLNT_ST_REJECTED,
 	CLNT_ST_REDIRECTED,
+	CLNT_ST_WAIT_RECONNECT,
 };
 
 struct clnt_state {
@@ -179,7 +180,8 @@ static const struct osmo_fsm_state client_fsm_states[] = {
 		.name = "ACCEPTED",
 		.in_event_mask = S(OCTOI_CLNT_EV_RX_AUTH_REQ) |
 				 S(OCTOI_EV_RX_TDM_DATA),
-		.out_state_mask = S(CLNT_ST_INIT),
+		.out_state_mask = S(CLNT_ST_INIT) |
+				  S(CLNT_ST_WAIT_RECONNECT),
 		.action = clnt_st_accepted,
 		.onenter = clnt_st_accepted_onenter,
 		.onleave = clnt_st_accepted_onleave,
@@ -195,6 +197,11 @@ static const struct osmo_fsm_state client_fsm_states[] = {
 		.in_event_mask = 0,
 		.out_state_mask = S(CLNT_ST_SVC_REQ_SENT),
 		.action = clnt_st_redirected,
+	},
+	[CLNT_ST_WAIT_RECONNECT] = {
+		.name = "WAIT_RECONNECT",
+		.in_event_mask = 0,
+		.out_state_mask = S(CLNT_ST_INIT),
 	},
 };
 
@@ -235,6 +242,9 @@ static int clnt_fsm_timer_cb(struct osmo_fsm_inst *fi)
 				     PACKAGE_NAME, PACKAGE_VERSION, st->capability_flags);
 		osmo_fsm_inst_state_chg(fi, CLNT_ST_SVC_REQ_SENT, 10, 0);
 		break;
+	case CLNT_ST_WAIT_RECONNECT:
+		LOGPFSML(fi, LOGL_INFO, "Re-starting connection\n");
+		osmo_fsm_inst_state_chg(fi, CLNT_ST_INIT, 0, 0);
 	}
 	return 0;
 }
@@ -257,6 +267,7 @@ static void clnt_rx_alive_timer_cb(void *data)
 	struct osmo_fsm_inst *fi = data;
 	struct clnt_state *st = fi->priv;
 	struct timespec ts;
+	uint64_t rate;
 
 	clock_gettime(CLOCK_MONOTONIC, &ts);
 
@@ -264,8 +275,19 @@ static void clnt_rx_alive_timer_cb(void *data)
 		LOGPFSML(fi, LOGL_NOTICE, "No TDM data received for >= 3 seconds, declaring peer dead\n");
 		osmo_fsm_inst_state_chg(fi, CLNT_ST_INIT, 0, 0);
 		osmo_fsm_inst_dispatch(fi, OCTOI_CLNT_EV_REQUEST_SERVICE, NULL);
-	} else
-		osmo_timer_schedule(&st->rx_alive_timer, 3, 0);
+		return;
+	}
+
+	rate = iline_ctr_get_rate_1s(st->peer->iline, LINE_CTR_E1oIP_UNDERRUN);
+	if (rate > 7500) {
+		LOGPFSML(fi, LOGL_ERROR, "More than 7500 RIFO underruns per second: "
+			 "Your clock appears to be too fast. Disconnecting.\n");
+		osmo_fsm_inst_state_chg(fi, CLNT_ST_WAIT_RECONNECT, 10, 0);
+		osmo_fsm_inst_dispatch(fi, OCTOI_CLNT_EV_REQUEST_SERVICE, NULL);
+		return;
+	}
+
+	osmo_timer_schedule(&st->rx_alive_timer, 3, 0);
 }
 
 

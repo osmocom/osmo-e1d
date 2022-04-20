@@ -345,14 +345,25 @@ static void srv_rx_alive_timer_cb(void *data)
 	struct osmo_fsm_inst *fi = data;
 	struct srv_state *st = fi->priv;
 	struct timespec ts;
+	uint64_t rate;
 
 	clock_gettime(CLOCK_MONOTONIC, &ts);
 
 	if (ts.tv_sec - st->peer->last_rx_tdm > 3) {
 		LOGPFSML(fi, LOGL_NOTICE, "No TDM data received for >= 3 seconds, declaring peer dead\n");
 		osmo_fsm_inst_term(fi, OSMO_FSM_TERM_TIMEOUT, NULL);
-	} else
-		osmo_timer_schedule(&st->rx_alive_timer, 3, 0);
+		return;
+	}
+
+	rate = iline_ctr_get_rate_1s(st->peer->iline, LINE_CTR_E1oIP_UNDERRUN);
+	if (rate > 7500) {
+		LOGPFSML(fi, LOGL_ERROR, "More than 7500 RIFO underruns per second: "
+			 "Peer clock is too slow. Disconnecting.\n");
+		osmo_fsm_inst_term(fi, OSMO_FSM_TERM_ERROR, NULL);
+		return;
+	}
+
+	osmo_timer_schedule(&st->rx_alive_timer, 3, 0);
 }
 
 /* call-back function for every received OCTOI socket message for given peer */

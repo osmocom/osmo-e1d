@@ -59,6 +59,13 @@ struct e1oip_line {
 	/* TODO: statistics (RTT, frame loss, std deviation, alarms */
 };
 
+/* get the rate of the given counter during the last second */
+static inline uint64_t iline_ctr_get_rate_1s(struct e1oip_line *iline, unsigned int idx)
+{
+	const struct rate_ctr *ctr = rate_ctr_group_get_ctr(iline->ctrs, idx);
+	return ctr->intv[RATE_CTR_INTV_SEC].rate;
+}
+
 struct e1oip_line *e1oip_line_alloc(struct octoi_peer *peer);
 void e1oip_line_set_name(struct e1oip_line *line, const char *name);
 void e1oip_line_reset(struct e1oip_line *iline);
