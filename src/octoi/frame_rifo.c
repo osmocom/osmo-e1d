@@ -97,6 +97,7 @@ void frame_rifo_init(struct frame_rifo *rifo)
 	memset(rifo->buf, 0xff, sizeof(rifo->buf));
 	rifo->next_out = rifo->buf;
 	rifo->next_out_fn = 0;
+	rifo->last_in_fn = -1;
 	memset(rifo->bitvec, 0, sizeof(rifo->bitvec));
 }
 
@@ -151,10 +152,11 @@ int frame_rifo_out(struct frame_rifo *rifo, uint8_t *out)
 	if (rifo->next_out >= RIFO_BUF_END(rifo))
 		rifo->next_out -= sizeof(rifo->buf);
 
+	/* if we're empty we 'drag' last_in along to avoid overflows */
+	if (frame_rifo_depth(rifo) == 0)
+		rifo->last_in_fn += 1;
+
 	rifo->next_out_fn += 1;
-	/* make sure that frame_rifo_depth() doing last_in - next_out won't overflow */
-	if (rifo->next_out_fn == rifo->last_in_fn + 1)
-		rifo->last_in_fn = rifo->next_out_fn;
 
 	return rc;
 }

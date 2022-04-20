@@ -24,7 +24,7 @@ static inline bool frame_rifo_fn_in_range(const struct frame_rifo *ff, uint32_t 
 /* current depth of RIFO */
 static inline unsigned int frame_rifo_depth(struct frame_rifo *rifo)
 {
-	return rifo->last_in_fn - rifo->next_out_fn;
+	return rifo->last_in_fn - rifo->next_out_fn + 1;
 }
 
 void frame_rifo_init(struct frame_rifo *rifo);
