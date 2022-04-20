@@ -101,7 +101,7 @@ void octoi_peer_e1o_in(struct octoi_peer *peer, const uint8_t *buf, int ftr)
 
 	rc = frame_fifo_in_multi(&iline->e1o.fifo, buf, ftr);
 	if (rc < ftr)
-		iline_ctr_add(iline, LINE_CTR_E1oIP_OVERFLOW, ftr - rc);
+		iline_ctr_add(iline, LINE_CTR_E1oIP_E1O_OVERFLOW, ftr - rc);
 
 	iline_stat_set(iline, LINE_STAT_E1oIP_E1O_FIFO, frame_fifo_frames(&iline->e1o.fifo));
 }
