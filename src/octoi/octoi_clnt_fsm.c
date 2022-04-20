@@ -118,6 +118,7 @@ static void clnt_st_accepted_onenter(struct osmo_fsm_inst *fi, uint32_t prev_sta
 
 	/* reset RIFO/FIFO etc. */
 	e1oip_line_reset(st->peer->iline);
+	iline_ctr_add(st->peer->iline, LINE_CTR_E1oIP_CONNECT_ACCEPT, 1);
 
 	st->peer->tdm_permitted = true;
 	osmo_timer_schedule(&st->rx_alive_timer, 3, 0);

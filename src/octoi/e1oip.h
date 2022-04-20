@@ -22,6 +22,7 @@ enum e1oip_line_ctr {
 	LINE_CTR_E1oIP_E1O_OVERFLOW,
 	LINE_CTR_E1oIP_RX_OUT_OF_ORDER,
 	LINE_CTR_E1oIP_RX_OUT_OF_WIN,
+	LINE_CTR_E1oIP_CONNECT_ACCEPT,
 };
 
 enum e1oip_line_stat {
