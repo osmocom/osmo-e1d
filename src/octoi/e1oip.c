@@ -46,6 +46,7 @@
 static const struct rate_ctr_desc iline_ctr_description[] = {
 	[LINE_CTR_E1oIP_UNDERRUN] = { "e1oip:underrun", "Frames underrun / slipped in IP->E1 direction"},
 	[LINE_CTR_E1oIP_SUBSTITUTED] = { "e1oip:substituted", "Frames substituted in E1->IP direction"},
+	[LINE_CTR_E1oIP_E1T_OVERFLOW] = { "e1oip:e1t_overflow", "Frames overflowing the RIFO in E1->IP direction"},
 	[LINE_CTR_E1oIP_E1O_OVERFLOW] = { "e1oip:e1o_overflow", "Frames overflowed in IP->E1 direction"},
 	[LINE_CTR_E1oIP_RX_OUT_OF_ORDER] = { "e1oip:rx:pkt_out_of_order", "Packets out-of-order in IP->E1 direction"},
 	[LINE_CTR_E1oIP_RX_OUT_OF_WIN] = { "e1oip:rx:pkt_out_of_win", "Packets out-of-rx-window in IP->E1 direction"},
@@ -245,12 +246,15 @@ int e1oip_rcvmsg_tdm_data(struct e1oip_line *iline, struct msgb *msg)
 
 	memcpy(frame_buf, iline->e1t.last_frame, BYTES_PER_FRAME);
 	for (unsigned int i = 0; i < n_frames; i++) {
+		int rc;
 		for (unsigned int j = 0; j < num_ts; j++) {
 			uint8_t ts_nr = idx2ts[j];
 			frame_buf[ts_nr] = e1th->data[i*num_ts + j];
 		}
 		/* FIXME: what to do about TS0? */
-		frame_rifo_in(&iline->e1t.rifo, frame_buf, fn32+i);
+		rc = frame_rifo_in(&iline->e1t.rifo, frame_buf, fn32+i);
+		if (rc < 0)
+			iline_ctr_add(iline, LINE_CTR_E1oIP_E1T_OVERFLOW, 1);
 	}
 	/* update local state */
 	memcpy(iline->e1t.last_frame, frame_buf, BYTES_PER_FRAME);
