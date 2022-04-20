@@ -356,14 +356,24 @@ static void srv_rx_alive_timer_cb(void *data)
 	}
 
 	rate = iline_ctr_get_rate_1s(st->peer->iline, LINE_CTR_E1oIP_UNDERRUN);
-	if (rate > 7500) {
-		LOGPFSML(fi, LOGL_ERROR, "More than 7500 RIFO underruns per second: "
-			 "Peer clock is too slow. Disconnecting.\n");
-		osmo_fsm_inst_term(fi, OSMO_FSM_TERM_ERROR, NULL);
-		return;
+	if (rate > FRAMES_PER_SEC_THRESHOLD) {
+		LOGPFSML(fi, LOGL_ERROR, "More than %u RIFO underruns per second: "
+			 "Peer clock is too slow. Disconnecting.\n", FRAMES_PER_SEC_THRESHOLD);
+		goto term;
+	}
+
+	rate = iline_ctr_get_rate_1s(st->peer->iline, LINE_CTR_E1oIP_E1T_OVERFLOW);
+	if (rate > FRAMES_PER_SEC_THRESHOLD) {
+		LOGPFSML(fi, LOGL_ERROR, "More than %u RIFO overflows per second: "
+			 "Peer clock is too fast. Disconnecting.\n", FRAMES_PER_SEC_THRESHOLD);
+		goto term;
 	}
 
 	osmo_timer_schedule(&st->rx_alive_timer, 3, 0);
+	return;
+
+term:
+	osmo_fsm_inst_term(fi, OSMO_FSM_TERM_ERROR, NULL);
 }
 
 /* call-back function for every received OCTOI socket message for given peer */

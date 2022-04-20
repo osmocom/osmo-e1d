@@ -279,15 +279,25 @@ static void clnt_rx_alive_timer_cb(void *data)
 	}
 
 	rate = iline_ctr_get_rate_1s(st->peer->iline, LINE_CTR_E1oIP_UNDERRUN);
-	if (rate > 7500) {
-		LOGPFSML(fi, LOGL_ERROR, "More than 7500 RIFO underruns per second: "
-			 "Your clock appears to be too fast. Disconnecting.\n");
-		osmo_fsm_inst_state_chg(fi, CLNT_ST_WAIT_RECONNECT, 10, 0);
-		osmo_fsm_inst_dispatch(fi, OCTOI_CLNT_EV_REQUEST_SERVICE, NULL);
-		return;
+	if (rate > FRAMES_PER_SEC_THRESHOLD) {
+		LOGPFSML(fi, LOGL_ERROR, "More than %u RIFO underruns per second: "
+			 "Your clock appears to be too fast. Disconnecting.\n", FRAMES_PER_SEC_THRESHOLD);
+		goto reconnect;
+	}
+
+	rate = iline_ctr_get_rate_1s(st->peer->iline, LINE_CTR_E1oIP_E1T_OVERFLOW);
+	if (rate > FRAMES_PER_SEC_THRESHOLD) {
+		LOGPFSML(fi, LOGL_ERROR, "More than %u RIFO overflows per second: "
+			 "Your clock appears to be too slow. Disconnecting.\n", FRAMES_PER_SEC_THRESHOLD);
+		goto reconnect;
 	}
 
 	osmo_timer_schedule(&st->rx_alive_timer, 3, 0);
+	return;
+
+reconnect:
+	osmo_fsm_inst_state_chg(fi, CLNT_ST_WAIT_RECONNECT, 10, 0);
+	osmo_fsm_inst_dispatch(fi, OCTOI_CLNT_EV_REQUEST_SERVICE, NULL);
 }
 
 

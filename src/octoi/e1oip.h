@@ -13,6 +13,8 @@
 #define iline_stat_set(iline, idx, add) \
 	osmo_stat_item_set(osmo_stat_item_group_get_item((iline)->stats, idx), add)
 
+#define FRAMES_PER_SEC_THRESHOLD	7500
+
 enum e1oip_line_ctr {
 	LINE_CTR_E1oIP_UNDERRUN,
 	LINE_CTR_E1oIP_SUBSTITUTED,
