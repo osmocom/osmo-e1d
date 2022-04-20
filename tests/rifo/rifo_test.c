@@ -13,13 +13,17 @@ static uint32_t init_next_out_fn;
 
 static void rifo_in(struct frame_rifo *rifo, uint8_t *frame, uint32_t fn)
 {
-	printf("RIFO_IN(%s, %u)=%d\n", osmo_hexdump_nospc(frame, BYTES_PER_FRAME), fn, frame_rifo_in(rifo, frame, fn));
+	int rc = frame_rifo_in(rifo, frame, fn);
+	printf("RIFO_IN(%s, %u)=%d [depth=%u, frames=%u]\n",
+		osmo_hexdump_nospc(frame, BYTES_PER_FRAME), fn, rc,
+		frame_rifo_depth(rifo), frame_rifo_frames(rifo));
 }
 
 static int rifo_out(struct frame_rifo *rifo, uint8_t *out)
 {
 	int rc = frame_rifo_out(rifo, out);
-	printf("RIFO_OUT(%s)=%d\n", osmo_hexdump_nospc(out, BYTES_PER_FRAME), rc);
+	printf("RIFO_OUT(%s)=%d [depth=%u, frames=%u]\n", osmo_hexdump_nospc(out, BYTES_PER_FRAME),
+		rc, frame_rifo_depth(rifo), frame_rifo_frames(rifo));
 	return rc;
 }
 
