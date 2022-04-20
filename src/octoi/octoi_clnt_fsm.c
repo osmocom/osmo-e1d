@@ -245,6 +245,7 @@ static int clnt_fsm_timer_cb(struct osmo_fsm_inst *fi)
 	case CLNT_ST_WAIT_RECONNECT:
 		LOGPFSML(fi, LOGL_INFO, "Re-starting connection\n");
 		osmo_fsm_inst_state_chg(fi, CLNT_ST_INIT, 0, 0);
+		osmo_fsm_inst_dispatch(fi, OCTOI_CLNT_EV_REQUEST_SERVICE, NULL);
 	}
 	return 0;
 }
@@ -297,7 +298,6 @@ static void clnt_rx_alive_timer_cb(void *data)
 
 reconnect:
 	osmo_fsm_inst_state_chg(fi, CLNT_ST_WAIT_RECONNECT, 10, 0);
-	osmo_fsm_inst_dispatch(fi, OCTOI_CLNT_EV_REQUEST_SERVICE, NULL);
 }
 
 
