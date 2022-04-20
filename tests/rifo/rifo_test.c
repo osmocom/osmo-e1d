@@ -11,6 +11,13 @@
 static void *g_e1d_ctx;
 static uint32_t init_next_out_fn;
 
+static void rifo_init(struct frame_rifo *rifo)
+{
+	frame_rifo_init(rifo);
+	rifo->next_out_fn = init_next_out_fn;
+	rifo->last_in_fn  = init_next_out_fn - 1;
+}
+
 static void rifo_in(struct frame_rifo *rifo, uint8_t *frame, uint32_t fn)
 {
 	int rc = frame_rifo_in(rifo, frame, fn);
@@ -32,6 +39,7 @@ static void missing_frames(uint8_t modulo)
 	struct frame_rifo rifo;
 	frame_rifo_init(&rifo);
 	rifo.next_out_fn = init_next_out_fn;
+	rifo.last_in_fn  = init_next_out_fn - 1;
 
 	printf("\nTEST: %s, starting at FN: %u\n", __func__, init_next_out_fn);
 
@@ -54,8 +62,7 @@ static void missing_frames(uint8_t modulo)
 static void reordered_in(void)
 {
 	struct frame_rifo rifo;
-	frame_rifo_init(&rifo);
-	rifo.next_out_fn = init_next_out_fn;
+	rifo_init(&rifo);
 
 	printf("\nTEST: %s, starting at FN: %u\n", __func__, init_next_out_fn);
 
@@ -76,8 +83,7 @@ static void reordered_in(void)
 static void correct_order(void)
 {
 	struct frame_rifo rifo;
-	frame_rifo_init(&rifo);
-	rifo.next_out_fn = init_next_out_fn;
+	rifo_init(&rifo);
 
 	printf("\nTEST: %s, starting at FN: %u\n", __func__, init_next_out_fn);
 
@@ -98,8 +104,7 @@ static void correct_order(void)
 static void too_old_frames(void)
 {
 	struct frame_rifo rifo;
-	frame_rifo_init(&rifo);
-	rifo.next_out_fn = init_next_out_fn;
+	rifo_init(&rifo);
 
 	printf("\nTEST: %s, starting at FN: %u\n", __func__, init_next_out_fn);
 
@@ -133,8 +138,7 @@ static void bound_check(void)
 {
 	uint8_t frame[32];
 	struct frame_rifo rifo;
-	frame_rifo_init(&rifo);
-	rifo.next_out_fn = init_next_out_fn;
+	rifo_init(&rifo);
 
 	printf("\nTEST: %s, starting at FN: %u\n", __func__, init_next_out_fn);
 
