@@ -65,6 +65,8 @@ static const struct osmo_stat_item_desc iline_stat_description[] = {
 	[LINE_STAT_E1oIP_RTT] = { "e1oip:rtt", "Round Trip Time (in ms)" },
 	[LINE_STAT_E1oIP_E1O_FIFO] = { "e1oip:e1o_fifo_level", "E1 originated FIFO level" },
 	[LINE_STAT_E1oIP_E1T_FIFO] = { "e1oip:e1t_fifo_level", "E1 terminated FIFO level" },
+	[LINE_STAT_E1oIP_E1O_TS] = { "e1oip:e1o_ts_active", "E1 timeslots active in E1->IP direction" },
+	[LINE_STAT_E1oIP_E1T_TS] = { "e1oip:e1t_ts_active", "E1 timeslots active in IP->E1 direction" },
 };
 
 static const struct osmo_stat_item_group_desc iline_stats_desc = {
@@ -126,6 +128,7 @@ static void fifo_threshold_cb(struct frame_fifo *fifo, unsigned int frames, void
 		if (ts_mask & (1U << i))
 			num_ts++;
 	}
+	iline_stat_set(iline, LINE_STAT_E1oIP_E1O_TS, num_ts);
 
 	/* finally, encode the payload */
 	if (num_ts == 0) {
@@ -228,6 +231,7 @@ int e1oip_rcvmsg_tdm_data(struct e1oip_line *iline, struct msgb *msg)
 
 	/* compute E1oIP idx to timeslot table */
 	num_ts = ts_mask2idx(idx2ts, ts_mask);
+	iline_stat_set(iline, LINE_STAT_E1oIP_E1T_TS, num_ts);
 	if (num_ts > 0) {
 		n_frames = msgb_l3len(msg) / num_ts;
 		if (msgb_l3len(msg) % num_ts) {

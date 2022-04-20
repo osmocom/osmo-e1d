@@ -29,6 +29,8 @@ enum e1oip_line_stat {
 	LINE_STAT_E1oIP_RTT,
 	LINE_STAT_E1oIP_E1O_FIFO,
 	LINE_STAT_E1oIP_E1T_FIFO,
+	LINE_STAT_E1oIP_E1O_TS,
+	LINE_STAT_E1oIP_E1T_TS,
 };
 
 struct octoi_peer;
