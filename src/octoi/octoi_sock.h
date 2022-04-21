@@ -66,6 +66,9 @@ void octoi_sock_destroy(struct octoi_sock *sock);
 
 struct octoi_peer *octoi_sock_client_get_peer(struct octoi_sock *sock);
 
+int octoi_sock_set_dscp(struct octoi_sock *sock, uint8_t dscp);
+int octoi_sock_set_priority(struct octoi_sock *sock, uint8_t priority);
+
 void octoi_peer_destroy(struct octoi_peer *peer);
 
 int octoi_tx(struct octoi_peer *peer, uint8_t msg_type, uint8_t flags,

@@ -450,6 +450,16 @@ struct octoi_sock *octoi_sock_create_client(void *ctx, void *priv, const struct 
 	return sock;
 }
 
+int octoi_sock_set_dscp(struct octoi_sock *sock, uint8_t dscp)
+{
+	return osmo_sock_set_dscp(sock->ofd.fd, dscp);
+}
+
+int octoi_sock_set_priority(struct octoi_sock *sock, uint8_t priority)
+{
+	return osmo_sock_set_priority(sock->ofd.fd, priority);
+}
+
 void octoi_sock_destroy(struct octoi_sock *sock)
 {
 	struct octoi_peer *p1, *p2;

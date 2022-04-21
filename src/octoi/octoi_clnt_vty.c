@@ -148,6 +148,68 @@ DEFUN(cfg_clnt_local, cfg_clnt_local_cmd,
 	}
 	clnt->sock->rx_cb = octoi_clnt_fsm_rx_cb;
 
+	if (clnt->cfg.dscp) {
+		rc = octoi_sock_set_dscp(clnt->sock, clnt->cfg.dscp);
+		if (rc < 0) {
+			vty_out(vty, "%% failed to set DSCP on socket: %s%s", strerror(errno), VTY_NEWLINE);
+			return CMD_WARNING;
+		}
+	}
+
+	if (clnt->cfg.priority) {
+		rc = octoi_sock_set_priority(clnt->sock, clnt->cfg.priority);
+		if (rc < 0) {
+			vty_out(vty, "%% failed to set priority on socket: %s%s", strerror(errno), VTY_NEWLINE);
+			return CMD_WARNING;
+		}
+	}
+
+	return CMD_SUCCESS;
+}
+
+DEFUN(cfg_clnt_dscp, cfg_clnt_dscp_cmd,
+	"ip-dscp <0-63>",
+	"Set IP DSCP value for outbound packets\n"
+	"IP DSCP Value to use\n")
+{
+	struct octoi_client *clnt = vty->index;
+	int rc;
+
+	clnt->cfg.dscp = atoi(argv[0]);
+
+	if (!clnt->sock)
+		return CMD_SUCCESS;
+
+	/* apply to already-existing server */
+	rc = octoi_sock_set_dscp(clnt->sock, clnt->cfg.dscp);
+	if (rc < 0) {
+		vty_out(vty, "%% failed to set DSCP on socket: %s%s", strerror(errno), VTY_NEWLINE);
+		return CMD_WARNING;
+	}
+
+	return CMD_SUCCESS;
+}
+
+DEFUN(cfg_clnt_prio, cfg_clnt_prio_cmd,
+	"socket-priority <0-255>",
+	"Set socket priority value for outbound packets\n"
+	"Socket Priority\n")
+{
+	struct octoi_client *clnt = vty->index;
+	int rc;
+
+	clnt->cfg.priority = atoi(argv[0]);
+
+	if (!clnt->sock)
+		return CMD_SUCCESS;
+
+	/* apply to already-existing server */
+	rc = octoi_sock_set_priority(clnt->sock, clnt->cfg.priority);
+	if (rc < 0) {
+		vty_out(vty, "%% failed to set priority on socket: %s%s", strerror(errno), VTY_NEWLINE);
+		return CMD_WARNING;
+	}
+
 	return CMD_SUCCESS;
 }
 
@@ -197,6 +259,11 @@ static int config_write_octoi_clnt(struct vty *vty)
 			vty_out(vty, " local-bind %s %u%s", clnt->cfg.local.ip, clnt->cfg.local.port,
 				VTY_NEWLINE);
 		}
+		if (clnt->cfg.dscp)
+			vty_out(vty, " ip-dscp %u%s", clnt->cfg.dscp, VTY_NEWLINE);
+		if (clnt->cfg.priority)
+			vty_out(vty, " socket-priority %u%s", clnt->cfg.priority, VTY_NEWLINE);
+
 		octoi_vty_write_one_account(vty, clnt->cfg.account);
 	}
 
@@ -215,5 +282,7 @@ void octoi_client_vty_init(void)
 	install_node(&clnt_node, config_write_octoi_clnt);
 	install_element(CONFIG_NODE, &cfg_client_cmd);
 	install_element(OCTOI_CLNT_NODE, &cfg_clnt_local_cmd);
+	install_element(OCTOI_CLNT_NODE, &cfg_clnt_dscp_cmd);
+	install_element(OCTOI_CLNT_NODE, &cfg_clnt_prio_cmd);
 	install_element(OCTOI_CLNT_NODE, &cfg_clnt_account_cmd);
 }

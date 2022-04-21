@@ -182,6 +182,68 @@ DEFUN(cfg_srv_local, cfg_srv_local_cmd,
 	}
 	srv->sock->rx_cb = octoi_srv_fsm_rx_cb;
 
+	if (srv->cfg.dscp) {
+		rc = octoi_sock_set_dscp(srv->sock, srv->cfg.dscp);
+		if (rc < 0) {
+			vty_out(vty, "%% failed to set DSCP on socket: %s%s", strerror(errno), VTY_NEWLINE);
+			return CMD_WARNING;
+		}
+	}
+
+	if (srv->cfg.priority) {
+		rc = octoi_sock_set_priority(srv->sock, srv->cfg.priority);
+		if (rc < 0) {
+			vty_out(vty, "%% failed to set priority on socket: %s%s", strerror(errno), VTY_NEWLINE);
+			return CMD_WARNING;
+		}
+	}
+
+	return CMD_SUCCESS;
+}
+
+DEFUN(cfg_srv_dscp, cfg_srv_dscp_cmd,
+	"ip-dscp <0-63>",
+	"Set IP DSCP value for outbound packets\n"
+	"IP DSCP Value to use\n")
+{
+	struct octoi_server *srv = vty->index;
+	int rc;
+
+	srv->cfg.dscp = atoi(argv[0]);
+
+	if (!srv->sock)
+		return CMD_SUCCESS;
+
+	/* apply to already-existing server */
+	rc = octoi_sock_set_dscp(srv->sock, srv->cfg.dscp);
+	if (rc < 0) {
+		vty_out(vty, "%% failed to set DSCP on socket: %s%s", strerror(errno), VTY_NEWLINE);
+		return CMD_WARNING;
+	}
+
+	return CMD_SUCCESS;
+}
+
+DEFUN(cfg_srv_prio, cfg_srv_prio_cmd,
+	"socket-priority <0-255>",
+	"Set socket priority value for outbound packets\n"
+	"Socket Priority\n")
+{
+	struct octoi_server *srv = vty->index;
+	int rc;
+
+	srv->cfg.priority = atoi(argv[0]);
+
+	if (!srv->sock)
+		return CMD_SUCCESS;
+
+	/* apply to already-existing server */
+	rc = octoi_sock_set_priority(srv->sock, srv->cfg.priority);
+	if (rc < 0) {
+		vty_out(vty, "%% failed to set priority on socket: %s%s", strerror(errno), VTY_NEWLINE);
+		return CMD_WARNING;
+	}
+
 	return CMD_SUCCESS;
 }
 
@@ -347,6 +409,10 @@ static int config_write_octoi_srv(struct vty *vty)
 		vty_out(vty, " local-bind %s %u%s", srv->cfg.local.ip, srv->cfg.local.port,
 			VTY_NEWLINE);
 	}
+	if (srv->cfg.dscp)
+		vty_out(vty, " ip-dscp %u%s", srv->cfg.dscp, VTY_NEWLINE);
+	if (srv->cfg.priority)
+		vty_out(vty, " socket-priority %u%s", srv->cfg.priority, VTY_NEWLINE);
 
 	llist_for_each_entry(acc, &srv->cfg.accounts, list)
 		octoi_vty_write_one_account(vty, acc);
@@ -385,6 +451,8 @@ void octoi_server_vty_init(void)
 	install_element(CONFIG_NODE, &cfg_server_cmd);
 	//install_element(CONFIG_NODE, &cfg_no_server_cmd);
 	install_element(OCTOI_SRV_NODE, &cfg_srv_local_cmd);
+	install_element(OCTOI_SRV_NODE, &cfg_srv_dscp_cmd);
+	install_element(OCTOI_SRV_NODE, &cfg_srv_prio_cmd);
 	install_element(OCTOI_SRV_NODE, &cfg_srv_account_cmd);
 	//install_element(CONFIG_SRV_NODE, &cfg_srv_no_account_cmd);
 }

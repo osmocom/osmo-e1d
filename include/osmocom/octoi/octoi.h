@@ -42,6 +42,8 @@ struct octoi_server {
 	struct {
 		struct llist_head accounts;		/* list of octoi_account */
 		struct osmo_sockaddr_str local;		/* local socket bind address/port */
+		uint8_t dscp;				/* IP DSCP value */
+		uint8_t priority;			/* Socket Priority value */
 	} cfg;
 
 };
@@ -54,6 +56,9 @@ struct octoi_client {
 		struct osmo_sockaddr_str local;		/* local socket bind address/port */
 
 		struct octoi_account *account;
+
+		uint8_t dscp;				/* IP DSCP value */
+		uint8_t priority;			/* Socket Priority value */
 	} cfg;
 };
 
