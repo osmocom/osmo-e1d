@@ -46,8 +46,8 @@
 static const struct rate_ctr_desc iline_ctr_description[] = {
 	[LINE_CTR_E1oIP_UNDERRUN] = { "e1oip:underrun", "Frames underrun / slipped in IP->E1 direction"},
 	[LINE_CTR_E1oIP_SUBSTITUTED] = { "e1oip:substituted", "Frames substituted in E1->IP direction"},
-	[LINE_CTR_E1oIP_E1T_OVERFLOW] = { "e1oip:e1t_overflow", "Frames overflowing the RIFO in E1->IP direction"},
-	[LINE_CTR_E1oIP_E1O_OVERFLOW] = { "e1oip:e1o_overflow", "Frames overflowed in IP->E1 direction"},
+	[LINE_CTR_E1oIP_E1T_OVERFLOW] = { "e1oip:e1t_overflow", "Frames overflowing the RIFO in IP->E1 direction"},
+	[LINE_CTR_E1oIP_E1O_OVERFLOW] = { "e1oip:e1o_overflow", "Frames overflowed in E1->IP direction"},
 	[LINE_CTR_E1oIP_RX_OUT_OF_ORDER] = { "e1oip:rx:pkt_out_of_order", "Packets out-of-order in IP->E1 direction"},
 	[LINE_CTR_E1oIP_RX_OUT_OF_WIN] = { "e1oip:rx:pkt_out_of_win", "Packets out-of-rx-window in IP->E1 direction"},
 	[LINE_CTR_E1oIP_CONNECT_ACCEPT] = { "e1oip:connect_accepted", "OCTOI connections entering accepted state" },
