@@ -26,6 +26,7 @@
 
 #include "octoi_sock.h"
 #include "octoi_fsm.h"
+#include "e1oip.h"
 
 
 const struct value_string octoi_fsm_event_names[] = {
@@ -157,6 +158,12 @@ int _octoi_fsm_rx_cb(struct octoi_peer *peer, struct msgb *msg)
 	OSMO_ASSERT(fi);
 	OSMO_ASSERT(msgb_l1(msg));
 	OSMO_ASSERT(msgb_l2(msg));
+
+	if (peer->iline) {
+		iline_ctr_add(peer->iline, LINE_CTR_E1oIP_RX_PACKETS, 1);
+		iline_ctr_add(peer->iline, LINE_CTR_E1oIP_RX_BYTES,
+			      peer->sock->iph_udph_size + msgb_length(msg));
+	}
 
 	if (!octoi_msg_validate(fi, msg))
 		return -1;

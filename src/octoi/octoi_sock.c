@@ -40,6 +40,44 @@
 #include "octoi_sock.h"
 #include "e1oip.h"
 
+/* determine domain / AF of socket */
+static int sock_get_domain(int fd)
+{
+	int domain;
+	socklen_t dom_len = sizeof(domain);
+	int rc;
+
+	rc = getsockopt(fd, SOL_SOCKET, SO_DOMAIN, &domain, &dom_len);
+	if (rc < 0)
+		return rc;
+
+	return domain;
+}
+
+/* typical number of bytes in IP + UDP header for given socket */
+static int sock_get_iph_udph_overhead(int fd)
+{
+	int rc = sock_get_domain(fd);
+	if (rc < 0) {
+		LOGP(DLINP, LOGL_ERROR, "Unable to determine domain of socket %d: %s\n",
+		     fd, strerror(errno));
+		goto assume_ipv4;
+	}
+
+	switch (rc) {
+	case AF_INET6:
+		return 40 + 8;
+	case AF_INET:
+		return 20 + 8;
+	default:
+		LOGP(DLINP, LOGL_ERROR, "Unknown domain %d of socket %d\n", rc, fd);
+		break;
+	}
+
+assume_ipv4:
+	return 20 + 8;
+}
+
 /***********************************************************************
  * transmit to remote peer
  ***********************************************************************/
@@ -400,6 +438,8 @@ struct octoi_sock *octoi_sock_create_server(void *ctx, void *priv, const struct 
 	LOGP(DLINP, LOGL_NOTICE, "OCTOI server socket at "OSMO_SOCKADDR_STR_FMT"\n",
 		OSMO_SOCKADDR_STR_FMT_ARGS(local));
 
+	sock->iph_udph_size = sock_get_iph_udph_overhead(sock->ofd.fd);
+
 	return sock;
 }
 
@@ -440,6 +480,8 @@ struct octoi_sock *octoi_sock_create_client(void *ctx, void *priv, const struct 
 
 	LOGP(DLINP, LOGL_NOTICE, "OCTOI client socket to "OSMO_SOCKADDR_STR_FMT"\n",
 		OSMO_SOCKADDR_STR_FMT_ARGS(remote));
+
+	sock->iph_udph_size = sock_get_iph_udph_overhead(sock->ofd.fd);
 
 	/* create [the only] peer */
 	peer = alloc_peer(sock, (struct sockaddr *) &sa_remote, sizeof(sa_remote));

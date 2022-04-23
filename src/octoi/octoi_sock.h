@@ -31,6 +31,7 @@ struct octoi_sock {
 	struct osmo_fd ofd;		/* file descriptor */
 	struct llist_head peers;	/* list of peers */
 	void *priv;
+	unsigned int iph_udph_size;	/* size of IP + UDP header */
 
 	int (*rx_cb)(struct octoi_peer *peer, struct msgb *msg);
 

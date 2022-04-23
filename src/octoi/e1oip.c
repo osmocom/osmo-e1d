@@ -51,6 +51,10 @@ static const struct rate_ctr_desc iline_ctr_description[] = {
 	[LINE_CTR_E1oIP_RX_OUT_OF_ORDER] = { "e1oip:rx:pkt_out_of_order", "Packets out-of-order in IP->E1 direction"},
 	[LINE_CTR_E1oIP_RX_OUT_OF_WIN] = { "e1oip:rx:pkt_out_of_win", "Packets out-of-rx-window in IP->E1 direction"},
 	[LINE_CTR_E1oIP_CONNECT_ACCEPT] = { "e1oip:connect_accepted", "OCTOI connections entering accepted state" },
+	[LINE_CTR_E1oIP_RX_BYTES] = { "e1oip:rx:bytes", "Number of bytes received including UDP+IP header" },
+	[LINE_CTR_E1oIP_RX_PACKETS] = { "e1oip:rx:packets", "Number of UDP packets received" },
+	[LINE_CTR_E1oIP_TX_BYTES] = { "e1oip:tx:bytes", "Number of bytes transmitted including UDP+IP header" },
+	[LINE_CTR_E1oIP_TX_PACKETS] = { "e1oip:tx:packets", "Number of UDP packets transmitted" },
 };
 
 static const struct rate_ctr_group_desc iline_ctrg_desc = {
@@ -82,6 +86,7 @@ static const struct osmo_stat_item_group_desc iline_stats_desc = {
 static void fifo_threshold_cb(struct frame_fifo *fifo, unsigned int frames, void *priv)
 {
 	struct e1oip_line *iline = priv;
+	struct octoi_peer *peer = iline->peer;
 	struct msgb *msg;
 	struct e1oip_tdm_hdr *eith;
 	unsigned int n_frames = fifo->threshold;
@@ -108,7 +113,7 @@ static void fifo_threshold_cb(struct frame_fifo *fifo, unsigned int frames, void
 			/* this situation cannot really happen: The FIFO called us that
 			 * a certain threshold is reached, but now it cannot provide
 			 * frames? */
-			LOGPEER(iline->peer, LOGL_ERROR,
+			LOGPEER(peer, LOGL_ERROR,
 				"frame_fifo_out failure for frame %u/%u\n", iline->e1o.next_seq + i, i);
 		}
 	}
@@ -146,7 +151,9 @@ static void fifo_threshold_cb(struct frame_fifo *fifo, unsigned int frames, void
 	}
 
 	/* send the packet to the peer */
-	octoi_tx(iline->peer, E1OIP_MSGT_TDM_DATA, 0, msgb_data(msg), msgb_length(msg));
+	octoi_tx(peer, E1OIP_MSGT_TDM_DATA, 0, msgb_data(msg), msgb_length(msg));
+	iline_ctr_add(iline, LINE_CTR_E1oIP_TX_PACKETS, 1);
+	iline_ctr_add(iline, LINE_CTR_E1oIP_TX_BYTES, peer->sock->iph_udph_size + msgb_length(msg));
 	msgb_free(msg);
 
 	/* update the local state */
