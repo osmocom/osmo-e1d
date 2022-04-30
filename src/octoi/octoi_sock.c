@@ -130,7 +130,8 @@ static int _octoi_tx_echo(struct octoi_peer *peer, bool is_req, uint16_t seq_nr,
 	} u;
 
 	u.echo.seq_nr = htons(seq_nr);
-	memcpy(u.echo.data, data, data_len);
+	if (data && data_len)
+		memcpy(u.echo.data, data, data_len);
 
 	if (is_req)
 		msgt = E1OIP_MSGT_ECHO_REQ;
