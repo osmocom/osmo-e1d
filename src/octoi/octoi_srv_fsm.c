@@ -55,6 +55,11 @@ struct srv_state {
 	struct octoi_account *acc;
 	void *app_priv;			/* application private data */
 	const char *rej_str;
+	struct {
+		struct osmo_timer_list timer;
+		struct timespec last_tx_ts;
+		uint16_t last_tx_seq;
+	} echo_req;
 };
 
 static void srv_st_init(struct osmo_fsm_inst *fi, uint32_t event, void *data)
@@ -175,6 +180,7 @@ static void srv_st_accepted_onenter(struct osmo_fsm_inst *fi, uint32_t prev_stat
 
 	st->peer->tdm_permitted = true;
 	osmo_timer_schedule(&st->rx_alive_timer, 3, 0);
+	osmo_timer_schedule(&st->echo_req.timer, 10, 0);
 }
 
 static void srv_st_accepted(struct osmo_fsm_inst *fi, uint32_t event, void *data)
@@ -200,6 +206,7 @@ static void srv_st_accepted_onleave(struct osmo_fsm_inst *fi, uint32_t next_stat
 {
 	struct srv_state *st = fi->priv;
 
+	osmo_timer_del(&st->echo_req.timer);
 	osmo_timer_del(&st->rx_alive_timer);
 	st->peer->tdm_permitted = false;
 }
@@ -277,16 +284,27 @@ static void srv_allstate_action(struct osmo_fsm_inst *fi, uint32_t event, void *
 {
 	struct srv_state *st = fi->priv;
 	struct msgb *msg = data;
-	struct e1oip_echo *echo_req;
+	struct e1oip_echo *echo_req, *echo_resp;
 	struct e1oip_error_ind *err_ind;
+	int32_t rtt_us;
 
 	switch (event) {
 	case OCTOI_EV_RX_ECHO_REQ:
 		echo_req = msgb_l2(msg);
+		LOGPFSML(fi, LOGL_DEBUG, "Rx OCTOI ECHO_REQ (seq=%u)\n", ntohs(echo_req->seq_nr));
 		octoi_tx_echo_resp(st->peer, ntohs(echo_req->seq_nr), echo_req->data, msgb_l2len(msg));
 		break;
 	case OCTOI_EV_RX_ECHO_RESP:
-		/* TODO: update state, peer has responded! */
+		echo_resp = msgb_l2(msg);
+		if (ntohs(echo_resp->seq_nr) != st->echo_req.last_tx_seq) {
+			LOGPFSML(fi, LOGL_NOTICE, "Rx OCTOI ECHO RESP (seq=%u) doesn't match our last "
+				 "request (seq=%u)\n", ntohs(echo_resp->seq_nr), st->echo_req.last_tx_seq);
+			break;
+		}
+		rtt_us = ts_us_ago(&st->echo_req.last_tx_ts);
+		iline_stat_set(st->peer->iline, LINE_STAT_E1oIP_RTT, rtt_us);
+		LOGPFSML(fi, LOGL_INFO, "Rx OCTOI ECHO_RESP (seq=%u, rtt=%d)\n",
+			 ntohs(echo_resp->seq_nr), rtt_us);
 		break;
 	case OCTOI_EV_RX_ERROR_IND:
 		err_ind = msgb_l2(msg);
@@ -316,6 +334,7 @@ static void srv_fsm_cleanup(struct osmo_fsm_inst *fi, enum osmo_fsm_term_cause c
 	struct srv_state *st = fi->priv;
 
 	osmo_timer_del(&st->rx_alive_timer);
+	osmo_timer_del(&st->echo_req.timer);
 
 	/* as long as 'fi' lives within 'peer' we cannot recursively destroy peer */
 	talloc_steal(OTC_SELECT, fi);
@@ -377,6 +396,18 @@ term:
 	osmo_fsm_inst_term(fi, OSMO_FSM_TERM_ERROR, NULL);
 }
 
+static void srv_echo_req_timer_cb(void *data)
+{
+	struct osmo_fsm_inst *fi = data;
+	struct srv_state *st = fi->priv;
+
+	/* trigger sending of an OCTOI ECHO REQ */
+	clock_gettime(CLOCK_MONOTONIC, &st->echo_req.last_tx_ts);
+	octoi_tx_echo_req(st->peer, ++st->echo_req.last_tx_seq, NULL, 0);
+	LOGPFSML(fi, LOGL_DEBUG, "Tx OCTOI ECHO_REQ (seq=%u)\n", st->echo_req.last_tx_seq);
+	osmo_timer_schedule(&st->echo_req.timer, 10, 0);
+}
+
 /* call-back function for every received OCTOI socket message for given peer */
 int octoi_srv_fsm_rx_cb(struct octoi_peer *peer, struct msgb *msg)
 {
@@ -393,6 +424,7 @@ int octoi_srv_fsm_rx_cb(struct octoi_peer *peer, struct msgb *msg)
 		OSMO_ASSERT(st);
 		st->peer = peer;
 		osmo_timer_setup(&st->rx_alive_timer, srv_rx_alive_timer_cb, fi);
+		osmo_timer_setup(&st->echo_req.timer, srv_echo_req_timer_cb, fi);
 		fi->priv = st;
 
 		peer->priv = fi;

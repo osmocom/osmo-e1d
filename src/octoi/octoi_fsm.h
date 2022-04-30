@@ -29,3 +29,5 @@ int _octoi_fsm_rx_cb(struct octoi_peer *peer, struct msgb *msg);
 /* call-back function for every received OCTOI socket message for given peer */
 int octoi_srv_fsm_rx_cb(struct octoi_peer *peer, struct msgb *msg);
 int octoi_clnt_fsm_rx_cb(struct octoi_peer *peer, struct msgb *msg);
+
+int32_t ts_us_ago(const struct timespec *old_ts);

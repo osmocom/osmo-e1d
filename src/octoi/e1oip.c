@@ -66,7 +66,7 @@ static const struct rate_ctr_group_desc iline_ctrg_desc = {
 };
 
 static const struct osmo_stat_item_desc iline_stat_description[] = {
-	[LINE_STAT_E1oIP_RTT] = { "e1oip:rtt", "Round Trip Time (in ms)" },
+	[LINE_STAT_E1oIP_RTT] = { "e1oip:rtt", "Round Trip Time (in us)" },
 	[LINE_STAT_E1oIP_E1O_FIFO] = { "e1oip:e1o_fifo_level", "E1 originated FIFO level" },
 	[LINE_STAT_E1oIP_E1T_FIFO] = { "e1oip:e1t_fifo_level", "E1 terminated FIFO level" },
 	[LINE_STAT_E1oIP_E1O_TS] = { "e1oip:e1o_ts_active", "E1 timeslots active in E1->IP direction" },

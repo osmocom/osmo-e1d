@@ -28,6 +28,19 @@
 #include "octoi_fsm.h"
 #include "e1oip.h"
 
+/* how many microseconds ago was 'old_ts'? */
+int32_t ts_us_ago(const struct timespec *old_ts)
+{
+	struct timespec ts_now, ts_diff;
+
+	clock_gettime(CLOCK_MONOTONIC, &ts_now);
+	timespecsub(&ts_now, old_ts, &ts_diff);
+
+	if (ts_diff.tv_sec > INT32_MAX / 1000000)
+		return INT32_MAX;
+
+	return ts_diff.tv_sec * 1000000 + ts_diff.tv_nsec / 1000;
+}
 
 const struct value_string octoi_fsm_event_names[] = {
 	{ OCTOI_EV_RX_TDM_DATA,		"RX_TDM_DATA" },
