@@ -302,8 +302,8 @@ struct e1oip_line *e1oip_line_alloc(struct octoi_peer *peer)
 	iline->stats = osmo_stat_item_group_alloc(iline, &iline_stats_desc, ctr_idx);
 	e1oip_line_set_name(iline, peer->name);
 
-	iline->cfg.batching_factor = 32;
-	iline->cfg.prefill_frame_count = 200; /* 25ms */
+	iline->cfg.batching_factor = DEFAULT_BATCHING_FACTOR;
+	iline->cfg.prefill_frame_count = DEFAULT_PREFILL_FRAME_COUNT;
 
 	e1oip_line_reset(iline);
 
