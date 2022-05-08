@@ -174,6 +174,8 @@ static void srv_st_accepted_onenter(struct osmo_fsm_inst *fi, uint32_t prev_stat
 {
 	struct srv_state *st = fi->priv;
 
+	e1oip_line_configure(st->peer->iline, st->acc->batching_factor,
+			     st->acc->prefill_frame_count);
 	/* reset RIFO/FIFO etc. */
 	e1oip_line_reset(st->peer->iline);
 	iline_ctr_add(st->peer->iline, LINE_CTR_E1oIP_CONNECT_ACCEPT, 1);

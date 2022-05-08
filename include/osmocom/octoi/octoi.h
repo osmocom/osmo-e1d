@@ -21,6 +21,8 @@ struct octoi_account {
 	struct llist_head list;				/* member in octoi_server.cfg.accounts */
 	char *user_id;					/* user ID (IMSI) */
 	enum octoi_account_mode mode;
+	uint8_t batching_factor;			/* E1 frames per UDP packet (Tx) */
+	uint32_t prefill_frame_count;			/* FIFO prefill/preseed count (Rx) */
 	union {
 		struct {
 			char *usb_serial;		/* USB serial string (ASCII) of icE1usb */

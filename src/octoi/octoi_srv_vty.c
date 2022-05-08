@@ -34,6 +34,7 @@
 #include <osmocom/vty/stats.h>
 #include <osmocom/vty/misc.h>
 
+#include "e1oip.h"
 #include "octoi.h"
 #include "octoi_sock.h"
 #include "octoi_fsm.h"
@@ -62,6 +63,9 @@ static struct octoi_account *_account_create(void *ctx, const char *user_id)
 		talloc_free(ac);
 		return NULL;
 	}
+
+	ac->batching_factor = DEFAULT_BATCHING_FACTOR;
+	ac->prefill_frame_count = DEFAULT_PREFILL_FRAME_COUNT;
 
 	return ac;
 }
@@ -367,6 +371,35 @@ DEFUN(cfg_account_redir, cfg_account_redir_cmd,
 	return CMD_SUCCESS;
 }
 
+gDEFUN(cfg_account_batching_factor, cfg_account_batching_factor_cmd,
+	"batching-factor <1-256>",
+	"E1oIP batching factor (E1 frames per Tx UDP packet)\n"
+	"E1oIP batching factor (E1 frames per Tx UDP packet)\n")
+{
+	struct octoi_account *acc = vty->index;
+
+	acc->batching_factor = atoi(argv[0]);
+	return CMD_SUCCESS;
+}
+
+gDEFUN(cfg_account_prefill_frame_count, cfg_account_prefill_frame_count_cmd,
+	"prefill-frame-count <0-8000>",
+	"Number of E1 frames to pre-fill/pre-seed in Rx RIFO\n"
+	"Number of E1 frames to pre-fill/pre-seed in Rx RIFO\n")
+{
+	struct octoi_account *acc = vty->index;
+
+	acc->prefill_frame_count = atoi(argv[0]);
+	return CMD_SUCCESS;
+}
+
+void octoi_vty_show_one_account(struct vty *vty, const char *pfx, struct octoi_account *acc)
+{
+	vty_out(vty, "%sAccount '%s': Mode=%s, Batching=%u, Prefill=%u%s", pfx,
+		acc->user_id, get_value_string(octoi_account_mode_name, acc->mode),
+		acc->batching_factor, acc->prefill_frame_count, VTY_NEWLINE);
+}
+
 void octoi_vty_write_one_account(struct vty *vty, const struct octoi_account *acc)
 {
 	if (!acc)
@@ -375,6 +408,10 @@ void octoi_vty_write_one_account(struct vty *vty, const struct octoi_account *ac
 	vty_out(vty, " account %s%s", acc->user_id, VTY_NEWLINE);
 	vty_out(vty, "  mode %s%s", get_value_string(octoi_account_mode_name, acc->mode),
 		VTY_NEWLINE);
+	if (acc->batching_factor != DEFAULT_BATCHING_FACTOR)
+		vty_out(vty, "  batching-factor %u%s", acc->batching_factor, VTY_NEWLINE);
+	if (acc->prefill_frame_count != DEFAULT_PREFILL_FRAME_COUNT)
+		vty_out(vty, "  prefill-frame-count %u%s", acc->prefill_frame_count, VTY_NEWLINE);
 
 	switch (acc->mode) {
 	case ACCOUNT_MODE_NONE:
@@ -425,6 +462,7 @@ DEFUN(show_server, show_server_cmd,
 	SHOW_STR "Display information about the OCTOI Server\n")
 {
 	struct octoi_server *srv = g_octoi->server;
+	struct octoi_account *acc;
 
 	if (!srv) {
 		vty_out(vty, "%% No OCTOI server present%s", VTY_NEWLINE);
@@ -432,6 +470,9 @@ DEFUN(show_server, show_server_cmd,
 	}
 
 	vty_show_octoi_sock(vty, srv->sock);
+
+	llist_for_each_entry(acc, &srv->cfg.accounts, list)
+		octoi_vty_show_one_account(vty, "", acc);
 
 	return CMD_SUCCESS;
 }
@@ -446,6 +487,8 @@ void octoi_server_vty_init(void)
 	install_element(OCTOI_ACCOUNT_NODE, &cfg_account_ice1_serno_cmd);
 	install_element(OCTOI_ACCOUNT_NODE, &cfg_account_ice1_line_cmd);
 	install_element(OCTOI_ACCOUNT_NODE, &cfg_account_redir_cmd);
+	install_element(OCTOI_ACCOUNT_NODE, &cfg_account_batching_factor_cmd);
+	install_element(OCTOI_ACCOUNT_NODE, &cfg_account_prefill_frame_count_cmd);
 
 	install_node(&srv_node, config_write_octoi_srv);
 	install_element(CONFIG_NODE, &cfg_server_cmd);

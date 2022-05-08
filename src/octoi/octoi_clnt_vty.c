@@ -242,6 +242,7 @@ DEFUN(show_clnt, show_clnt_cmd,
 	llist_for_each_entry(clnt, &g_octoi->clients, list) {
 		struct octoi_sock *sock = clnt->sock;
 
+		octoi_vty_show_one_account(vty, "", clnt->cfg.account);
 		vty_show_octoi_sock(vty, sock);
 	}
 
@@ -278,6 +279,8 @@ void octoi_client_vty_init(void)
 	install_element(OCTOI_CLNT_ACCOUNT_NODE, &cfg_account_ice1_serno_cmd);
 	install_element(OCTOI_CLNT_ACCOUNT_NODE, &cfg_account_ice1_line_cmd);
 	install_element(OCTOI_CLNT_ACCOUNT_NODE, &cfg_account_mode_cmd);
+	install_element(OCTOI_CLNT_ACCOUNT_NODE, &cfg_account_batching_factor_cmd);
+	install_element(OCTOI_CLNT_ACCOUNT_NODE, &cfg_account_prefill_frame_count_cmd);
 
 	install_node(&clnt_node, config_write_octoi_clnt);
 	install_element(CONFIG_NODE, &cfg_client_cmd);

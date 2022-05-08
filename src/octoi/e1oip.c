@@ -313,6 +313,13 @@ struct e1oip_line *e1oip_line_alloc(struct octoi_peer *peer)
 	return iline;
 }
 
+void e1oip_line_configure(struct e1oip_line *iline, uint8_t batching_factor,
+			  uint32_t prefill_frame_count)
+{
+	iline->cfg.batching_factor = batching_factor;
+	iline->cfg.prefill_frame_count = prefill_frame_count;
+}
+
 void e1oip_line_reset(struct e1oip_line *iline)
 {
 	frame_fifo_init(&iline->e1o.fifo, iline->cfg.batching_factor, fifo_threshold_cb, iline);
