@@ -18,10 +18,9 @@ GIT Repository
 
 You can clone from the official osmo-e1d.git repository using
 
-	git clone git://git.osmocom.org/osmo-e1d.git
-	git clone https://git.osmocom.org/osmo-e1d.git
+	git clone https://gitea.osmocom.org/retronetworking/osmo-e1d
 
-There is a cgit interface at https://git.osmocom.org/osmo-e1d/
+There is a web interface at <https://gitea.osmocom.org/retronetworking/osmo-e1d>
 
 Related Links
 -------------

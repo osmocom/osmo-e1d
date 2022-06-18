@@ -1,6 +1,6 @@
 Format: http://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
 Upstream-Name: osmo-e1d
-Source: git://git.osmocom.org/osmo-e1d
+Source: https://gitea.osmocom.org/retronetworking/osmo-e1d
 
 Files:     *
 Copyright: 2019 Sylvain Munaut
