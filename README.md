@@ -11,7 +11,7 @@ Homepage
 --------
 
 The official homepage of the project is
-https://osmocom.org/projects/osmo-e1d/wiki
+<https://osmocom.org/projects/osmo-e1d/wiki>
 
 GIT Repository
 --------------
@@ -44,12 +44,12 @@ Contributing
 ------------
 
 Our coding standards are described at
-https://osmocom.org/projects/cellular-infrastructure/wiki/Coding_standards
+<https://osmocom.org/projects/cellular-infrastructure/wiki/Coding_standards>
 
 We us a gerrit based patch submission/review process for managing
 contributions.  Please see
-https://osmocom.org/projects/cellular-infrastructure/wiki/Gerrit for
+<https://osmocom.org/projects/cellular-infrastructure/wiki/Gerrit> for
 more details
 
 The current patch queue for osmo-e1d can be seen at
-https://gerrit.osmocom.org/#/q/project:osmo-e1d+status:open
+<https://gerrit.osmocom.org/#/q/project:osmo-e1d+status:open>
