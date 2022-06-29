@@ -1,3 +1,87 @@
+osmo-e1d (0.4.0) unstable; urgency=medium
+
+  [ Harald Welte ]
+  * Use the error counters for remote alarm + remote CRC error
+  * Add support for icE1usb RAI interrupt error flag
+  * cosmetic: Adhere osmocom coding style in for-loops
+  * usb: Print failed USB isochronous packets
+  * usb: Use libusb_status_str when logging INT EP error
+  * make rate_counters work
+  * update copyright statement
+  * e1_{intf,line}_new: Allow caller to specify the numeric identifier
+  * Allow configuration of interfaces/lines via VTY
+  * GPS-DO support for icE1usb hardware
+  * Proper libusb error reporting in all error paths
+  * usb: rename 'size' to 'len' in callback functions
+  * e1d.h: add #pragma once
+  * cosmetic: Remove extra empty newlines from end of intf_line.c
+  * intf_line.c: Make e1d_find_intf_by_usb_serial safe for empty string
+  * cosmetic: curly braces around multi-line blocks
+  * intf_line: Ensure unique rate counter group indexes
+  * mux_demux.c: Use %zu for size_t
+  * vty.c: Fix re-reading of config file after 'write file'
+  * OCTOI: initial support for E1oIP forwarding
+  * add example config files for octoi-server and octoi-client
+  * RIFO (random in, first out) for IP->E1 direction
+  * fix segfault on 'show octoi-server' if no server configured
+  * vty: Print only applicable information during 'show line'
+  * OCTOI: re-implement LINE_STAT_E1oIP_E1T_FIFO
+  * octo: give rate_ctr / stat_items meaningful identifiers
+  * Make use of libosmcoore cpu_sched_vty
+  * Set rate_ctr_group name for each line
+  * Fix stats exporter
+  * octoi: Update RIFO depth also on dequeue
+  * Add rate counters for number of frames muxed/demuxed (E1 side)
+  * octoi: Add new rate-counter for out-of-order packets
+  * e1d: stat_items for the GPS-DO related bits
+  * octoi: Reset FIFO/RIFO when entering ACCEPTED state
+  * octoi: Disconnect the link when >= 7500 underruns/s
+  * rifo_test: print rifo_depth + rifo_frames on every IN/OUT
+  * octoi: differentiate UNDERRUN from SUBSTITUTED in counters
+  * e1oip: Rename e1oip:overflow to e1oip:e1o_overflow
+  * e1oip: Add rate_ctr for IP->E1 RIFO overflows
+  * octoi: Terminate connection on too high RIFO OVERFLOW rates
+  * octoi: Fix client re-start after clock drift disconnect
+  * octoi: add new counter every time a connection is accepted
+  * e1oip: Add stat items for number of timeslots
+  * cosmetic: remove dead code {fifo,rifo}_dump() functions
+  * octoi: Support setting IP DSCP and socket priority via VTY
+  * e1oip: fix line counter descriptions
+  * e1oip: Add rate_ctr for rx + tx packet / byte count
+  * octoi: only memcpy() if it is present in _octoi_tx_echo()
+  * octoi: Send ECHO_REQ every 10s and update the related stat_item
+  * e1oip: introduce #defines for BATCHING_FACTOR / PREFILL_COUNT
+  * e1oip: Make batching-factor and prefill-frame-count configurable
+  * update git URLs (git -> https; gitea)
+  * README.md: Fix syntax for hyperlinks
+
+  [ Sylvain Munaut ]
+  * e1d/usb: Limit feedback EP transfer size to 3
+  * e1d/usb: Use wMaxPacketSize to know maximum number of frames to send
+  * build: Increase warnings
+  * Fix a bunch of warning raised by the new build warning options
+  * usb: Add warning for error during interrupt transfers
+  * mux_demux: Shuffle functions around for consistency
+  * mux_demux: In RAW mode, fill with dummy until first TX
+  * contrib/e1-prbs-test: Delay the TX pipe fill data until first RX
+  * RIFO: Minor typo/comment fixes
+  * RIFO: Fix operator precedence issue in the math for bucket_for_fn
+  * RIFO: Fix issue in frame number bounds checking
+  * RIFO: Add a test for bounds checking
+  * OCTOI: Fix the extension of 16b FN from packet to full 32b FN
+  * octoi: Simple RX priming / pre-filling
+  * rifo_test: Use a helper function for the rifo init
+  * octoi: Fix frame_rifo_depth() function
+
+  [ Oliver Smith ]
+  * checkpatch.conf: new file
+
+  [ Tobias Mädel ]
+  * RIFO: fix frame_rifo_in check on frame number wrap-around
+  * RIFO: add more thorough tests and a vetted test.ok file
+
+ -- Pau Espin Pedrol <pespin@sysmocom.de>  Wed, 29 Jun 2022 12:09:54 +0200
+
 osmo-e1d (0.3.0) unstable; urgency=medium
 
   * e1d: reliably detect EOF in _e1_ts_{read,write} (RAW mode)
