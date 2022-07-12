@@ -131,6 +131,7 @@ static void srv_st_init(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 		case ACCOUNT_MODE_NONE:
 			LOGPFSML(fi, LOGL_NOTICE, "User account %s has mode 'none', rejecting\n",
 				 acc->user_id);
+			/* fall through */
 		default:
 			st->rej_str = "Unsupported mode for user";
 			goto reject;
