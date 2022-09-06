@@ -109,11 +109,53 @@ enum q931_iei {
 	/* TODO */
 };
 
+struct q931_call_state {
+	struct llist_head list;
+	uint32_t call_ref;		/* decoded call reference */
+	bool net2user;			/* call established in Net->User direction? */
+	time_t create_time;		/* time at which call was created */
+};
+
+/* Q.931 Section 4.3 */
+static uint32_t q931_decode_callref(const uint8_t *data, uint8_t len)
+{
+	uint8_t len_of_callref;
+	uint32_t callref = 0;
+	bool flag;
+
+	if (len < 1)
+		return 0;
+
+	len_of_callref = data[0] & 0x0f;
+	if (len_of_callref = 0)
+		return 0;
+
+	if (len_of_callref > 4)
+		return 0;
+
+	if (len - 1 < len_of_callref)
+		return 0;
+
+	/* first octet contains flag, needs special handling */
+	if (data[1] & 0x80)
+		flag = 1;
+	callref = data[1] & 0x7f;
+
+	/* all further octets ... */
+	for (i = 1; i < len_of_callref; i++)
+		callref = (callref << 8) | data[i];
+
+	if (flag)
+		callref |= 0x80000000;
+
+	return callref;
+}
 
 /* receive one Q.931 message for signaling analysis */
 static void e1tap_q931_rx(struct e1tap_line *line, bool net2user, const uint8_t *buf, size_t len)
 {
-	uint8_t cref_len
+	uint8_t cref_len;
+	uint32_t cref;
 
 	if (len < 2)
 		return;
@@ -126,35 +168,50 @@ static void e1tap_q931_rx(struct e1tap_line *line, bool net2user, const uint8_t 
 	cref_len = buf[1] & 0x0F;
 	if (len < 2 + cref_len)
 		return;
+	cref = q931_decode_callref(buf+1, len-1);
 
 	msg_type = buf[2+cref_len] & 0x7f;
 
 	/* TODO: dispatch by message type; look in those that contain a ChannelIndicator */
+	switch (msg_type) {
+	case Q931_MSGT_SETUP:
+		break;
+	}
 }
 
 /* trace one Q.921 / LAPD frame for signaling analysis */
 static void e1tap_q921_rx(struct e1tap_line *line, bool net2user, const uint8_t *buf, size_t len)
 {
 	uint8_t sapi, tei;
+	/* Parse LAPD header; Ignore anything != I frames */
+	/* Q.921 header: 2 bytes address; 1-2 byte control; [optional] information */
 
 	if (len < 2)
 		return;
 
-	/* Parse LAPD header; Ignore anything != I frames */
+	/* Address field: Figure 5 / Q.921 */
 	sapi = buf[0] >> 2;
 	tei = buf[1] >> 1;
 
-	/* skip unknown SAPI */
-	if (sapi != 0)
+	/* SAPI value for circuit-switched call control (Table 2/Q.921) */
+	if (sapi != 0) {
+		/* skip unknown SAPI */
 		return;
+	}
 
 	if (len < 3)
 		return;
 
-	/* skip frames != I-frame */
-	if (buf[2] & 0x01)
+	/* Control field: Table 4/Q.921 */
+	if (buf[2] & 0x01) {
+		/* skip frames != I-frame (which have 0 as lsb of 1st octet) */
+		return;
+	}
+
+	if (len < 4)
 		return;
 
+	/* skip N(R) / N(S) and go directly to Q.931 payload */
 	e1tap_q931_rx(buf + 4, len - 4);
 }
 
@@ -187,6 +244,7 @@ void e1tap_trace_ts(struct e1tap_ts *ts, const uint8_t *tsbuf, size_t frame_coun
 				gsmtap_send_ex(line->gti, GSMTAP_TYPE_E1T1, flags,
 						ts->num, ts->gsmtap_subtype, 0, 0, 0, 0,
 						ts->hdlc.state[hdlc_idx].out, rc);
+				/* feed D-channel into higher level analysis */
 				if (ts->mode == E1_TS_TRACE_MODE_ISDN_D)
 					e1tap_q921_rx(line, hdlc_idx, ts->hdlc.state[hdlc_idx].out, rc);
 			} else if (rc < 0) {
