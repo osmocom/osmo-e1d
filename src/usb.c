@@ -706,14 +706,29 @@ _e1_usb_intf_gpsdo_status_cb(struct e1_intf *intf, const uint8_t *data, size_t l
 {
 	struct e1_usb_intf_data *id = intf->drv_data;
 	struct e1usb_gpsdo_status *last_st = &id->gpsdo.last_status;
-	const struct e1usb_gpsdo_status *st;
+	struct e1usb_gpsdo_status _st, *st = &_st;
 	struct e1_line *line;
 
 	if (len < sizeof(*st)) {
-		LOGPIF(intf, DE1D, LOGL_ERROR, "GPSDO status %zu < %zu!\n", len, sizeof(*st));
-		return;
+		/*
+		 * Because some fields can be added to the structure by newer
+		 * firmware revisions, this means we can potentially get a shorter
+		 * struct than what we asked for. We simply set those fields to
+		 * zero.
+		 *
+		 * The opposite case (newer firmware than e1d) means the structure
+		 * could be larger, but because we limit the wLength to the struct
+		 * we know, we can't receive a larger one and the new fields are
+		 * just ignored by this e1d version
+		 */
+		LOGPIF(intf, DE1D, LOGL_DEBUG,
+			"GPSDO status %zu < %zu ! Firmware probably outdated. "
+			"Some values will be zeroed\n",
+			len, sizeof(*st));
 	}
-	st = (const struct e1usb_gpsdo_status *) data;
+
+	memset(st, 0x00, sizeof(*st));
+	memcpy(st, data, len);
 
 	if (st->state != last_st->state) {
 		LOGPIF(intf, DE1D, LOGL_NOTICE, "GPSDO state change: %s -> %s\n",
@@ -750,6 +765,7 @@ _e1_usb_intf_gpsdo_status_cb(struct e1_intf *intf, const uint8_t *data, size_t l
 		line_stat_set(line, LINE_GPSDO_TUNE_COARSE, libusb_le16_to_cpu(st->tune.coarse));
 		line_stat_set(line, LINE_GPSDO_TUNE_FINE, libusb_le16_to_cpu(st->tune.fine));
 		line_stat_set(line, LINE_GPSDO_FREQ_EST, osmo_load32le(&st->freq_est));
+		line_stat_set(line, LINE_GPSDO_ERR_ACC, (int16_t)libusb_le16_to_cpu(st->err_acc));
 	}
 
 	/* update our state */

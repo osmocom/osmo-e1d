@@ -65,6 +65,7 @@ struct e1usb_gpsdo_status {
 	uint8_t mode;			/*!< Current configured operating mode */
 	struct e1usb_gpsdo_tune tune;	/*!< Current VCXO tuning values */
 	uint32_t freq_est;		/*!< Latest frequency estimate measurement */
+	int16_t  err_acc;		/*!< Accumulated error (since fw icE1usb-fw-0.3 commit cfb8b0b7) */
 } __attribute__((packed));
 
 

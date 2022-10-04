@@ -75,6 +75,7 @@ static const struct osmo_stat_item_desc line_stat_description[] = {
 	[LINE_GPSDO_TUNE_COARSE]= { "gpsdo:tune:coarse", "GSPDO Coarse Tuning" },
 	[LINE_GPSDO_TUNE_FINE]	= { "gpsdo:tune:fine", "GSPDO Fine Tuning" },
 	[LINE_GPSDO_FREQ_EST]	= { "gpsdo:freq_est", "GSPDO Frequency Estimate" },
+	[LINE_GPSDO_ERR_ACC]    = { "gpsdo:err_acc", "GPSDO Accumulated Error" },
 };
 
 static const struct osmo_stat_item_group_desc line_stats_desc = {

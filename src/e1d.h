@@ -67,6 +67,7 @@ enum e1d_line_stat_item {
 	LINE_GPSDO_TUNE_COARSE,
 	LINE_GPSDO_TUNE_FINE,
 	LINE_GPSDO_FREQ_EST,
+	LINE_GPSDO_ERR_ACC,
 };
 
 enum e1_ts_mode {
