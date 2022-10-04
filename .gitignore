@@ -32,6 +32,7 @@ debian/tmp
 
 src/osmo-e1d
 src/osmo-e1d-pipe
+src/osmo-e1gen
 contrib/e1-prbs-test/e1-prbs-test
 contrib/e1-prbs-test/ice40-e1-prbs-check
 
