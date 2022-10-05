@@ -645,7 +645,7 @@ e1_usb_ctrl_set_gpsdo_tune(struct e1_intf *intf, const struct e1usb_gpsdo_tune *
 	const uint16_t bmReqType = LIBUSB_RECIPIENT_INTERFACE | LIBUSB_REQUEST_TYPE_VENDOR |
 				   LIBUSB_ENDPOINT_OUT;
 	return _e1_usb_intf_send_ctrl(intf, bmReqType, ICE1USB_INTF_SET_GPSDO_TUNE, 0,
-				      (uint8_t *)gpsdo_tune, sizeof(gpsdo_tune));
+				      (uint8_t *)gpsdo_tune, sizeof(*gpsdo_tune));
 }
 
 int
