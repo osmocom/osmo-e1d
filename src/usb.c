@@ -635,8 +635,8 @@ e1_usb_ctrl_set_gpsdo_mode(struct e1_intf *intf, enum ice1usb_gpsdo_mode gpsdo_m
 {
 	const uint16_t bmReqType = LIBUSB_RECIPIENT_INTERFACE | LIBUSB_REQUEST_TYPE_VENDOR |
 				   LIBUSB_ENDPOINT_OUT;
-	return _e1_usb_intf_send_ctrl(intf, bmReqType, ICE1USB_INTF_SET_GPSDO_MODE, 0,
-				      (uint8_t *)&gpsdo_mode, sizeof(gpsdo_mode));
+	return _e1_usb_intf_send_ctrl(intf, bmReqType, ICE1USB_INTF_SET_GPSDO_MODE, gpsdo_mode,
+				      NULL, 0);
 }
 
 int
