@@ -789,6 +789,17 @@ _e1_usb_gpsdo_init(struct e1_intf *intf)
 {
 	struct e1_usb_intf_data *id = intf->drv_data;
 
+	if (intf->usb.gpsdo.manual) {
+		struct e1usb_gpsdo_tune tune = {
+			.coarse = intf->usb.gpsdo.coarse,
+			.fine   = intf->usb.gpsdo.fine,
+		};
+		e1_usb_ctrl_set_gpsdo_mode(intf, ICE1USB_GPSDO_MODE_DISABLED);
+		e1_usb_ctrl_set_gpsdo_tune(intf, &tune);
+	} else {
+		e1_usb_ctrl_set_gpsdo_mode(intf, ICE1USB_GPSDO_MODE_AUTO);
+	}
+
 	osmo_timer_setup(&id->gpsdo.poll_timer, &_e1_usb_gpsdo_poll_cb, intf);
 	osmo_timer_schedule(&id->gpsdo.poll_timer, 1, 0);
 }

@@ -174,6 +174,11 @@ struct e1_intf {
 
 	struct {
 		char *serial_str;
+		struct {
+			bool manual;
+			uint16_t coarse;
+			uint16_t fine;
+		} gpsdo;
 	} usb;
 
 	bool vty_created;

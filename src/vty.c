@@ -302,6 +302,38 @@ DEFUN(cfg_e1d_if_usb_serial, cfg_e1d_if_usb_serial_cmd,
 	return CMD_SUCCESS;
 }
 
+DEFUN(cfg_e1d_if_gpsdo_manual, cfg_e1d_if_gpsdo_manual_cmd,
+	"gpsdo-manual <0-4095> <0-4095>",
+	"Set the GPS-DO to manual mode with the provided tune values\n"
+	"Coarse tune value\n"
+	"Fine tune value\n")
+{
+	struct e1_intf *intf = vty->index;
+
+	if (intf->drv != E1_DRIVER_USB)
+		return CMD_WARNING;
+
+	intf->usb.gpsdo.manual = true;
+	intf->usb.gpsdo.coarse = atoi(argv[0]);
+	intf->usb.gpsdo.fine   = atoi(argv[1]);
+
+	return CMD_SUCCESS;
+}
+
+DEFUN(cfg_e1d_if_no_gpsdo_manual, cfg_e1d_if_no_gpsdo_manual_cmd,
+	"no gpsdo-manual",
+	NO_STR "Set the GPS-DO back to automatic mode\n")
+{
+	struct e1_intf *intf = vty->index;
+
+	if (intf->drv != E1_DRIVER_USB)
+		return CMD_WARNING;
+
+	intf->usb.gpsdo.manual = false;
+
+	return CMD_SUCCESS;
+}
+
 DEFUN(cfg_e1d_if_line, cfg_e1d_if_line_cmd, "line <0-255>",
 	"Configure an E1 line\n"
 	"E1 Interface Number\n")
@@ -387,6 +419,8 @@ static int config_write_e1d(struct vty *vty)
 			vty_out(vty, " interface %u icE1usb%s", intf->id, VTY_NEWLINE);
 			if (intf->usb.serial_str && strlen(intf->usb.serial_str))
 				vty_out(vty, "  usb-serial %s%s", intf->usb.serial_str, VTY_NEWLINE);
+			if (intf->usb.gpsdo.manual)
+				vty_out(vty, "  gpsdo-manual %d %d%s", intf->usb.gpsdo.coarse, intf->usb.gpsdo.fine, VTY_NEWLINE);
 			break;
 		case E1_DRIVER_VPAIR:
 			vty_out(vty, " interface %u vpair%s", intf->id, VTY_NEWLINE);
@@ -417,6 +451,8 @@ void e1d_vty_init(struct e1_daemon *e1d)
 	install_element(E1D_NODE, &cfg_e1d_if_vpair_cmd);
 	install_element(INTF_NODE, &cfg_e1d_if_line_cmd);
 	install_element(INTF_NODE, &cfg_e1d_if_usb_serial_cmd);
+	install_element(INTF_NODE, &cfg_e1d_if_gpsdo_manual_cmd);
+	install_element(INTF_NODE, &cfg_e1d_if_no_gpsdo_manual_cmd);
 
 	install_node(&line_node, NULL);
 	install_element(LINE_NODE, &cfg_e1d_if_line_mode_cmd);
