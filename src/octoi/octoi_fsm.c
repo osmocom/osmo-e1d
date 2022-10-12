@@ -240,7 +240,9 @@ void vty_show_octoi_sock(struct vty *vty, struct octoi_sock *sock)
 		vty_out(vty, " Peer '%s', Remote "OSMO_SOCKADDR_STR_FMT", State %s%s",
 			peer->name, OSMO_SOCKADDR_STR_FMT_ARGS(&peer->cfg.remote),
 			osmo_fsm_inst_state_name(peer->priv), VTY_NEWLINE);
-		vty_out_rate_ctr_group(vty, "  ", peer->iline->ctrs);
-		vty_out_stat_item_group(vty, "  ", peer->iline->stats);
+		if (peer->iline) {
+			vty_out_rate_ctr_group(vty, "  ", peer->iline->ctrs);
+			vty_out_stat_item_group(vty, "  ", peer->iline->stats);
+		}
 	}
 }
