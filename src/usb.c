@@ -904,21 +904,6 @@ _e1_usb_open_device(struct e1_daemon *e1d, struct libusb_device *dev)
 			}
 		}
 
-		/* Get interface and set it up */
-		ret = libusb_claim_interface(devh, id->bInterfaceNumber);
-		if (ret) {
-			LOGP(DE1D, LOGL_ERROR, "Failed to claim interface %d:%s\n", id->bInterfaceNumber,
-			     libusb_strerror(ret));
-			goto next_interface;
-		}
-
-		ret = libusb_set_interface_alt_setting(devh, id->bInterfaceNumber, 1);
-		if (ret) {
-			LOGP(DE1D, LOGL_ERROR, "Failed to set interface %d altsetting:%s\n", id->bInterfaceNumber,
-			     libusb_strerror(ret));
-			goto next_interface;
-		}
-
 		/* Setup driver data and find endpoints */
 		line_data = talloc_zero(e1d->ctx, struct e1_usb_line_data);
 
@@ -965,6 +950,22 @@ _e1_usb_open_device(struct e1_daemon *e1d, struct libusb_device *dev)
 			line->drv_data = line_data;
 		}
 
+		/* Get interface and set it up */
+		ret = libusb_claim_interface(devh, id->bInterfaceNumber);
+		if (ret) {
+			LOGP(DE1D, LOGL_ERROR, "Failed to claim interface %d:%s\n", id->bInterfaceNumber,
+			     libusb_strerror(ret));
+			goto next_interface;
+		}
+
+		ret = libusb_set_interface_alt_setting(devh, id->bInterfaceNumber, 1);
+		if (ret) {
+			LOGP(DE1D, LOGL_ERROR, "Failed to set interface %d altsetting:%s\n", id->bInterfaceNumber,
+			     libusb_strerror(ret));
+			goto next_interface;
+		}
+
+		/* Create data flows and start the line */
 		line_data->flow_in  = e1uf_create(line, e1_usb_xfer_in,  line_data->ep_in,  4, line_data->pkt_size, 4);
 		line_data->flow_out = e1uf_create(line, e1_usb_xfer_out, line_data->ep_out, 4, line_data->pkt_size, 4);
 		line_data->flow_fb  = e1uf_create(line, e1_usb_xfer_fb,  line_data->ep_fb,  2, 3, 1);
