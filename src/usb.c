@@ -2,6 +2,7 @@
  * usb.c
  *
  * (C) 2019 by Sylvain Munaut <tnt@246tNt.com>
+ * (C) 2022 by Harald Welte <laforge@gnumonks.org>
  *
  * All Rights Reserved
  *
@@ -42,6 +43,7 @@
 
 #define USB_VID		0x1d50
 #define USB_PID		0x6145
+#define USB_PID_TRACER	0x6151
 
 libusb_context *g_usb = NULL;
 
@@ -809,7 +811,7 @@ _e1_usb_gpsdo_init(struct e1_intf *intf)
 // ---------------------------------------------------------------------------
 
 static int
-_e1_usb_open_device(struct e1_daemon *e1d, struct libusb_device *dev)
+_e1_usb_open_device(struct e1_daemon *e1d, struct libusb_device *dev, bool is_tracer)
 {
 	struct e1_intf *intf;
 	struct e1_line *line;
@@ -873,6 +875,10 @@ _e1_usb_open_device(struct e1_daemon *e1d, struct libusb_device *dev)
 		osmo_talloc_replace_string(intf, &intf->usb.serial_str, serial_str);
 	}
 
+	/* we have prior knowledge that the e1-tracer firmware configuration 2 is the e1d compatible mode. */
+	if (is_tracer)
+		libusb_set_configuration(devh, 2);
+
 	INIT_LLIST_HEAD(&intf_data->ctrl_inprogress);
 
 	ret = libusb_get_active_config_descriptor(dev, &cd);
@@ -892,8 +898,13 @@ _e1_usb_open_device(struct e1_daemon *e1d, struct libusb_device *dev)
 			continue;
 
 		id = &cd->interface[i].altsetting[1];
-		if ((id->bInterfaceClass != 0xff) || (id->bInterfaceSubClass != 0xe1) || (id->bNumEndpoints < 3))
-			continue;
+		if (is_tracer) {
+			if ((id->bInterfaceClass != 0xff) || (id->bInterfaceSubClass != 0xe1) || (id->bNumEndpoints < 1))
+				continue;
+		} else {
+			if ((id->bInterfaceClass != 0xff) || (id->bInterfaceSubClass != 0xe1) || (id->bNumEndpoints < 3))
+				continue;
+		}
 
 		line = e1_intf_find_line(intf, line_nr);
 		if (line) {
@@ -933,9 +944,16 @@ _e1_usb_open_device(struct e1_daemon *e1d, struct libusb_device *dev)
 			}
 		}
 
-		if (!line_data->ep_in || !line_data->ep_out || !line_data->ep_fb || !line_data->pkt_size) {
-			LOGP(DE1D, LOGL_ERROR, "Failed to use interface %d\n", id->bInterfaceNumber);
-			goto next_interface;
+		if (is_tracer) {
+			if (!line_data->ep_in || !line_data->pkt_size) {
+				LOGP(DE1D, LOGL_ERROR, "Failed to use interface %d\n", id->bInterfaceNumber);
+				goto next_interface;
+			}
+		} else {
+			if (!line_data->ep_in || !line_data->ep_out || !line_data->ep_fb || !line_data->pkt_size) {
+				LOGP(DE1D, LOGL_ERROR, "Failed to use interface %d\n", id->bInterfaceNumber);
+				goto next_interface;
+			}
 		}
 
 		if (!line) {
@@ -966,13 +984,18 @@ _e1_usb_open_device(struct e1_daemon *e1d, struct libusb_device *dev)
 		}
 
 		/* Create data flows and start the line */
-		line_data->flow_in  = e1uf_create(line, e1_usb_xfer_in,  line_data->ep_in,  4, line_data->pkt_size, 4);
-		line_data->flow_out = e1uf_create(line, e1_usb_xfer_out, line_data->ep_out, 4, line_data->pkt_size, 4);
-		line_data->flow_fb  = e1uf_create(line, e1_usb_xfer_fb,  line_data->ep_fb,  2, 3, 1);
 
+		/* all supported devices have an IN endpoint */
+		line_data->flow_in  = e1uf_create(line, e1_usb_xfer_in,  line_data->ep_in,  4, line_data->pkt_size, 4);
 		e1uf_start(line_data->flow_in);
-		e1uf_start(line_data->flow_out);
-		e1uf_start(line_data->flow_fb);
+
+		/* e1-tracer has no OUT or FEEDBACK endpoint */
+		if (!is_tracer) {
+			line_data->flow_out = e1uf_create(line, e1_usb_xfer_out, line_data->ep_out, 4, line_data->pkt_size, 4);
+			e1uf_start(line_data->flow_out);
+			line_data->flow_fb  = e1uf_create(line, e1_usb_xfer_fb,  line_data->ep_fb,  2, 3, 1);
+			e1uf_start(line_data->flow_fb);
+		}
 
 		if (line_data->ep_int)
 			resubmit_irq(line);
@@ -1028,10 +1051,19 @@ e1_usb_probe(struct e1_daemon *e1d)
 		if (ret)
 			continue;
 
-		if ((desc.idVendor != USB_VID) || (desc.idProduct != USB_PID))
+		if (desc.idVendor != USB_VID)
 			continue;
 
-		_e1_usb_open_device(e1d, dev_list[i]);
+		switch (desc.idProduct) {
+		case USB_PID:
+			_e1_usb_open_device(e1d, dev_list[i], false);
+			break;
+		case USB_PID_TRACER:
+			_e1_usb_open_device(e1d, dev_list[i], true);
+			break;
+		default:
+			continue;
+		}
 	}
 
 	libusb_free_device_list(dev_list, 1);
