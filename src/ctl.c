@@ -45,7 +45,7 @@
 static struct e1_ts *
 _e1d_get_ts(struct e1_line *line, uint8_t ts)
 {
-	if (ts < 32)
+	if (ts > 0 && ts < 32)
 		return &line->ts[ts];
 	else if (ts == E1DP_TS_SUPERCHAN)
 		return &line->superchan;
