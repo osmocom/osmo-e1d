@@ -1,6 +1,6 @@
 /* E1 timeslot "pipe" utility: Open a 64k timeslot of osmo-e1d and connect to stdin/stdout
  *
- * (C) 2020 by Harald Welte <laforge@osmocom.org>
+ * (C) 2020-2022 by Harald Welte <laforge@osmocom.org>
  *
  * All Rights Reserved
  *
@@ -22,6 +22,7 @@
  */
 
 #include <stdint.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <unistd.h>
 #include <errno.h>
@@ -40,6 +41,7 @@ static void *g_ctx;
 static struct osmo_e1dp_client *g_client;
 static struct osmo_fd ts_ofd;
 static enum osmo_e1dp_ts_mode g_mode = E1DP_TSMODE_RAW;
+static bool g_force = false;
 static int outfd = 1;
 static int infd = 0;
 
@@ -47,7 +49,11 @@ static int infd = 0;
 static int ts_open(uint8_t intf_nr, uint8_t line_nr, uint8_t ts_nr,
 		   enum osmo_e1dp_ts_mode mode, uint16_t bufsize)
 {
-	int  rc = osmo_e1dp_client_ts_open(g_client, intf_nr, line_nr, ts_nr, mode, bufsize);
+	int rc;
+	if (g_force)
+		rc = osmo_e1dp_client_ts_open_force(g_client, intf_nr, line_nr, ts_nr, mode, bufsize);
+	else
+		rc = osmo_e1dp_client_ts_open(g_client, intf_nr, line_nr, ts_nr, mode, bufsize);
 	if (rc < 0)
 		fprintf(stderr, "Cannot open e1d timeslot %u:%u:%u\n", intf_nr, line_nr, ts_nr);
 	return rc;
@@ -118,6 +124,7 @@ static void print_help(void)
 	" -l --line <0-255>             E1 Line Number\n"
 	" -t --timeslot <0-31>          E1 Timeslot Number\n"
 	" -m --mode (RAW|HDLC-FCS)      E1 Timeslot Mode\n"
+	" -f --force                    Force open of the timeslot (may disconnect other client)\n"
 	" -r --read FILE                Read from FILE instead of STDIN\n"
 	);
 }
@@ -145,12 +152,13 @@ int main(int argc, char **argv)
 			{ "line", 1, 0, 'l' },
 			{ "timeslot", 1, 0, 't' },
 			{ "mode", 1, 0, 'm' },
+			{ "force", 0, 0, 'f' },
 			{ "read", 1, 0, 'r' },
 			{ "read-bufsize", 1, 0, 'b' },
 			{ 0,0,0,0 }
 		};
 
-		c = getopt_long(argc, argv, "hp:i:l:t:m:r:b:", long_options, &option_index);
+		c = getopt_long(argc, argv, "hp:i:l:t:m:fr:b:", long_options, &option_index);
 		if (c == -1)
 			break;
 
@@ -177,6 +185,9 @@ int main(int argc, char **argv)
 				exit(2);
 			}
 			g_mode = rc;
+			break;
+		case 'f':
+			g_force = true;
 			break;
 		case 'r':
 			rc = open(optarg, 0, O_RDONLY);
