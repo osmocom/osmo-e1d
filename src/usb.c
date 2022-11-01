@@ -876,8 +876,13 @@ _e1_usb_open_device(struct e1_daemon *e1d, struct libusb_device *dev, bool is_tr
 	}
 
 	/* we have prior knowledge that the e1-tracer firmware configuration 2 is the e1d compatible mode. */
-	if (is_tracer)
-		libusb_set_configuration(devh, 2);
+	if (is_tracer) {
+		if (libusb_set_configuration(devh, 2) != LIBUSB_SUCCESS) {
+			LOGP(DE1D, LOGL_ERROR, "Cannot set configuration 2 of e1-tracer device. Maybe too old firmware?\n");
+			libusb_close(devh);
+			return -EIO;
+		}
+	}
 
 	INIT_LLIST_HEAD(&intf_data->ctrl_inprogress);
 
