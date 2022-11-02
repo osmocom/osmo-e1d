@@ -242,7 +242,7 @@ DEFUN(cfg_vpair, cfg_vpair_cmd, "virtual-e1-pair <1-255>",
 }
 
 DEFUN(cfg_e1d_if_icE1usb, cfg_e1d_if_icE1usb_cmd, "interface <0-255> icE1usb",
-	"Configure an icE1usb E1 interface\n"
+	"Configure an icE1usb/e1-tracer E1 interface\n"
 	"E1 Interface Number\n")
 {
 	struct e1_intf *intf;

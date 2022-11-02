@@ -825,6 +825,10 @@ _e1_usb_open_device(struct e1_daemon *e1d, struct libusb_device *dev, bool is_tr
 	libusb_device_handle *devh;
 	int line_nr = 0;
 	int i, j, ret;
+	const char *hwname = "icE1usb";
+
+	if (is_tracer)
+		hwname = "e1-tracer";
 
 	ret = libusb_open(dev, &devh);
 	if (ret) {
@@ -853,7 +857,7 @@ _e1_usb_open_device(struct e1_daemon *e1d, struct libusb_device *dev, bool is_tr
 	/* try to find the matching interface config created by the vty */
 	intf = e1d_find_intf_by_usb_serial(e1d, serial_str);
 	if (intf) {
-		LOGP(DE1D, LOGL_INFO, "Configuration for icE1usb serial '%s' found\n", serial_str);
+		LOGP(DE1D, LOGL_INFO, "Configuration for %s serial '%s' found\n", hwname, serial_str);
 		auto_create_lines = false;
 		if (intf->drv_data) {
 			LOGP(DE1D, LOGL_ERROR, "New device with serial '%s', but E1 interface %u busy\n",
@@ -865,8 +869,8 @@ _e1_usb_open_device(struct e1_daemon *e1d, struct libusb_device *dev, bool is_tr
 		intf_data->devh = devh;
 		intf->drv_data = intf_data;
 	} else {
-		LOGP(DE1D, LOGL_NOTICE, "No configuration for icE1usb serial '%s' found, "
-		     "auto-generating it\n", serial_str);
+		LOGP(DE1D, LOGL_NOTICE, "No configuration for %s serial '%s' found, "
+		     "auto-generating it\n", hwname, serial_str);
 		auto_create_lines = true;
 		intf_data = talloc_zero(e1d->ctx, struct e1_usb_intf_data);
 		intf_data->devh = devh;
@@ -888,7 +892,7 @@ _e1_usb_open_device(struct e1_daemon *e1d, struct libusb_device *dev, bool is_tr
 
 	ret = libusb_get_active_config_descriptor(dev, &cd);
 	if (ret) {
-		LOGP(DE1D, LOGL_ERROR, "Failed to talk to usb device: %s\n", libusb_strerror(ret));
+		LOGP(DE1D, LOGL_ERROR, "Failed to talk to %s usb device: %s\n", hwname, libusb_strerror(ret));
 		intf_data->devh = NULL;
 		talloc_free(intf_data);
 		if (auto_create_lines)
