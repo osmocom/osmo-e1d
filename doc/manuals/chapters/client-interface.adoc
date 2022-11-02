@@ -1,0 +1,72 @@
+[[e1dp]]
+== Client Interface
+
+This chapter documents the _Client interface_ which is used by
+application programs wanting to send and/or receive data on the E1
+circuits served by `osmo-e1d`.
+
+The interface is based on a `unix domain socket` and works in the
+following way:
+
+* `osmo-e1d` implements the server side of a unix domain socket
+
+* the application program acts as a client program establishing a socket
+  connection to the e1d unix domain socket
+* the application program preforms operations such as opening of a
+  specific E1 timeslot on a spcific line/interface.
+* `osmo-e1d` passes a file descriptor from the daemon to the client
+  application
+* the client application can read/write data from/to the E1 timeslot via
+  this file descriptor
+
+This architecture was chosen to allow for the _one file descriptor per
+timeslot_ paradigm that is known from other drivers, such as DAHDI.
+
+Each timeslot of each line on each interface can theoretically be opened
+by a different program.  This permits for example control/user plane
+splits like a signaling gateway + media gateway implemented as separate
+processes.
+
+When opening a timeslot, the client specifies the _mode_.
+
+* In _RAW mode_, the transparent 64kBps bit-stream is passed over the
+  per-timeslot file descriptor.  This is mostly used for B-channels /
+  user traffic.
+* In _HDLC-FCS mode_, a (software) HDLC processor is instantiated. It
+  performs flag sequence detection/generation and bit-stuffing.  This is
+  mostly used for D-channels / signalling.
+
+Details about the messaging on the unix domain socket can be found in
+the definitions contained in the `include/osmocom/e1d/proto.h` header
+file, as well as the doxygen API documentation generated from it.
+
+=== `libosmo-e1d` client library
+
+To simplify interfacing `osmo-e1d` from an application, there is a
+companion library called `libosmo-e1d`.
+
+It contains functions implementing the above-mentioned client interface
+protocol and prevents the application developer from having to implement
+the low-level bits of this interface.
+
+The library is licensed under GNU LGPL-3.0-or-later, which is a weak
+copyleft license that permits using the library from non-open-source /
+proprietary applications.
+
+The library offers the following functions:
+
+* initialization / teardown
+** `osmo_e1dp_client_create()`
+** `osmo_e1dp_client_destroy()`
+* information querying
+** `osmo_e1dp_client_intf_query()`
+** `osmo_e1dp_client_line_query()`
+** `osmo_e1dp_client_ts_query()`
+* configuration
+** `osmo_e1dp_client_line_config()`
+* opening of timeslots
+** `osmo_e1dp_client_ts_open()`
+** `osmo_e1dp_client_ts_open_force()`
+
+Details about those functions can be found in the definitions contained
+in the `include/osmocom/e1d/proto_clnt.h` header file.

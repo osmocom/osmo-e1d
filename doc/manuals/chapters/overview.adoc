@@ -1,0 +1,105 @@
+== Overview
+
+=== About this manual
+
+This manual should help you getting started with the `osmo-e1d` software.
+It will cover aspects of configuring and running `osmo-e1d` as well as some
+introduction about its internal architecture and external interfaces.
+
+=== About `osmo-e1d`
+
+`osmo-e1d` is a driver (implemented as userspace daemon) for a variety of hardware
+related to the E1 (TDM) interface, such as
+
+* the `icEusb` USB attached E1 interface
+* the `e1-tracer` USB attached passive E1 tracer
+
+=== Credits
+
+`osmo-e1d` was originally developed in 2019 by Sylvain Munaut alongside
+the icE1usb project. It subsequently got improved and extended by Harald
+Welte.
+
+=== Architecture
+
+`osmo-e1d` is a driver system for E1 circuits, which are sometimes also called
+primary rate (PRI). It typically sits between an E1 hardware interface beneath
+it and application software above it.
+
+.How osmo-e1d fits in the overall system architecture
+[graphviz]
+----
+digraph G{
+  //rankdir = LR;
+  Application -> loa;
+  pipe -> e1d [style=dashed];
+  loa -> e1d;
+
+  e1d -> HW;
+  e1d -> vpair;
+
+  HW -> BTS;
+
+  {rank=same;
+   Application [label="Application\nosmo-nitb / osmo-bsc"];
+   pipe [label="osmo-e1d-pipe\nfor testing", style=dashed];
+  }
+  e1d [label="osmo-e1d", color=red];
+  loa [label="libosmo-abis\ne1_input"];
+  HW [label="E1 Hardware"];
+  vpair [label="Virtual E1 pair"];
+}
+----
+
+Contrary to older E1 drivers such as DAHDI or mISDN, `osmo-e1d` runs entirely in userspace,
+without a need for kernel drivers.  This is obviously less computationally efficient,
+but has other advantages, such as working on unmodified Linux kernels / operating systems,
+and with a lower risk of software bugs affecting overall system
+stability.  Particularly at low E1 port density and modern hardware, the
+lower efficiency is not expected to make a big difference.
+
+==== E1 Interfaces
+
+In `osmo-e1d` language, an _E1 Interface_ is some kind of underlying hardware that contains one or more
+_Lines_.  Interfaces are numbered from 0..N and are often abbreviated e.g. as `I0` for Interface 0.
+
+==== E1 Lines
+
+In `osmo-e1d` language, an _E1 Line_ represents one single E1 circuit within an _E1 Interface_.
+
+=== Hardware support
+
+`osmo-e1d` currently supports the following hardware:
+
+* Osmocom icE1usb
+* Osmocom e1-tracer
+* Virtual pair of E1 circuits
+
+==== icE1usb
+
+The Osmocom icE1usb is an OSHW implementation of a USB-attached hardware
+interface for up to two E1 circuits (lines).
+
+For more information on the Osmocom icE1usb, see
+
+* data sheet: https://www.sysmocom.de/downloads/icE1usb_data_sheet.pdf
+* project wiki: https://osmocom.org/projects/e1-t1-adapter/wiki/ICE40_E1_USB_interface
+* user manual: https://ftp.osmocom.org/docs/latest/icE1usb-usermanual.pdf
+* product page: https://www.sysmocom.de/products/lab/icE1usb
+
+==== e1-tracer
+
+The Osmocom e1-tracer is an OSHW implementation of a passive,
+high-impedance bi-directional E1 tap/tracer/sniffer.  It can be used to
+capture traffic on an unmodified E1 interface.
+
+For more information on the Osmocom e1-tracer, see
+
+* project wiki: https://osmocom.org/projects/e1-t1-adapter/wiki/E1_tracer
+* user manual: https://ftp.osmocom.org/docs/latest/e1tracer-usermanual.pdf
+
+==== vpair
+
+The osmo-e1d _vpair_ is not actual hardware, but a virtual pair of E1
+interfaces.  It can be used to test E1-using applications without
+involving a hardware E1 circuit.

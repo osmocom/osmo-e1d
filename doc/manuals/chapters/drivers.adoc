@@ -1,0 +1,85 @@
+[[drivers]]
+== E1 drivers
+
+`osmo-e1d` was primarily developed for the icE1usb hardware, but also
+supports some other drivers by now.
+
+
+=== The `usb` driver for icE1usb and e1-tracer
+
+The `usb` driver implements the USB interface first implemented by the
+`icE1usb` hardware.
+
+For more information on the `icEusb`, please see its related user
+manual, published at https://downloads.osmocom.org/docs/latest/icE1usb-usermanual.pdf
+
+Each `icEusb` device implements one E1 interface with up to two E1
+lines.  Note that supporting two E1 lines is only supported on very few
+select USB host controllers. In most cases, your USB host controller
+will only permit using one of the two lines.
+
+==== Configuration
+
+`osmo-e1d` will automatically detect any supported USB devices when
+starting up. It will dynamically allocate E1 interface and E1 line
+numbers to those USB devices.  However, the order is not guaranteed and
+particularly in case you have multiple devices, it is strongly
+recommended to use _static configuration_.
+
+In this static configuration, you would have a block like
+
+.Example configuration snippet for an icE1usb
+----
+ interface 2 icE1usb
+  usb-serial dc697407e7881531
+----
+
+This way you reserve/allocate the E1 interface number 2 for the icE1usb
+with serial number dc697407e7881531.  The Serial number is unique and
+stored in the iSerial string of the USB device descriptor.  You can for
+example use `lsusb -v -d 1d50: | grep iSerial` to obtain it, or check
+the `dmesg` kernel log after plugging in a device.
+
+==== Using the `usb` driver with `e1-tracer`
+
+The same driver has been slightly extended to also support the passive,
+bi-directional `e1-tracer` hardware.  The configuration and use is
+identical to the use with the `icE1usb`, with the notable difference
+that a passive tracer can obviously only receive data from E1, but not
+transmit.  The two directions of a E1 circuit are represented as two
+lines in `osmo-e1d`.
+
+=== The `vpair` driver for virtual E1 circuits
+
+Sometimes it is useful to be able to interface multiple E1-using
+applications without a real E1 circuit or any hardware whatsoever.
+
+This can be used in automatic / virtualized software testing, but also
+in case a legacy application is migrate away from real physical E1
+circuits.
+
+==== Configuration
+
+The configuration of the `vpair` driver is relatively simple.  It
+consists of a single `virtual-e1-pair` command.
+
+.Example configuration snippet for a virtual E1 pair with one E1 line
+----
+e1d
+ virtual-e1-pair 1
+----
+
+The above example will create a virtual pair of E1 interfaces, each
+of those interface with one E1 line.
+
+.Log output of the example configuration for 1 virtual pair
+----
+intf_line.c:184 (I0) Created
+intf_line.c:285 (I0:L0) Created
+intf_line.c:184 (I1) Created
+intf_line.c:285 (I1:L0) Created
+----
+
+You can subsequently use the Lines just like you would use physical E1
+lines.  Any data you transmit on one line will be received on the other
+line, and vice versa.

@@ -1,0 +1,68 @@
+[[octoi]]
+== OCTOI TDMoIP mode
+
+Instead of providing a programmatic client interface (<<client>>) enabling
+external applications timeslot-granular access to the data of a E1 line,
+`osmo-e1d` also supports an entirely separate mode of operation:
+_TDMoIP using the OCTOI (Osmocom Community TDMoIP) protocol_.
+
+In this mode of operation, osmo-e1d acts as interface between an E1 line
+and a remote system over UDP/IP.  This allows you to transparently pass
+an E1 line over an IP network such as the Internet.
+
+`osmo-e1d` can operate either as client or as server for the OCTOI protocol.
+
+=== osmo-e1d as OCTOI client
+
+Below is an example configuration snippet for operating as an OCTOI client.
+
+.Configuration snippet for operating as an OCTOI client
+----
+e1d
+ interface 0 icE1usb
+  usb-serial dc697407e7881531
+  line 0
+   mode e1oip <1>
+octoi-client 192.168.7.2 10013 <2>
+ local-bind 0.0.0.0 3333 <3>
+ account foobar <4>
+  mode ice1usb
+  ice1usb serial-number dc697407e7881531 <5>
+  ice1usb line-number 0
+----
+<1> we specify that Interface 0 Line 0 (I0:L0) of the icE1usb device with serial number dc697407e7881531 shall
+    be used in `e1oip` mode.
+<2> we instantiate an OCTOI client to the remote IP 192.168.7.2 / UDP port 10013
+<3> we specify to bind locally to INADDR_ANY and local UDP port 3333
+<4> we specify the account/user name to tell the server is `foobar`
+<5> we specify that this OCTOI client instance shall use the icE1usb device with the given serial number. This
+    must match the serial number used above when configuring the icE1usb line mode.
+
+There can of course be any number of E1 interfaces/lines and clients; the example just shows one for clarity.
+
+=== osmo-e1d as OCTOI server
+
+Below is an example configuration snippet for operating as an OCTOI server.
+
+.Configuration snippet for operating as an OCTOI server
+----
+e1d
+ interface 0 icE1usb
+  usb-serial dc697407e7881531
+  line 0
+   mode e1oip <1>
+octoi-server
+ local-bind 0.0.0.0 10013 <2>
+ account foobar <3>
+  mode ice1usb
+  ice1usb serial-number dc697407e7881531 <4>
+  ice1usb line-number 0
+----
+<1> we specify that Interface 0 Line 0 (I0:L0) of the icE1usb device with serial number dc697407e7881531 shall
+    be used in `e1oip` mode.
+<2> we bind the OCTOI server to UDP port 9999 of INADDR_ANY
+<3> we specify a user account `foobar`
+<4> we connect the user account `foobar` to the icE1usb serial number / line number specified above
+
+There can of course be any number of E1 interfaces/lines and user accounts; the example just shows one for
+clarity.

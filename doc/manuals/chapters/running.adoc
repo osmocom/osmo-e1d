@@ -1,0 +1,25 @@
+[[running]]
+== Running osmo-e1d
+
+The `osmo-e1d` executable offers the following command-line arguments:
+
+=== SYNOPSIS
+
+*osmo-e1d* [-h] [-d 'DBGMASK'] [-c 'CONFIGFILE']
+
+=== OPTIONS
+
+*-h, --help*::
+        Print a short help message about the supported options.
+*-V, --version*::
+        Print the version of osmo-e1d.
+*-d, --debug 'DBGMASK','DBGLEVELS'*::
+        Set the log subsystems and levels for logging to stderr. This
+        has mostly been superseded by VTY-based logging configuration,
+        see <<logging>> for further information.
+*-c, --config-file 'CONFIGFILE'*::
+        Specify the file and path name of the configuration file to be
+        used. If none is specified, use `osmo-bsc.cfg` in the current
+        working directory.
+
+include::../common/snippets/systemd.adoc[]
