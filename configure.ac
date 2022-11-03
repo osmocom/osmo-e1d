@@ -136,6 +136,14 @@ AC_MSG_CHECKING([whether to enable VTY/CTRL tests])
 AC_MSG_RESULT([$enable_ext_tests])
 AM_CONDITIONAL(ENABLE_EXT_TESTS, test "x$enable_ext_tests" = "xyes")
 
+AC_ARG_ENABLE(doxygen,
+	[AS_HELP_STRING(
+		[--disable-doxygen],
+		[Disable generation of documentation using doxygen],
+	)],
+	[doxygen=$enableval], [doxygen="yes"])
+AC_PATH_PROG(DOXYGEN,doxygen,false)
+AM_CONDITIONAL(HAVE_DOXYGEN, test $DOXYGEN != false && test "x$doxygen" = "xyes")
 
 
 # https://www.freedesktop.org/software/systemd/man/daemon.html
@@ -156,6 +164,7 @@ AM_CONDITIONAL([HAVE_SYSTEMD], [test "x$with_systemdsystemunitdir" != "xno"])
 
 AC_OUTPUT(
 	Makefile
+	Doxyfile
 	contrib/Makefile
 	contrib/systemd/Makefile
 	contrib/osmo-e1d.spec

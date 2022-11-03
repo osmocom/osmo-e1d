@@ -5,7 +5,7 @@ The `osmo-e1d` executable offers the following command-line arguments:
 
 === SYNOPSIS
 
-*osmo-e1d* [-h] [-d 'DBGMASK'] [-c 'CONFIGFILE']
+*osmo-e1d* [-h] [-V] [-d 'DBGMASK'] [-c 'CONFIGFILE']
 
 === OPTIONS
 

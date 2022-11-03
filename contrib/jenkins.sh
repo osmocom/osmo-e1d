@@ -46,10 +46,12 @@ autoreconf --install --force
 ./configure --enable-sanitize --enable-werror $CONFIG
 $MAKE $PARALLEL_MAKE
 $MAKE check || cat-testlogs.sh
-# Do distcheck with --disable-manuals as workaround, because it doesn't build
-# the usermanual pdf for some reason and then fails at "make install" because
-# it doesn't exist. Spent a lot of time on debugging it, not worth fixing now.
-DISTCHECK_CONFIGURE_FLAGS="$CONFIG --disable-manuals" $MAKE distcheck || cat-testlogs.sh
+# Do distcheck with --disable options as workaround, because it doesn't build
+# the usermanual pdf / doxygen html files for some reason and then fails at
+# "make install" because it doesn't exist. Spent a lot of time on debugging it,
+# not worth fixing now.
+DISTCHECK_CONFIGURE_FLAGS="$CONFIG --disable-manuals --disable-doxygen" \
+	$MAKE distcheck || cat-testlogs.sh
 
 if [ "$WITH_MANUALS" = "1" ] && [ "$PUBLISH" = "1" ]; then
 	make -C "$base/doc/manuals" publish

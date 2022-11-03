@@ -22,6 +22,28 @@
  * along with this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
+/*! \file proto_clnt.c
+ * e1d protocol client library (libosmo-e1d).
+ *
+ * This library implements ways how an external client (application
+ * program) can talk to osmo-e1d.  The primary purpose is to open
+ * specific E1 timeslots in order to receive and/or transmit data on
+ * them.
+ *
+ * Each such open timeslot is represented to the client program as a
+ * file descriptor, which the client can read and/or write as usual.
+ * This is implemented using underlying UNIX domain sockets and file
+ * descriptor passing.
+ *
+ * In addition to opening timeslots, client applications can also query
+ * osmo-e1d for information about its E1 interfaces, E1 lines and E1 timeslots.
+ *
+ * The functions provided by this client library are implemented as
+ * synchronous/blocking calls to osmo-e1d.  This means that an API call
+ * will be blocking until there is a response received from osmo-e1d.
+ *
+ */
+
 #include <errno.h>
 #include <fcntl.h>
 #include <unistd.h>
@@ -43,9 +65,10 @@
 #include "log.h"
 
 
+/*! Internal representation of client program connected to the CTL socket */
 struct osmo_e1dp_client {
-	void *ctx;
-	struct osmo_fd ctl_fd;
+	void *ctx;		/*!< talloc context */
+	struct osmo_fd ctl_fd;	/*!< osmo-fd wrapped unix domain (CTL) socket to @osmo-e1d@ */
 };
 
 
@@ -85,6 +108,10 @@ err:
 }
 
 
+/*! Create a new client talking to the CTL server socket of osmo-e1d.
+ *  \param[in] ctx talloc context from which this client is allocated
+ *  \param[in] path path of the CTL unix domain socket of osmo-e1d
+ *  \returns handle to newly-created client; NULL in case of errors */
 struct osmo_e1dp_client *
 osmo_e1dp_client_create(void *ctx, const char *path)
 {
@@ -113,6 +140,9 @@ err:
 }
 
 
+/*! Destroy a previously created client. Closes socket and releases memory.
+ *  \param[in] clnt Client previously returned from osmo_e1dp_client_create().
+ */
 void
 osmo_e1dp_client_destroy(struct osmo_e1dp_client *clnt)
 {
@@ -192,6 +222,12 @@ err:
 	return rc;
 }
 
+/*! Query osmo-e1d for information about a specific E1 interface.
+ *  \param[in] clnt Client previously returned from osmo_e1dp_client_create().
+ *  \param[out] ii callee-allocated array of interface information structures.
+ *  \param[out] n caller-provided pointer to integer. Will contain number of entries in ii.
+ *  \param[in] intf E1 interface number to query, or E1DP_INVALID to query all interfaces.
+ *  \returns zero in case of success; negative in case of error. */
 int
 osmo_e1dp_client_intf_query(struct osmo_e1dp_client *clnt,
 	struct osmo_e1dp_intf_info **ii, int *n,
@@ -223,6 +259,14 @@ osmo_e1dp_client_intf_query(struct osmo_e1dp_client *clnt,
 	return 0;
 }
 
+/*! Query osmo-e1d for information about a specific E1 line.
+ *  \param[in] clnt Client previously returned from osmo_e1dp_client_create().
+ *  \param[out] li callee-allocated array of line information structures.
+ *  \param[out] n caller-provided pointer to integer. Will contain number of entries in li.
+ *  \param[in] intf E1 interface number to query.
+ *  \param[in] line E1 line number (within interface) to query, or E1DP_INVALID to query all lines within the
+ *  interface.
+ *  \returns zero in case of success; negative in case of error. */
 int
 osmo_e1dp_client_line_query(struct osmo_e1dp_client *clnt,
 	struct osmo_e1dp_line_info **li, int *n,
@@ -254,6 +298,15 @@ osmo_e1dp_client_line_query(struct osmo_e1dp_client *clnt,
 	return 0;
 }
 
+/*! Query osmo-e1d for information about a specific E1 timeslot.
+ *  \param[in] clnt Client previously returned from osmo_e1dp_client_create().
+ *  \param[out] ti callee-allocated array of timeslot information structures.
+ *  \param[out] n caller-provided pointer to integer. Will contain number of entries in ti.
+ *  \param[in] intf E1 interface number to query.
+ *  \param[in] line E1 line number (within interface) to query.
+ *  \param[in] ts E1 timeslot numer (within line) to query, or E1DP_INVALID to query all of the timeslots
+ *  within the line.
+ *  \returns zero in case of success; negative in case of error. */
 int
 osmo_e1dp_client_ts_query(struct osmo_e1dp_client *clnt,
 	struct osmo_e1dp_ts_info **ti, int *n,
@@ -285,6 +338,12 @@ osmo_e1dp_client_ts_query(struct osmo_e1dp_client *clnt,
 	return 0;
 }
 
+/*! Configure a specific E1 line in osmo-e1d.
+ *  \param[in] clnt Client previously returned from osmo_e1dp_client_create().
+ *  \param[in] intf E1 interface number to configure.
+ *  \param[in] line E1 line number (within interface) to configure.
+ *  \param[in] mode E1 line mode to set on line.
+ *  \returns zero in case of success; negative in case of error. */
 int
 osmo_e1dp_client_line_config(struct osmo_e1dp_client *clnt,
 	uint8_t intf, uint8_t line, enum osmo_e1dp_line_mode mode)
@@ -350,6 +409,14 @@ _client_ts_open(struct osmo_e1dp_client *clnt,
 	return tsfd;
 }
 
+/*! Open a specific E1 timeslot of osmo-e1d.
+ *  \param[in] clnt Client previously returned from osmo_e1dp_client_create().
+ *  \param[in] intf E1 interface number of line containing timeslot.
+ *  \param[in] line E1 line number (within interface) of line containing timeslot.
+ *  \param[in] ts E1 timeslot number (within line) to open.
+ *  \param[in] mode timeslot mode (RAW, HDLC-FCE) in which to open timeslot.
+ *  \param[in] read_bufsize size of read buffer (in octets) to use.
+ *  \returns file descriptor of opened timeslot in case of success; negative in case of error. */
 int
 osmo_e1dp_client_ts_open(struct osmo_e1dp_client *clnt,
 	uint8_t intf, uint8_t line, uint8_t ts,
@@ -358,6 +425,17 @@ osmo_e1dp_client_ts_open(struct osmo_e1dp_client *clnt,
 	return _client_ts_open(clnt, intf, line, ts, mode, read_bufsize, 0);
 }
 
+/*! Force-Open a specific E1 timeslot of osmo-e1d.
+ *  The normal (non-force) opening of a timeslot will fail in case the given timeslot is already
+ *  open (by either this or some other client).  Using the open_force variant you can force osmo-e1d
+ *  to disregard the existing client/timeslot and transfer ownership of the timeslot to this client.
+ *  \param[in] clnt Client previously returned from osmo_e1dp_client_create().
+ *  \param[in] intf E1 interface number of line containing timeslot.
+ *  \param[in] line E1 line number (within interface) of line containing timeslot.
+ *  \param[in] ts E1 timeslot number (within line) to open.
+ *  \param[in] mode timeslot mode (RAW, HDLC-FCE) in which to open timeslot.
+ *  \param[in] read_bufsize size of read buffer (in octets) to use.
+ *  \returns file descriptor of opened timeslot in case of success; negative in case of error. */
 int
 osmo_e1dp_client_ts_open_force(struct osmo_e1dp_client *clnt,
 	uint8_t intf, uint8_t line, uint8_t ts,
