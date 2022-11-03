@@ -694,6 +694,12 @@ e1_usb_intf_gpsdo_state_string(char *buf, size_t len, const struct e1_intf *intf
 
 	OSMO_ASSERT(intf->drv == E1_DRIVER_USB);
 
+	if (!id) {
+		/* This can happen for statically configured devices (config/vty) which are not
+		 * currently present */
+		return snprintf(buf, len, "unknown");
+	}
+
 	return snprintf(buf, len, "mode=%s, fix=%s, state=%s antenna=%s, tune=%u/%u, freq_est=%u",
 			get_value_string(ice1usb_gpsdo_mode_str, last_st->mode),
 			last_st->valid_fix ? "TRUE" : "FALSE",
