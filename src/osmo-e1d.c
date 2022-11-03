@@ -100,6 +100,7 @@ static void print_help(void)
 {
 	printf("  Some useful help...\n");
 	printf("  -h --help			This text.\n");
+	printf("  -V --version			Print the version of osmo-e1d.\n");
 	printf("  -d --debug option		--debug=DE1D:DXFR enable debugging.\n");
 	printf("  -c --config-file filename	The config file to use.\n");
 }
@@ -110,18 +111,23 @@ static void handle_options(int argc, char **argv)
 		int option_index = 0, c;
 		static const struct option long_options[] = {
 			{"help", 0, 0, 'h'},
+			{"version", 0, 0, 'V'},
 			{"debug", 1, 0, 'd'},
 			{"config-file", 1, 0, 'c'},
 			{0, 0, 0, 0}
 		};
 
-		c = getopt_long(argc, argv, "hd:c:", long_options, &option_index);
+		c = getopt_long(argc, argv, "hVd:c:", long_options, &option_index);
 		if (c == -1)
 			break;
 
 		switch (c) {
 		case 'h':
 			print_help();
+			exit(0);
+			break;
+		case 'V':
+			print_version(1);
 			exit(0);
 			break;
 		case 'd':
