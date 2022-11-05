@@ -29,6 +29,9 @@ osmo-build-dep.sh libosmocore "" ac_cv_path_DOXYGEN=false
 
 # Additional configure options and depends
 CONFIG=""
+if [ "$WITH_MANUALS" = "1" ]; then
+	 CONFIG="--enable-manuals"
+fi
 
 set +x
 echo
@@ -43,7 +46,14 @@ autoreconf --install --force
 ./configure --enable-sanitize --enable-werror $CONFIG
 $MAKE $PARALLEL_MAKE
 $MAKE check || cat-testlogs.sh
-DISTCHECK_CONFIGURE_FLAGS="$CONFIG" $MAKE distcheck || cat-testlogs.sh
-$MAKE maintainer-clean
+# Do distcheck with --disable-manuals as workaround, because it doesn't build
+# the usermanual pdf for some reason and then fails at "make install" because
+# it doesn't exist. Spent a lot of time on debugging it, not worth fixing now.
+DISTCHECK_CONFIGURE_FLAGS="$CONFIG --disable-manuals" $MAKE distcheck || cat-testlogs.sh
 
+if [ "$WITH_MANUALS" = "1" ] && [ "$PUBLISH" = "1" ]; then
+	make -C "$base/doc/manuals" publish
+fi
+
+$MAKE maintainer-clean
 osmo-clean-workspace.sh
