@@ -115,6 +115,7 @@ AC_OUTPUT(
 	Makefile
 	contrib/Makefile
 	contrib/systemd/Makefile
+	contrib/osmo-e1d.spec
 	doc/Makefile
 	doc/examples/Makefile
 	src/Makefile
