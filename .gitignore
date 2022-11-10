@@ -35,6 +35,16 @@ src/osmo-e1d-pipe
 src/osmo-e1gen
 contrib/e1-prbs-test/e1-prbs-test
 contrib/e1-prbs-test/ice40-e1-prbs-check
+contrib/osmo-e1d.spec
+
+Doxyfile
+doc/manuals/build
+doc/manuals/common
+doc/manuals/*.pdf
+doc/manuals/*.png
+doc/*.tag
+doc/html.tar
+doc/e1d
 
 tests/atconfig
 tests/atlocal
