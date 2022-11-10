@@ -109,7 +109,7 @@ static void srv_st_init(struct osmo_fsm_inst *fi, uint32_t event, void *data)
 
 		switch (acc->mode) {
 		case ACCOUNT_MODE_ICE1USB:
-		case ACCOUNT_MODE_DAHDI:
+		case ACCOUNT_MODE_DAHDI_TRUNKDEV:
 			/* check if a matching device exists for that account */
 			st->app_priv = g_octoi->ops->client_connected(srv, st->peer, acc);
 			if (!st->app_priv) {

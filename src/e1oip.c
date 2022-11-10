@@ -48,6 +48,16 @@ find_line_by_usb_serial(struct e1_daemon *e1d, const char *serial_str, uint8_t i
 	return e1_intf_find_line(e1i, id);
 }
 
+/* convenience helper function finding a e1_line for given name + id */
+static struct e1_line *
+find_line_by_trunkdev_name(struct e1_daemon *e1d, const char *name, uint8_t id)
+{
+	struct e1_intf *e1i = e1d_find_intf_by_trunkdev_name(e1d, name);
+	if (!e1i)
+		return NULL;
+	return e1_intf_find_line(e1i, id);
+}
+
 static struct e1_line *
 find_line_for_account(struct e1_daemon *e1d, const struct octoi_account *acc)
 {
@@ -55,8 +65,9 @@ find_line_for_account(struct e1_daemon *e1d, const struct octoi_account *acc)
 	case ACCOUNT_MODE_ICE1USB:
 		return find_line_by_usb_serial(e1d, acc->u.ice1usb.usb_serial,
 						acc->u.ice1usb.line_nr);
-	case ACCOUNT_MODE_DAHDI:
-		OSMO_ASSERT(0);		/* TODO */
+	case ACCOUNT_MODE_DAHDI_TRUNKDEV:
+		return find_line_by_trunkdev_name(e1d, acc->u.dahdi_trunkdev.name,
+						  acc->u.dahdi_trunkdev.line_nr);
 		break;
 	default:
 		return NULL;
@@ -127,6 +138,35 @@ _e1d_octoi_client_connected_cb(struct octoi_server *srv, struct octoi_peer *peer
 	return line;
 }
 
+static void
+_e1d_octoi_client_updated_cb(struct octoi_client *clnt)
+{
+	struct e1_daemon *e1d = g_octoi->priv;
+	struct e1_line *line;
+
+	/* find line for client */
+	line = find_line_for_account(e1d, clnt->cfg.account);
+	if (!line)
+		return;
+
+	if (line->mode != E1_LINE_MODE_E1OIP)
+		return;
+
+	/* check if line is active */
+	if (!osmo_timer_pending(&line->ts0.timer))
+		return;
+
+	/* TODO: kill old peer, if != current peer */
+	if (!line->octoi_peer)
+		line->octoi_peer = octoi_client_get_peer(clnt);
+	else
+		OSMO_ASSERT(line->octoi_peer == octoi_client_get_peer(clnt));
+
+	/* start client for peer (if not started) */
+	OSMO_ASSERT(line->octoi_peer);
+	octoi_clnt_start_for_peer(line->octoi_peer, clnt->cfg.account);
+}
+
 /* OCTOI has detected that a given peer has vanished; delete reference to it */
 static void
 _e1d_octoi_peer_disconnected_cb(struct octoi_peer *peer)
@@ -148,5 +188,6 @@ _e1d_octoi_peer_disconnected_cb(struct octoi_peer *peer)
 
 const struct octoi_ops e1d_octoi_ops = {
 	.client_connected = &_e1d_octoi_client_connected_cb,
+	.client_updated = &_e1d_octoi_client_updated_cb,
 	.peer_disconnected = &_e1d_octoi_peer_disconnected_cb,
 };

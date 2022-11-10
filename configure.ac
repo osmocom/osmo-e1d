@@ -75,6 +75,21 @@ then
 	CPPFLAGS="$CPPFLAGS $WERROR_FLAGS"
 fi
 
+AC_ARG_ENABLE(dahdi-trunkdev,
+	[AS_HELP_STRING(
+		[--enable-dahdi-trunkdev],
+		[Enable support for DAHDI trunkdev [default=no]],
+	)],
+	[ENABLE_DAHDI_TRUNKDEV=$enableval], [ENABLE_DAHDI_TRUNKDEV="no"])
+if test x"$ENABLE_DAHDI_TRUNKDEV" = x"yes"
+then
+	AC_CHECK_TYPE(struct dahdi_trunkdev_open,
+	      [AC_DEFINE(HAVE_DAHDI_TRUNKDEV)],
+	      [AC_MSG_ERROR("Cannot build requested trunkdev support without matching DAHDI headers")],
+	      [[#include <dahdi/user.h>]])
+fi
+AM_CONDITIONAL(ENABLE_DAHDI_TRUNKDEV, test "x$ENABLE_DAHDI_TRUNKDEV" = "xyes")
+AC_SUBST(ENABLE_DAHDI_TRUNKDEV)
 
 # Generate manuals
 AC_ARG_ENABLE(manuals,

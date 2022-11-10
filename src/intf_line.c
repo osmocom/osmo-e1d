@@ -46,6 +46,7 @@
 const struct value_string e1_driver_names[] = {
 	{ E1_DRIVER_USB, "usb" },
 	{ E1_DRIVER_VPAIR, "vpair" },
+	{ E1_DRIVER_DAHDI_TRUNKDEV, "dahdi-trunkdev" },
 	{ 0, NULL }
 };
 
@@ -127,6 +128,22 @@ e1d_find_intf_by_usb_serial(struct e1_daemon *e1d, const char *serial_str)
 
 	llist_for_each_entry(intf, &e1d->interfaces, list) {
 		if (intf->usb.serial_str && !strcmp(intf->usb.serial_str, serial_str))
+			return intf;
+	}
+
+	return NULL;
+}
+
+struct e1_intf *
+e1d_find_intf_by_trunkdev_name(struct e1_daemon *e1d, const char *name)
+{
+	struct e1_intf *intf;
+
+	if (!name)
+		return NULL;
+
+	llist_for_each_entry(intf, &e1d->interfaces, list) {
+		if (intf->dahdi_trunkdev.name && !strcmp(intf->dahdi_trunkdev.name, name))
 			return intf;
 	}
 
@@ -298,6 +315,11 @@ static struct octoi_client *octoi_client_by_line(struct e1_line *line)
 		case ACCOUNT_MODE_ICE1USB:
 			if (!strcmp(line->intf->usb.serial_str, acc->u.ice1usb.usb_serial) &&
 			    line->id == acc->u.ice1usb.line_nr)
+				return clnt;
+			break;
+		case ACCOUNT_MODE_DAHDI_TRUNKDEV:
+			if (!strcmp(line->intf->dahdi_trunkdev.name, acc->u.dahdi_trunkdev.name) &&
+			    line->id == acc->u.dahdi_trunkdev.line_nr)
 				return clnt;
 			break;
 		case ACCOUNT_MODE_NONE:

@@ -161,6 +161,7 @@ struct e1_line {
 enum e1_driver {
 	E1_DRIVER_USB,
 	E1_DRIVER_VPAIR,
+	E1_DRIVER_DAHDI_TRUNKDEV,
 };
 
 extern const struct value_string e1_driver_names[];
@@ -180,6 +181,9 @@ struct e1_intf {
 			uint16_t fine;
 		} gpsdo;
 	} usb;
+	struct {
+		char *name;
+	} dahdi_trunkdev;
 
 	bool vty_created;
 	enum e1_driver drv;
@@ -209,6 +213,9 @@ e1d_find_intf(struct e1_daemon *e1d, uint8_t id);
 
 struct e1_intf *
 e1d_find_intf_by_usb_serial(struct e1_daemon *e1d, const char *serial_str);
+
+struct e1_intf *
+e1d_find_intf_by_trunkdev_name(struct e1_daemon *e1d, const char *name);
 
 void
 e1_intf_destroy(struct e1_intf *intf);
@@ -243,6 +250,14 @@ e1d_vpair_create(struct e1_daemon *e1d, unsigned int num_lines);
 
 struct e1_intf *
 e1d_vpair_intf_peer(struct e1_intf *intf);
+
+#ifdef HAVE_DAHDI_TRUNKDEV
+int
+e1_dahdi_trunkdev_open(struct e1_intf *e1i);
+
+int
+e1_dahdi_trunkdev_close(struct e1_intf *e1i);
+#endif
 
 int
 e1oip_line_demux_in(struct e1_line *line, const uint8_t *buf, int ftr);

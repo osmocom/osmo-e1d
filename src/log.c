@@ -38,6 +38,12 @@ static const struct log_info_cat default_categories[] = {
 		.loglevel = LOGL_NOTICE,
 		.enabled = 1,
 	},
+	[DTRUNKDEV] = {
+		.name = "DTRUNKDEV",
+		.description = "DAHDI trunkdev driver",
+		.loglevel = LOGL_NOTICE,
+		.enabled = 1,
+	},
 };
 
 const struct log_info log_info = {

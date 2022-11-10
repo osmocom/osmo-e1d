@@ -88,10 +88,19 @@ static void vty_dump_ts(struct vty *vty, const struct e1_ts *ts)
 
 static const char *intf_serno(const struct e1_intf *intf)
 {
-	if (intf->usb.serial_str)
-		return intf->usb.serial_str;
-	else
-		return "unnamed";
+	switch (intf->drv) {
+	case E1_DRIVER_USB:
+		if (intf->usb.serial_str)
+			return intf->usb.serial_str;
+		break;
+	case E1_DRIVER_DAHDI_TRUNKDEV:
+		if (intf->dahdi_trunkdev.name)
+			return intf->dahdi_trunkdev.name;
+		break;
+	default:
+		break;
+	}
+	return "unnamed";
 }
 
 static void vty_dump_intf(struct vty *vty, const struct e1_intf *intf)
@@ -288,6 +297,31 @@ DEFUN(cfg_e1d_if_vpair, cfg_e1d_if_vpair_cmd, "interface <0-255> vpair",
 	return CMD_SUCCESS;
 }
 
+#ifdef HAVE_DAHDI_TRUNKDEV
+DEFUN(cfg_e1d_if_trunkdev, cfg_e1d_if_trunkdev_cmd, "interface <0-255> dahdi-trunkdev",
+	"Configure a DAHDI trunkdev interface (virtual trunk)\n"
+	"E1 Interface Number\n"
+	"Use DAHDI trunkdev driver for this interface\n")
+{
+	struct e1_intf *intf;
+	int intf_nr = atoi(argv[0]);
+
+	intf = e1d_find_intf(vty_e1d, intf_nr);
+	if (!intf)
+		intf = e1_intf_new(vty_e1d, intf_nr, NULL);
+	if (!intf) {
+		vty_out(vty, "%% Could not create interface%s", VTY_NEWLINE);
+		return CMD_WARNING;
+	}
+	intf->drv = E1_DRIVER_DAHDI_TRUNKDEV;
+	intf->vty_created = true;
+
+	vty->index = intf;
+	vty->node = INTF_NODE;
+	return CMD_SUCCESS;
+}
+#endif /* HAVE_DAHDI_TRUNKDEV */
+
 DEFUN(cfg_e1d_if_usb_serial, cfg_e1d_if_usb_serial_cmd,
 	"usb-serial SERNO",
 	"Configure the USB serial number of an E1 interface device\n"
@@ -333,6 +367,26 @@ DEFUN(cfg_e1d_if_no_gpsdo_manual, cfg_e1d_if_no_gpsdo_manual_cmd,
 
 	return CMD_SUCCESS;
 }
+
+#ifdef HAVE_DAHDI_TRUNKDEV
+DEFUN(cfg_e1d_if_trunkdev_name, cfg_e1d_if_trunkdev_name_cmd,
+	"trunkdev-name SERNO",
+	"Configure the name of the DAHDI trunkdev device\n"
+	"DAHDI trunkdev name\n")
+{
+	struct e1_intf *intf = vty->index;
+
+	if (intf->drv != E1_DRIVER_DAHDI_TRUNKDEV)
+		return CMD_WARNING;
+
+	osmo_talloc_replace_string(intf, &intf->dahdi_trunkdev.name, argv[0]);
+
+	e1_dahdi_trunkdev_close(intf);
+	e1_dahdi_trunkdev_open(intf);
+
+	return CMD_SUCCESS;
+}
+#endif /* HAVE_DAHDI_TRUNKDEV */
 
 DEFUN(cfg_e1d_if_line, cfg_e1d_if_line_cmd, "line <0-255>",
 	"Configure an E1 line\n"
@@ -425,6 +479,11 @@ static int config_write_e1d(struct vty *vty)
 		case E1_DRIVER_VPAIR:
 			vty_out(vty, " interface %u vpair%s", intf->id, VTY_NEWLINE);
 			break;
+		case E1_DRIVER_DAHDI_TRUNKDEV:
+			vty_out(vty, " interface %u dahdi-trunkdev%s", intf->id, VTY_NEWLINE);
+			if (intf->dahdi_trunkdev.name && strlen(intf->dahdi_trunkdev.name))
+				vty_out(vty, "  trunkdev-name %s%s", intf->dahdi_trunkdev.name, VTY_NEWLINE);
+			break;
 		default:
 			break;
 		}
@@ -449,10 +508,16 @@ void e1d_vty_init(struct e1_daemon *e1d)
 	install_node(&intf_node, NULL);
 	install_element(E1D_NODE, &cfg_e1d_if_icE1usb_cmd);
 	install_element(E1D_NODE, &cfg_e1d_if_vpair_cmd);
+#ifdef HAVE_DAHDI_TRUNKDEV
+	install_element(E1D_NODE, &cfg_e1d_if_trunkdev_cmd);
+#endif /* HAVE_DAHDI_TRUNKDEV */
 	install_element(INTF_NODE, &cfg_e1d_if_line_cmd);
 	install_element(INTF_NODE, &cfg_e1d_if_usb_serial_cmd);
 	install_element(INTF_NODE, &cfg_e1d_if_gpsdo_manual_cmd);
 	install_element(INTF_NODE, &cfg_e1d_if_no_gpsdo_manual_cmd);
+#ifdef HAVE_DAHDI_TRUNKDEV
+	install_element(INTF_NODE, &cfg_e1d_if_trunkdev_name_cmd);
+#endif /* HAVE_DAHDI_TRUNKDEV */
 
 	install_node(&line_node, NULL);
 	install_element(LINE_NODE, &cfg_e1d_if_line_mode_cmd);

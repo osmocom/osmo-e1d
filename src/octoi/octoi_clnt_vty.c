@@ -281,6 +281,10 @@ void octoi_client_vty_init(void)
 	install_element(OCTOI_CLNT_ACCOUNT_NODE, &cfg_account_mode_cmd);
 	install_element(OCTOI_CLNT_ACCOUNT_NODE, &cfg_account_batching_factor_cmd);
 	install_element(OCTOI_CLNT_ACCOUNT_NODE, &cfg_account_prefill_frame_count_cmd);
+#ifdef HAVE_DAHDI_TRUNKDEV
+	install_element(OCTOI_CLNT_ACCOUNT_NODE, &cfg_account_trunkdev_name_cmd);
+	install_element(OCTOI_CLNT_ACCOUNT_NODE, &cfg_account_trunkdev_line_cmd);
+#endif /* HAVE_DAHDI_TRUNKDEV */
 
 	install_node(&clnt_node, config_write_octoi_clnt);
 	install_element(CONFIG_NODE, &cfg_client_cmd);

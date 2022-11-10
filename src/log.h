@@ -29,6 +29,7 @@
 enum {
 	DE1D,
 	DXFR,
+	DTRUNKDEV,
 };
 
 #define LOGPIF(itf, ss, lvl, fmt, args...) \

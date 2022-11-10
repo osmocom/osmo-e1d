@@ -43,6 +43,7 @@ static struct octoi_client *client4account(struct octoi_account *acc)
 int octoi_vty_go_parent(struct vty *vty)
 {
 	struct octoi_account *acc;
+	struct octoi_client *clnt;
 
 	switch (vty->node) {
 	case OCTOI_ACCOUNT_NODE:
@@ -53,6 +54,14 @@ int octoi_vty_go_parent(struct vty *vty)
 		acc = vty->index;
 		vty->node = OCTOI_CLNT_NODE;
 		vty->index = client4account(acc);
+		break;
+	case OCTOI_CLNT_NODE:
+		clnt = vty->index;
+		/* check if we have a (new?) line for this client */
+		if (g_octoi->ops->client_updated)
+			g_octoi->ops->client_updated(clnt);
+		vty->node = CONFIG_NODE;
+		vty->index = NULL;
 		break;
 	default:
 		vty->node = CONFIG_NODE;

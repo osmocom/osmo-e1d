@@ -11,7 +11,7 @@ enum octoi_account_mode {
 	ACCOUNT_MODE_NONE,
 	ACCOUNT_MODE_ICE1USB,
 	ACCOUNT_MODE_REDIRECT,
-	ACCOUNT_MODE_DAHDI,
+	ACCOUNT_MODE_DAHDI_TRUNKDEV,
 };
 
 extern const struct value_string octoi_account_mode_name[];
@@ -32,8 +32,9 @@ struct octoi_account {
 			struct osmo_sockaddr_str to;	/* remote IP/port to which to redirect */
 		} redirect;
 		struct {
-							/* TBD */
-		} dahdi;
+			char *name;			/* DAHDI trunkdev name */
+			uint8_t line_nr;		/* line number inside icE1usb */
+		} dahdi_trunkdev;
 	} u;
 };
 
@@ -71,6 +72,8 @@ struct octoi_ops {
 				   struct octoi_account *acc);
 	/* OCTOI library notifies the application that a given peer has disconnected */
 	void (*peer_disconnected)(struct octoi_peer *peer);
+	/* OCTOI library notifies the application that a given client has been updated */
+	void (*client_updated)(struct octoi_client *client);
 };
 
 struct octoi_daemon {

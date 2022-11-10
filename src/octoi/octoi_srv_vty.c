@@ -48,7 +48,7 @@ const struct value_string octoi_account_mode_name[] = {
 	{ ACCOUNT_MODE_NONE,		"none" },
 	{ ACCOUNT_MODE_ICE1USB,		"ice1usb" },
 	{ ACCOUNT_MODE_REDIRECT,	"redirect" },
-	{ ACCOUNT_MODE_DAHDI,		"dahdi" },
+	{ ACCOUNT_MODE_DAHDI_TRUNKDEV,	"dahdi-trunkdev" },
 	{ 0, NULL }
 };
 
@@ -288,10 +288,11 @@ DEFUN(cfg_srv_no_account, cfg_serv_no_account_cmd,
 #endif
 
 gDEFUN(cfg_account_mode, cfg_account_mode_cmd,
-	"mode (ice1usb|redirect)",
+	"mode (ice1usb|redirect|dahdi-trunkdev)",
 	"Operational mode of account\n"
 	"Connect to local icE1usb (identified by USB serial + line number)\n"
-	"Redirect to other IP/Port\n")
+	"Redirect to other IP/Port\n"
+	"Use DAHDI trunkdev virtual trunk\n")
 {
 	struct octoi_account *acc = vty->index;
 
@@ -309,6 +310,14 @@ gDEFUN(cfg_account_mode, cfg_account_mode_cmd,
 		acc->mode = ACCOUNT_MODE_ICE1USB;
 	} else if (!strcmp(argv[0], "redirect")) {
 		acc->mode = ACCOUNT_MODE_REDIRECT;
+	} else if (!strcmp(argv[0], "dahdi-trunkdev")) {
+#ifdef HAVE_DAHDI_TRUNKDEV
+		acc->mode = ACCOUNT_MODE_DAHDI_TRUNKDEV;
+#else
+		vty_out(vty, "%% This build wasn't compiled with dahdi-trunkdev support%s",
+			VTY_NEWLINE);
+		return CMD_WARNING;
+#endif
 	} else
 		OSMO_ASSERT(0);
 
@@ -400,6 +409,42 @@ void octoi_vty_show_one_account(struct vty *vty, const char *pfx, struct octoi_a
 		acc->batching_factor, acc->prefill_frame_count, VTY_NEWLINE);
 }
 
+#ifdef HAVE_DAHDI_TRUNKDEV
+
+#define DAHDI_STR	"DAHDI trunkdev settings\n"
+
+gDEFUN(cfg_account_trunkdev_name, cfg_account_trunkdev_name_cmd,
+	"dahdi-trunkdev name NAME",
+	DAHDI_STR "Identify DAHDI trunkdev device by name\n"
+	"Name of the DAHDI trunkdev device\n")
+{
+	struct octoi_account *acc = vty->index;
+
+	if (acc->mode != ACCOUNT_MODE_DAHDI_TRUNKDEV) {
+		vty_out(vty, "%% Error: Not in dahdi-trunkdev mode!%s", VTY_NEWLINE);
+		return CMD_WARNING;
+	}
+
+	osmo_talloc_replace_string(acc, &acc->u.dahdi_trunkdev.name, argv[0]);
+	return CMD_SUCCESS;
+}
+
+gDEFUN(cfg_account_trunkdev_line, cfg_account_trunkdev_line_cmd,
+	"dahdi-trunkdev line-number <0-1>",
+	DAHDI_STR "E1 Line number\n" "E1 Line number\n")
+{
+	struct octoi_account *acc = vty->index;
+
+	if (acc->mode != ACCOUNT_MODE_DAHDI_TRUNKDEV) {
+		vty_out(vty, "%% Error: Not in dahdi-trunkdev mode!%s", VTY_NEWLINE);
+		return CMD_WARNING;
+	}
+
+	acc->u.dahdi_trunkdev.line_nr = atoi(argv[0]);
+	return CMD_SUCCESS;
+}
+#endif /* HAVE_DAHDI_TRUNKDEV */
+
 void octoi_vty_write_one_account(struct vty *vty, const struct octoi_account *acc)
 {
 	if (!acc)
@@ -427,8 +472,13 @@ void octoi_vty_write_one_account(struct vty *vty, const struct octoi_account *ac
 		vty_out(vty, "  redirect %s %u%s", acc->u.redirect.to.ip, acc->u.redirect.to.port,
 			VTY_NEWLINE);
 		break;
-	case ACCOUNT_MODE_DAHDI:
-		OSMO_ASSERT(0);
+	case ACCOUNT_MODE_DAHDI_TRUNKDEV:
+#ifdef HAVE_DAHDI_TRUNKDEV
+		if (acc->u.dahdi_trunkdev.name)
+			vty_out(vty, "  dahdi-trunkdev name %s%s", acc->u.dahdi_trunkdev.name, VTY_NEWLINE);
+
+		vty_out(vty, "  dahdi-trunkdev line-number %u%s", acc->u.dahdi_trunkdev.line_nr, VTY_NEWLINE);
+#endif
 		break;
 	}
 }
@@ -489,6 +539,10 @@ void octoi_server_vty_init(void)
 	install_element(OCTOI_ACCOUNT_NODE, &cfg_account_redir_cmd);
 	install_element(OCTOI_ACCOUNT_NODE, &cfg_account_batching_factor_cmd);
 	install_element(OCTOI_ACCOUNT_NODE, &cfg_account_prefill_frame_count_cmd);
+#ifdef HAVE_DAHDI_TRUNKDEV
+	install_element(OCTOI_ACCOUNT_NODE, &cfg_account_trunkdev_name_cmd);
+	install_element(OCTOI_ACCOUNT_NODE, &cfg_account_trunkdev_line_cmd);
+#endif /* HAVE_DAHDI_TRUNKDEV */
 
 	install_node(&srv_node, config_write_octoi_srv);
 	install_element(CONFIG_NODE, &cfg_server_cmd);

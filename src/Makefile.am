@@ -76,3 +76,8 @@ osmo_e1gen_SOURCES = \
 	usb.c \
 	vty.c \
 	$(NULL)
+
+if ENABLE_DAHDI_TRUNKDEV
+osmo_e1d_SOURCES += dahdi_trunkdev.c
+osmo_e1gen_SOURCES += dahdi_trunkdev.c
+endif

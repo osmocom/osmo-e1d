@@ -9,6 +9,8 @@ extern struct cmd_element cfg_account_ice1_serno_cmd;
 extern struct cmd_element cfg_account_ice1_line_cmd;
 extern struct cmd_element cfg_account_batching_factor_cmd;
 extern struct cmd_element cfg_account_prefill_frame_count_cmd;
+extern struct cmd_element cfg_account_trunkdev_name_cmd;
+extern struct cmd_element cfg_account_trunkdev_line_cmd;
 
 struct octoi_account *octoi_client_account_create(struct octoi_client *clnt, const char *user_id);
 
