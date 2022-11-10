@@ -43,8 +43,14 @@ set -x
 
 cd "$base"
 autoreconf --install --force
+# build once without DAHDI trunkdev
 ./configure --enable-sanitize --enable-werror $CONFIG
 $MAKE $PARALLEL_MAKE
+# build once with DAHDI trunkdev
+$MAKE $PARALLEL_MAKE clean
+./configure --enable-sanitize --enable-werror --enable-dahdi-trunkdev $CONFIG
+$MAKE $PARALLEL_MAKE
+
 $MAKE check || cat-testlogs.sh
 # Do distcheck with --disable options as workaround, because it doesn't build
 # the usermanual pdf / doxygen html files for some reason and then fails at
