@@ -87,7 +87,6 @@ autoreconf -fiv
 %install
 %make_install
 find "%buildroot" -type f -name "*.la" -delete -print
-rm -Rf "%buildroot/%_sysconfdir/osmocom"
 
 %check
 %make_build check || find . -name testsuite.log -exec cat {} +
@@ -120,6 +119,8 @@ rm -Rf "%buildroot/%_sysconfdir/osmocom"
 %dir %_docdir/%name/examples
 %_docdir/%name/examples/
 %_unitdir/osmo-e1d.service
+%dir %{_sysconfdir}/osmocom
+%config(noreplace) %{_sysconfdir}/osmocom/osmo-e1d.cfg
 
 %files -n libosmo-e1d1
 %_libdir/libosmo-e1d.so.*
