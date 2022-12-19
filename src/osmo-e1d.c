@@ -205,7 +205,7 @@ int main(int argc, char *argv[])
 		exit(2);
 	}
 
-	rv = telnet_init_dynif(g_e1d_ctx, e1d, vty_get_bind_addr(), OSMO_VTY_PORT_E1D);
+	rv = telnet_init_default(g_e1d_ctx, e1d, OSMO_VTY_PORT_E1D);
 	if (rv != 0) {
 		LOGP(DE1D, LOGL_FATAL, "Failed to bind VTY interface to %s:%u\n",
 			vty_get_bind_addr(), OSMO_VTY_PORT_E1D);
