@@ -4,7 +4,7 @@
 #include <stddef.h>
 
 #define BYTES_PER_FRAME		32
-#define FRAMES_PER_FIFO		800
+#define FRAMES_PER_FIFO		1792
 
 struct frame_fifo {
 	uint8_t *next_in;	/* where to write next input into FIFO */
