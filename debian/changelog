@@ -1,3 +1,43 @@
+osmo-e1d (0.5.0) unstable; urgency=medium
+
+  [ Oliver Smith ]
+  * octoi_srv_fsm: fix implicit fall-through
+  * gitreview: new file
+  * doc/examples: only install osmo-e1d.cfg to /etc
+  * contrib/spec: add /etc/osmocom/osmo-e1d.cfg
+
+  [ Sylvain Munaut ]
+  * usb: Add support for new GPSDO status field "Accumulated error"
+  * Add osmo-e1gen to .gitignore
+  * usb: Fix the length field of ICE1USB_INTF_SET_GPSDO_TUNE request
+  * usb: Fix ICE1USB_INTF_SET_GPSDO_MODE request parameter
+  * vty: Add option to disable GPS-DO loop and use manual tuning values
+  * octoi: Prevent segfault on 'show octoi-clients if a client has no line
+  * usb: Claim and set interface alt-setting only for used lines
+
+  [ Harald Welte ]
+  * support for e1-tracer hardware
+  * ctl: Prevent clients from opening TS0
+  * osmo-e1d-pipe: Add command line option for --force open of timeslot
+  * usb.c: Bail out of e1-tracer doesn't accept set_configuration(2)
+  * Differentiate between icE1usb and e1-tracer in log/vty output
+  * osmo-e1d: Add the usual '-V' / '--version' command line argument
+  * avoid segfault in 'show interface' of absent icE1usb
+  * Add support of RPM package building via osmo-e1d.spec.in
+  * Initial user manual for osmo-e1d
+  * jenkins.sh: Support for building + publishing the manual
+  * doxygen API documentation for libosmo-e1d
+  * update .gitignore with files from manuals + doxygen
+  * DAHDI trunkdev support
+
+  [ arehbein ]
+  * osmo-e1d: Transition to use of 'telnet_init_default'
+
+  [ Christoph Lauter ]
+  * Increasing max FIFO size for feature request 5875, adapting tests
+
+ -- Pau Espin Pedrol <pespin@sysmocom.de>  Tue, 07 Feb 2023 11:57:43 +0100
+
 osmo-e1d (0.4.0) unstable; urgency=medium
 
   [ Harald Welte ]
