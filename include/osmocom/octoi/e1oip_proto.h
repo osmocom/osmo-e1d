@@ -1,9 +1,16 @@
 #pragma once
+#include <osmocom/core/endian.h>
 
 struct e1oip_hdr {
+#if OSMO_IS_LITTLE_ENDIAN
 	uint8_t version:4,
 		flags:4;
 	uint8_t msg_type;		/* enum e1oip_msgtype */
+#elif OSMO_IS_BIG_ENDIAN
+/* auto-generated from the little endian part above (libosmocore/contrib/struct_endianness.py) */
+	uint8_t flags:4, version:4;
+	uint8_t msg_type;
+#endif
 } __attribute__ ((packed));
 
 #define E1OIP_VERSION	1
