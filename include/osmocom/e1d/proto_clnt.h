@@ -30,7 +30,7 @@
 struct osmo_e1dp_client;
 
 struct osmo_e1dp_client *osmo_e1dp_client_create(void *ctx, const char *path);
-void osmo_e1dp_client_destroy(struct osmo_e1dp_client *srv);
+void osmo_e1dp_client_destroy(struct osmo_e1dp_client *clnt);
 
 int osmo_e1dp_client_intf_query(struct osmo_e1dp_client *clnt,
 	struct osmo_e1dp_intf_info **ii, int *n,
