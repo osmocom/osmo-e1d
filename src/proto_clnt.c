@@ -88,8 +88,12 @@ _e1dp_client_read(struct osmo_fd *ofd, unsigned int flags)
 	struct osmo_e1dp_msg_hdr *hdr;
 
 	msgb = osmo_e1dp_recv(ofd, NULL);
-	if (!msgb)
+	if (!msgb) {
+		LOGP(DE1D, LOGL_ERROR, "Lost connection with osmo-e1d control socket.\n");
+		close(ofd->fd);
+		ofd->fd = 0;
 		goto err;
+	}
 
 	hdr = msgb_l1(msgb);
 	if ((hdr->type & E1DP_TYPE_MSK) != E1DP_EVT_TYPE)
