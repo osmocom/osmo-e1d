@@ -90,8 +90,7 @@ _e1dp_client_read(struct osmo_fd *ofd, unsigned int flags)
 	msgb = osmo_e1dp_recv(ofd, NULL);
 	if (!msgb) {
 		LOGP(DE1D, LOGL_ERROR, "Lost connection with osmo-e1d control socket.\n");
-		close(ofd->fd);
-		ofd->fd = 0;
+		osmo_fd_close(&clnt->ctl_fd);
 		goto err;
 	}
 
