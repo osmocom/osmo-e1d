@@ -1,6 +1,8 @@
 [Unit]
 Description=Osmocom E1 Interface Daemon
 Wants=osmo-e1d.service
+After=network-online.target
+Wants=network-online.target
 
 [Service]
 Type=simple
