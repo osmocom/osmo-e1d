@@ -219,7 +219,7 @@ int main(int argc, char **argv)
 		exit(2);
 
 	osmo_fd_setup(&ts_ofd, tsfd, OSMO_FD_READ|OSMO_FD_WRITE, ts_fd_cb, NULL, 0);
-	osmo_fd_register(&ts_ofd);
+	OSMO_ASSERT(osmo_fd_register(&ts_ofd) == 0);
 
 	set_nonblock(infd);
 	set_nonblock(outfd);
