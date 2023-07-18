@@ -163,9 +163,20 @@ _e1d_ts_start(struct e1_ts *ts, enum e1_ts_mode mode, uint16_t bufsize)
 	}
 
 	int flags = fcntl(ts->fd, F_GETFL);
-	fcntl(ts->fd, F_SETFL, flags | O_NONBLOCK);
+	if (flags < 0)
+		goto out_err;
+
+	ret = fcntl(ts->fd, F_SETFL, flags | O_NONBLOCK);
+	if (ret < 0)
+		goto out_err;
 
 	return sd[1];
+out_err:
+	close(sd[0]);
+	close(sd[1]);
+	ts->fd = -1;
+	ts->mode = E1_TS_MODE_OFF;
+	return -1;
 }
 
 

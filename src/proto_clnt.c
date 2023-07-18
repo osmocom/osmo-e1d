@@ -189,7 +189,12 @@ _e1dp_client_query_base(struct osmo_e1dp_client *clnt,
 
 	/* Response */
 	int flags = fcntl(clnt->ctl_fd.fd, F_GETFL, 0);
-	fcntl(clnt->ctl_fd.fd, F_SETFL, flags & ~O_NONBLOCK);
+	if (flags < 0)
+		return -EIO;
+
+	rc = fcntl(clnt->ctl_fd.fd, F_SETFL, flags & ~O_NONBLOCK);
+	if (rc < 0)
+		goto err;
 
 	while (1) {
 		fd = -1;
@@ -207,7 +212,11 @@ _e1dp_client_query_base(struct osmo_e1dp_client *clnt,
 		msgb_free(msgb);
 	}
 
-	fcntl(clnt->ctl_fd.fd, F_SETFL, flags);
+	rc = fcntl(clnt->ctl_fd.fd, F_SETFL, flags);
+	if (rc < 0) {
+		rc = -EIO;
+		goto err;
+	}
 
 	if (msg_hdr->type != (hdr->type | E1DP_RESP_TYPE)) {
 		rc = -EPIPE;
