@@ -75,8 +75,8 @@ void octoi_init(void *ctx, void *priv, const struct octoi_ops *ops)
 {
 	OSMO_ASSERT(!g_octoi);
 
-	osmo_fsm_register(&octoi_server_fsm);
-	osmo_fsm_register(&octoi_client_fsm);
+	OSMO_ASSERT(osmo_fsm_register(&octoi_server_fsm) == 0);
+	OSMO_ASSERT(osmo_fsm_register(&octoi_client_fsm) == 0);
 
 	g_octoi = talloc_zero(ctx, struct octoi_daemon);
 	OSMO_ASSERT(g_octoi);
