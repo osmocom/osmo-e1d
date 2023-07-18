@@ -185,6 +185,7 @@ _e1dp_server_accept(struct osmo_fd *fd, unsigned int flags)
 	conn = talloc_zero(srv->ctx, struct osmo_e1dp_server_conn);
 	if (!conn) {
 		LOGP(DE1D, LOGL_ERROR, "Failed to create incoming connection.\n");
+		close(rc);
 		return -1;
 	}
 
@@ -197,6 +198,8 @@ _e1dp_server_accept(struct osmo_fd *fd, unsigned int flags)
 
 	if (osmo_fd_register(&conn->fd) != 0) {
 		LOGP(DE1D, LOGL_ERROR, "Failed to register incoming fd.\n");
+		close(conn->fd.fd);
+		talloc_free(conn);
 		return -1;
 	}
 
