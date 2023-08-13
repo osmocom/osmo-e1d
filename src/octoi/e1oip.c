@@ -119,12 +119,16 @@ static void fifo_threshold_cb(struct frame_fifo *fifo, unsigned int frames, void
 	}
 	iline_stat_set(iline, LINE_STAT_E1oIP_E1O_FIFO, frame_fifo_frames(&iline->e1o.fifo));
 
-	/* then compute the ts_mask */
-	for (i = 0, ref_frame = iline->e1o.last_frame; i < n_frames; i++, ref_frame = buf[i-1]) {
-		/* FIXME: what to do about TS0? */
-		for (unsigned int j = 1; j < BYTES_PER_FRAME; j++) {
-			if (buf[i][j] != ref_frame[j])
-				ts_mask |= (1U << j);
+	if (iline->cfg.force_send_all_ts) {
+		ts_mask = 0xfffffffe;
+	} else {
+		/* then compute the ts_mask */
+		for (i = 0, ref_frame = iline->e1o.last_frame; i < n_frames; i++, ref_frame = buf[i-1]) {
+			/* FIXME: what to do about TS0? */
+			for (unsigned int j = 1; j < BYTES_PER_FRAME; j++) {
+				if (buf[i][j] != ref_frame[j])
+					ts_mask |= (1U << j);
+			}
 		}
 	}
 	eith->ts_mask = htonl(ts_mask);
@@ -314,10 +318,11 @@ struct e1oip_line *e1oip_line_alloc(struct octoi_peer *peer)
 }
 
 void e1oip_line_configure(struct e1oip_line *iline, uint8_t batching_factor,
-			  uint32_t prefill_frame_count)
+			  uint32_t prefill_frame_count, bool force_send_all_ts)
 {
 	iline->cfg.batching_factor = batching_factor;
 	iline->cfg.prefill_frame_count = prefill_frame_count;
+	iline->cfg.force_send_all_ts = force_send_all_ts;
 }
 
 void e1oip_line_reset(struct e1oip_line *iline)

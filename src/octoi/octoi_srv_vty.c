@@ -391,6 +391,26 @@ gDEFUN(cfg_account_batching_factor, cfg_account_batching_factor_cmd,
 	return CMD_SUCCESS;
 }
 
+gDEFUN(cfg_account_force_all_ts, cfg_account_force_all_ts_cmd,
+	"force-all-ts",
+	"Force transmission of all TS all the time\n")
+{
+	struct octoi_account *acc = vty->index;
+
+	acc->force_send_all_ts = true;
+	return CMD_SUCCESS;
+}
+
+gDEFUN(cfg_account_no_force_all_ts, cfg_account_no_force_all_ts_cmd,
+	"no force-all-ts",
+	NO_STR "Don't force transmission of all TS all the time\n")
+{
+	struct octoi_account *acc = vty->index;
+
+	acc->force_send_all_ts = false;
+	return CMD_SUCCESS;
+}
+
 gDEFUN(cfg_account_prefill_frame_count, cfg_account_prefill_frame_count_cmd,
 	"prefill-frame-count <0-8000>",
 	"Number of E1 frames to pre-fill/pre-seed in Rx RIFO\n"
@@ -455,6 +475,8 @@ void octoi_vty_write_one_account(struct vty *vty, const struct octoi_account *ac
 		VTY_NEWLINE);
 	if (acc->batching_factor != DEFAULT_BATCHING_FACTOR)
 		vty_out(vty, "  batching-factor %u%s", acc->batching_factor, VTY_NEWLINE);
+	if (acc->force_send_all_ts)
+		vty_out(vty, "  force-all-ts%s", VTY_NEWLINE);
 	if (acc->prefill_frame_count != DEFAULT_PREFILL_FRAME_COUNT)
 		vty_out(vty, "  prefill-frame-count %u%s", acc->prefill_frame_count, VTY_NEWLINE);
 
@@ -538,6 +560,8 @@ void octoi_server_vty_init(void)
 	install_element(OCTOI_ACCOUNT_NODE, &cfg_account_ice1_line_cmd);
 	install_element(OCTOI_ACCOUNT_NODE, &cfg_account_redir_cmd);
 	install_element(OCTOI_ACCOUNT_NODE, &cfg_account_batching_factor_cmd);
+	install_element(OCTOI_ACCOUNT_NODE, &cfg_account_force_all_ts_cmd);
+	install_element(OCTOI_ACCOUNT_NODE, &cfg_account_no_force_all_ts_cmd);
 	install_element(OCTOI_ACCOUNT_NODE, &cfg_account_prefill_frame_count_cmd);
 #ifdef HAVE_DAHDI_TRUNKDEV
 	install_element(OCTOI_ACCOUNT_NODE, &cfg_account_trunkdev_name_cmd);

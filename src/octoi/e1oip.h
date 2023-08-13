@@ -53,6 +53,7 @@ struct e1oip_line {
 	struct {
 		uint8_t batching_factor;
 		uint32_t prefill_frame_count;
+		bool force_send_all_ts;
 	} cfg;
 
 	/* E1 originated side (E1->IP) */
@@ -84,7 +85,7 @@ struct e1oip_line *e1oip_line_alloc(struct octoi_peer *peer);
 void e1oip_line_set_name(struct e1oip_line *line, const char *name);
 void e1oip_line_reset(struct e1oip_line *iline);
 void e1oip_line_configure(struct e1oip_line *iline, uint8_t batching_factor,
-			  uint32_t prefill_frame_count);
+			  uint32_t prefill_frame_count, bool force_send_all_ts);
 void e1oip_line_destroy(struct e1oip_line *iline);
 
 int e1oip_rcvmsg_tdm_data(struct e1oip_line *iline, struct msgb *msg);

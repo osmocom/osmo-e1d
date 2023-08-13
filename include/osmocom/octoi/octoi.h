@@ -22,6 +22,7 @@ struct octoi_account {
 	char *user_id;					/* user ID (IMSI) */
 	enum octoi_account_mode mode;
 	uint8_t batching_factor;			/* E1 frames per UDP packet (Tx) */
+	bool force_send_all_ts;				/* force transmission of all timeslots */
 	uint32_t prefill_frame_count;			/* FIFO prefill/preseed count (Rx) */
 	union {
 		struct {
