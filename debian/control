@@ -10,7 +10,7 @@ Build-Depends: debhelper (>= 10),
                libtool,
                pkg-config,
                python3-minimal,
-               libosmocore-dev (>= 1.8.0),
+               libosmocore-dev (>= 1.9.0),
                libusb-1.0-0-dev,
                osmo-gsm-manuals-dev (>= 1.4.0)
 Standards-Version: 3.9.8
@@ -41,7 +41,7 @@ Depends: ${misc:Depends}, ${shlibs:Depends},
 	 libosmocore-dev,
 Description: Development headers for the osmo-e1d library.
 
-Package: libosmo-octoi1
+Package: libosmo-octoi2
 Section: libs
 Architecture: any
 Multi-Arch: same
@@ -54,6 +54,6 @@ Section: libdevel
 Architecture: any
 Multi-Arch: same
 Depends: ${misc:Depends}, ${shlibs:Depends},
-	 libosmo-octoi1 (= ${binary:Version}),
+	 libosmo-octoi2 (= ${binary:Version}),
 	 libosmocore-dev,
 Description: Development headers for the Osmocom Community TDMoIP library.

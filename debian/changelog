@@ -1,3 +1,24 @@
+osmo-e1d (0.6.0) unstable; urgency=medium
+
+  [ Oliver Smith ]
+  * Run struct_endianness.py
+  * debian: set compat level to 10
+  * systemd: depend on networking-online.target
+
+  [ Philipp Maier ]
+  * proto_clnt: fix function prototype
+  * proto_clnt: close osmo-e1d control socket on connection loss
+  * proto_clnt: use osmo_fd_close to close the socket on connection loss
+
+  [ Harald Welte ]
+  * Check return code of fcntl() in several plaaces
+  * proto_srv: Fix file descriptor and memory leak in error paths
+  * octoi: Fix missing check of osmo_fsm_register() return value
+  * e1d-ts-pipe: Assert that osmo_fd_register() succeeds
+  * octoi: Add force-send-all-ts mode
+
+ -- Pau Espin Pedrol <pespin@sysmocom.de>  Tue, 12 Sep 2023 13:30:06 +0200
+
 osmo-e1d (0.5.0) unstable; urgency=medium
 
   [ Oliver Smith ]
