@@ -250,7 +250,7 @@ int e1oip_rcvmsg_tdm_data(struct e1oip_line *iline, struct msgb *msg)
 				"RxIP: %u extraneous bytes (len=%u, num_ts=%u, n_frames=%u)\n",
 				msgb_length(msg) % num_ts, msgb_length(msg), num_ts, n_frames);
 		}
-		LOGPEER(peer, LOGL_INFO, "RxIP: frame=%05u ts_mask=0x%08x num_ts=%02u, n_frames=%u\n",
+		LOGPEER(peer, LOGL_DEBUG, "RxIP: frame=%05u ts_mask=0x%08x num_ts=%02u, n_frames=%u\n",
 			frame_nr, ts_mask, num_ts, n_frames);
 	} else {
 		if (msgb_l3len(msg) < 1) {
@@ -271,7 +271,26 @@ int e1oip_rcvmsg_tdm_data(struct e1oip_line *iline, struct msgb *msg)
 		rc = frame_rifo_in(&iline->e1t.rifo, frame_buf, fn32+i);
 		if (rc < 0)
 			iline_ctr_add(iline, LINE_CTR_E1oIP_E1T_OVERFLOW, 1);
+		/* Continue the for loop, if buffer reset is not configured. */
+		if (!iline->cfg.buffer_reset_percent)
+			continue;
+		/* Calculate average RIFO delay. */
+		int32_t d = fn32 + i - iline->e1t.rifo.next_out_fn;
+		iline->e1t.delay += d;
+		if (++iline->e1t.delay_cnt == FRAMES_BUFFER_RESET_AVG) {
+			int offset;
+			d = iline->e1t.delay / iline->e1t.delay_cnt;
+			iline->e1t.delay = iline->e1t.delay_cnt = 0;
+			offset = abs((int32_t)iline->cfg.prefill_frame_count - d) * 100 / iline->cfg.prefill_frame_count;
+			LOGPEER(peer, LOGL_INFO, "RxIP: Buffer fill %u frames, %u%% off target.\n", d, offset);
+			if (offset > iline->cfg.buffer_reset_percent) {
+				LOGPEER(peer, LOGL_ERROR, "RxIP: frame number out of range. Reset buffer.\n");
+				frame_rifo_init(&iline->e1t.rifo, fn32 + i);
+				iline->e1t.primed_rx_tdm = false;
+			}
+		}
 	}
+
 	/* update local state */
 	memcpy(iline->e1t.last_frame, frame_buf, BYTES_PER_FRAME);
 	if (update_next)
@@ -318,10 +337,11 @@ struct e1oip_line *e1oip_line_alloc(struct octoi_peer *peer)
 }
 
 void e1oip_line_configure(struct e1oip_line *iline, uint8_t batching_factor,
-			  uint32_t prefill_frame_count, bool force_send_all_ts)
+			  uint32_t prefill_frame_count, uint8_t buffer_reset_percent, bool force_send_all_ts)
 {
 	iline->cfg.batching_factor = batching_factor;
 	iline->cfg.prefill_frame_count = prefill_frame_count;
+	iline->cfg.buffer_reset_percent = buffer_reset_percent;
 	iline->cfg.force_send_all_ts = force_send_all_ts;
 }
 
@@ -331,10 +351,12 @@ void e1oip_line_reset(struct e1oip_line *iline)
 	memset(&iline->e1o.last_frame, 0xff, sizeof(iline->e1o.last_frame));
 	iline->e1o.next_seq = 0;
 
-	frame_rifo_init(&iline->e1t.rifo);
+	frame_rifo_init(&iline->e1t.rifo, 0);
 	memset(&iline->e1t.last_frame, 0xff, sizeof(iline->e1t.last_frame));
 	iline->e1t.next_fn32 = 0;
 	iline->e1t.primed_rx_tdm = false;
+	iline->e1t.delay = 0;
+	iline->e1t.delay_cnt = 0;
 }
 
 void e1oip_line_destroy(struct e1oip_line *iline)

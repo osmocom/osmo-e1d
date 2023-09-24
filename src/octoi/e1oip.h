@@ -15,6 +15,8 @@
 
 #define FRAMES_PER_SEC_THRESHOLD	7500
 
+#define FRAMES_BUFFER_RESET_AVG		40000
+
 #define DEFAULT_BATCHING_FACTOR		32
 #define DEFAULT_PREFILL_FRAME_COUNT	200	/* 25ms */
 
@@ -54,6 +56,7 @@ struct e1oip_line {
 	struct {
 		uint8_t batching_factor;
 		uint32_t prefill_frame_count;
+		uint8_t buffer_reset_percent;
 		bool force_send_all_ts;
 	} cfg;
 
@@ -70,6 +73,7 @@ struct e1oip_line {
 		uint8_t last_frame[BYTES_PER_FRAME];	/* last frame on the E1 side */
 		uint32_t next_fn32;			/* next expected frame number */
 		bool primed_rx_tdm;			/* Was RX RIFO primed */
+		int32_t delay, delay_cnt;		/* Delay counter to calculate average delay */
 	} e1t;
 };
 
@@ -84,7 +88,7 @@ struct e1oip_line *e1oip_line_alloc(struct octoi_peer *peer);
 void e1oip_line_set_name(struct e1oip_line *line, const char *name);
 void e1oip_line_reset(struct e1oip_line *iline);
 void e1oip_line_configure(struct e1oip_line *iline, uint8_t batching_factor,
-			  uint32_t prefill_frame_count, bool force_send_all_ts);
+			  uint32_t prefill_frame_count, uint8_t buffer_reset_percent, bool force_send_all_ts);
 void e1oip_line_destroy(struct e1oip_line *iline);
 
 int e1oip_rcvmsg_tdm_data(struct e1oip_line *iline, struct msgb *msg);

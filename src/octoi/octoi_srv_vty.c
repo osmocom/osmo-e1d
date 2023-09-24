@@ -412,13 +412,24 @@ gDEFUN(cfg_account_no_force_all_ts, cfg_account_no_force_all_ts_cmd,
 }
 
 gDEFUN(cfg_account_prefill_frame_count, cfg_account_prefill_frame_count_cmd,
-	"prefill-frame-count <0-8000>",
+	"prefill-frame-count <0-900>",
 	"Number of E1 frames to pre-fill/pre-seed in Rx RIFO\n"
 	"Number of E1 frames to pre-fill/pre-seed in Rx RIFO\n")
 {
 	struct octoi_account *acc = vty->index;
 
 	acc->prefill_frame_count = atoi(argv[0]);
+	return CMD_SUCCESS;
+}
+
+gDEFUN(cfg_account_buffer_reset, cfg_account_buffer_reset_cmd,
+	"buffer-reset <0-100>",
+	"Reset Rx RIFO when fill in Rx RIFO drifts too much off normal\n"
+	"Give fill in percentage, use 0 to disable this feature\n")
+{
+	struct octoi_account *acc = vty->index;
+
+	acc->buffer_reset_percent = atoi(argv[0]);
 	return CMD_SUCCESS;
 }
 
@@ -563,6 +574,7 @@ void octoi_server_vty_init(void)
 	install_element(OCTOI_ACCOUNT_NODE, &cfg_account_force_all_ts_cmd);
 	install_element(OCTOI_ACCOUNT_NODE, &cfg_account_no_force_all_ts_cmd);
 	install_element(OCTOI_ACCOUNT_NODE, &cfg_account_prefill_frame_count_cmd);
+	install_element(OCTOI_ACCOUNT_NODE, &cfg_account_buffer_reset_cmd);
 #ifdef HAVE_DAHDI_TRUNKDEV
 	install_element(OCTOI_ACCOUNT_NODE, &cfg_account_trunkdev_name_cmd);
 	install_element(OCTOI_ACCOUNT_NODE, &cfg_account_trunkdev_line_cmd);

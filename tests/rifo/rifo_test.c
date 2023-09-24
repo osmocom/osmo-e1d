@@ -23,7 +23,7 @@ static uint32_t init_next_out_fn;
 
 static void rifo_init(struct frame_rifo *rifo)
 {
-	frame_rifo_init(rifo);
+	frame_rifo_init(rifo, 0);
 	rifo->next_out_fn = init_next_out_fn;
 	rifo->last_in_fn  = init_next_out_fn - 1;
 }
@@ -48,7 +48,7 @@ static int rifo_out(struct frame_rifo *rifo, uint8_t *out)
 static void missing_frames(uint8_t modulo)
 {
 	struct frame_rifo rifo;
-	frame_rifo_init(&rifo);
+	frame_rifo_init(&rifo, 0);
 	rifo.next_out_fn = init_next_out_fn;
 	rifo.last_in_fn  = init_next_out_fn - 1;
 

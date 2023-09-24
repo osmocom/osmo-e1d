@@ -27,7 +27,7 @@ static inline unsigned int frame_rifo_depth(struct frame_rifo *rifo)
 	return rifo->last_in_fn - rifo->next_out_fn + 1;
 }
 
-void frame_rifo_init(struct frame_rifo *rifo);
+void frame_rifo_init(struct frame_rifo *rifo, uint32_t fn);
 
 /* number of frames currently available in FIFO */
 static inline unsigned int frame_rifo_frames(struct frame_rifo *rifo)
