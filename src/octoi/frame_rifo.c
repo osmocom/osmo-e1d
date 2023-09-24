@@ -86,12 +86,12 @@ static bool bucket_bit_get(struct frame_rifo *rifo, uint32_t bucket_nr)
 
 /*! Initialize a frame RIFO.
  *  \param rifo Caller-allocated memory for RIFO data structure */
-void frame_rifo_init(struct frame_rifo *rifo)
+void frame_rifo_init(struct frame_rifo *rifo, uint32_t fn)
 {
 	memset(rifo->buf, 0xff, sizeof(rifo->buf));
 	rifo->next_out = rifo->buf;
-	rifo->next_out_fn = 0;
-	rifo->last_in_fn = -1;
+	rifo->next_out_fn = fn;
+	rifo->last_in_fn = fn - 1;
 	memset(rifo->bitvec, 0, sizeof(rifo->bitvec));
 }
 

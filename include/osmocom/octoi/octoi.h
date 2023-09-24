@@ -24,6 +24,7 @@ struct octoi_account {
 	uint8_t batching_factor;			/* E1 frames per UDP packet (Tx) */
 	bool force_send_all_ts;				/* force transmission of all timeslots */
 	uint32_t prefill_frame_count;			/* FIFO prefill/preseed count (Rx) */
+	uint8_t buffer_reset_percent;			/* When to reset Rx RIFO in percent */
 	union {
 		struct {
 			char *usb_serial;		/* USB serial string (ASCII) of icE1usb */

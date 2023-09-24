@@ -11,6 +11,7 @@ extern struct cmd_element cfg_account_batching_factor_cmd;
 extern struct cmd_element cfg_account_force_all_ts_cmd;
 extern struct cmd_element cfg_account_no_force_all_ts_cmd;
 extern struct cmd_element cfg_account_prefill_frame_count_cmd;
+extern struct cmd_element cfg_account_buffer_reset_cmd;
 extern struct cmd_element cfg_account_trunkdev_name_cmd;
 extern struct cmd_element cfg_account_trunkdev_line_cmd;
 
