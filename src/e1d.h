@@ -59,6 +59,7 @@ enum e1d_line_ctr {
 	LINE_CTR_RX_REMOTE_A,
 	LINE_CTR_FRAMES_MUXED_E1T,
 	LINE_CTR_FRAMES_DEMUXED_E1O,
+	LINE_CTR_USB_ISO_TRUNC,
 };
 
 enum e1d_line_stat_item {

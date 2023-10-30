@@ -131,6 +131,33 @@ e1_usb_xfer_in(struct e1_usb_flow *flow, uint8_t *buf, int len, size_t size)
 {
 	if (len == 0)
 		return 0;
+
+	if (len < 4) {
+		LOGPLI(flow->line, DE1D, LOGL_ERROR, "IN EP %02x ISO packet truncated: len = %u\n",
+		       flow->ep, len);
+		line_ctr_add(flow->line, LINE_CTR_USB_ISO_TRUNC, 1);
+		return 0;
+	}
+
+	if (len > 4 && (len - 4) % 32) {
+		/* some ISO IN packet was truncated. Apparently this
+		 * does happen, see https://osmocom.org/issues/5490 -
+		 * there is little we can do here, but instead of the
+		 * earlier ASSERT, we just feed some garbage for the
+		 * last few timeslots, resulting in bit errors etc. */
+		LOGPLI(flow->line, DE1D, LOGL_ERROR, "IN EP %02x ISO packet truncated: len-4 = %u\n",
+		       flow->ep, len - 4);
+		line_ctr_add(flow->line, LINE_CTR_USB_ISO_TRUNC, 1);
+
+		/* The assumption here is that only the last E1 frame is
+		 * truncated, as we have no idea how many E1 frames the
+		 * USB device firmware wanted to send us. */
+		len += 32 - (len % 32);
+		/* don't overflow the underlying buffer */
+		if (len > (int) size)
+			len = size;
+	}
+
 	return e1_line_demux_in(flow->line, buf + 4, len - 4, buf[3] & 0xf);
 }
 
