@@ -48,6 +48,7 @@ struct e1oip_line {
 
 	struct rate_ctr_group *ctrs;
 	struct osmo_stat_item_group *stats;
+	/* TODO: statistics (std deviation, alarms) */
 
 	/* configuration data */
 	struct {
@@ -70,8 +71,6 @@ struct e1oip_line {
 		uint32_t next_fn32;			/* next expected frame number */
 		bool primed_rx_tdm;			/* Was RX RIFO primed */
 	} e1t;
-
-	/* TODO: statistics (RTT, frame loss, std deviation, alarms */
 };
 
 /* get the rate of the given counter during the last second */
