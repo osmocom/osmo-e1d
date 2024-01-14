@@ -436,3 +436,5 @@ int main(int argc, char **argv)
 
 	return 0;
 }
+
+void osmo_e1dp_server_event(void) {}

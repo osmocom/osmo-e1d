@@ -196,6 +196,7 @@ struct e1_intf {
 struct e1_daemon {
 	void *ctx;
 	struct llist_head interfaces;
+	void *srv;
 };
 
 extern const struct octoi_ops e1d_octoi_ops;
