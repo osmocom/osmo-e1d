@@ -430,6 +430,37 @@ _e1d_ctl_ts_open(void *data, struct msgb *msgb, struct msgb *rmsgb, int *rfd)
 	return 0;
 }
 
+static int
+_e1d_ctl_sabits(void *data, struct msgb *msgb, struct msgb *rmsgb, int *rfd)
+{
+	struct e1_daemon *e1d = (struct e1_daemon *)data;
+	struct osmo_e1dp_msg_hdr *hdr = msgb_l1(msgb);
+	uint8_t sa_bits = *(uint8_t *)msgb_l2(msgb);
+	struct e1_intf *intf = NULL;
+	struct e1_line *line = NULL;
+
+	/* Process query and find timeslot */
+	intf = e1d_find_intf(e1d, hdr->intf);
+	if (!intf) {
+		LOGP(DE1D, LOGL_NOTICE, "Client request for non-existant Interface %u\n", hdr->intf);
+		return 0;
+	}
+
+	line = e1_intf_find_line(intf, hdr->line);
+	if (!line) {
+		LOGPIF(intf, DE1D, LOGL_NOTICE, "Client request for non-existant line %u\n", hdr->line);
+		return 0;
+	}
+
+	line->ts0.tx_frame = ((sa_bits & 0x80) >> 7) | /* Bit 7 -> Sa8 */
+			     ((sa_bits & 0x40) >> 5) | /* Bit 6 -> Sa7 */
+			     ((sa_bits & 0x01) << 2) | /* Bit 0 -> Sa6 */
+			     ((sa_bits & 0x20) >> 2) | /* Bit 5 -> Sa5 */
+			     (sa_bits & 0x10); /* Bit 4 -> Sa4 */
+
+	return 0;
+}
+
 
 struct osmo_e1dp_server_handler e1d_ctl_handlers[] = {
 	{
@@ -461,6 +492,12 @@ struct osmo_e1dp_server_handler e1d_ctl_handlers[] = {
 		.flags = E1DP_SF_INTF_REQ | E1DP_SF_LINE_REQ | E1DP_SF_TS_REQ,
 		.payload_len = sizeof(struct osmo_e1dp_ts_config),
 		.fn = _e1d_ctl_ts_open,
+	},
+	{
+		.type = E1DP_CMD_SABITS,
+		.flags = E1DP_SF_INTF_REQ | E1DP_SF_LINE_REQ,
+		.payload_len = sizeof(uint8_t),
+		.fn = _e1d_ctl_sabits,
 	},
 	{ /* guard */ },
 };
