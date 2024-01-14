@@ -378,8 +378,8 @@ _e1_line_demux_in_ts0(struct e1_line *line, const uint8_t *buf, int ftr, uint8_t
 		const uint8_t *frame = buf + i*32;
 		uint8_t frame_nr = (frame_base + i) & 0xf;
 
-		/* A bit is present in each odd frame */
 		if (frame_nr % 2) {
+			/* A bit is present in each odd frame */
 			if (frame[0] & 0x20) {
 				if (!(line->ts0.cur_errmask & E1L_TS0_RX_ALARM)) {
 					line->ts0.cur_errmask |= E1L_TS0_RX_ALARM;
@@ -393,6 +393,17 @@ _e1_line_demux_in_ts0(struct e1_line *line, const uint8_t *buf, int ftr, uint8_t
 					osmo_e1dp_server_event(line->intf->e1d->srv, E1DP_EVT_RAI_OFF,
 							       line->intf->id, line->id, 0, NULL, 0);
 				}
+			}
+			/* SA bits changed */
+			if (line->ts0.rx_frame != (frame[0] | 0xe0)) {
+				uint8_t sa_bits = ((frame[0] & 0x01) << 7) | /* Sa8 -> Bit 7 */
+						  ((frame[0] & 0x02) << 5) | /* Sa7 -> Bit 6 */
+						  ((frame[0] & 0x04) >> 2) | /* Sa6 -> Bit 0 */
+						  ((frame[0] & 0x08) << 2) | /* Sa5 -> Bit 5 */
+						  (frame[0] & 0x10); /* Sa4 -> Bit 4 */
+				line->ts0.rx_frame = frame[0] | 0xe0;
+				osmo_e1dp_server_event(line->intf->e1d->srv, E1DP_EVT_SABITS,
+						       line->intf->id, line->id, 0, &sa_bits, 1);
 			}
 		}
 

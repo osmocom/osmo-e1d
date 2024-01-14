@@ -272,6 +272,7 @@ e1_line_new(struct e1_intf *intf, int line_id, void *drv_data)
 	line->intf = intf;
 	line->drv_data = drv_data;
 	line->mode = E1_LINE_MODE_CHANNELIZED;
+	line->ts0.rx_frame = 0xff;
 
 	for (int i = 0; i < 32; i++)
 		_ts_init(&line->ts[i], line, i);

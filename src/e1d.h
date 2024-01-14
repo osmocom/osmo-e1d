@@ -148,6 +148,8 @@ struct e1_line {
 		uint8_t prev_errmask;
 		/*! timer to re-set the rx_crc4_err and rx_alarm above */
 		struct osmo_timer_list timer;
+		/*! last received frame with Sa bits */
+		uint8_t rx_frame;
 	} ts0;
 
 	/* watchdog timer to catch situations where no more USB data is received */
