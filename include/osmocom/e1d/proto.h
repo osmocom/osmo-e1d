@@ -56,6 +56,38 @@ enum osmo_e1dp_msg_type {
 	 *      + message with the file descriptor */
 	E1DP_CMD_TS_OPEN	= 0x04,
 
+	/*! Send Sa bits to line.
+	 * filter: intf (required), line (required), ts n/a; in: uint8_t; */
+	E1DP_CMD_SABITS		= 0x05,
+
+	/*! Received signal loss from interface. */
+	E1DP_EVT_LOS_ON		= 0x40,
+
+	/*! Ceased signal loss from interface. */
+	E1DP_EVT_LOS_OFF	= 0x41,
+
+	/*! Received alarm indication signal from interface. */
+	E1DP_EVT_AIS_ON		= 0x42,
+
+	/*! Ceased alarm indication signal from interface. */
+	E1DP_EVT_AIS_OFF	= 0x43,
+
+	/*! Received remote alarm indication from interface. */
+	E1DP_EVT_RAI_ON		= 0x44,
+
+	/*! Ceased remote alarm indication from interface. */
+	E1DP_EVT_RAI_OFF	= 0x45,
+
+	/*! Received frame loss from interface. */
+	E1DP_EVT_LOF_ON		= 0x46,
+
+	/*! Ceased frame loss from interface. */
+	E1DP_EVT_LOF_OFF	= 0x47,
+
+	/*! Received Sa bits from interface.
+	 * out: uint8_t; */
+	E1DP_EVT_SABITS		= 0x7f,
+
 	/*! Message is an event */
 	E1DP_EVT_TYPE		= 0x40,
 	/*! Message is a response  */
