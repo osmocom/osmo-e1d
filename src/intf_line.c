@@ -239,7 +239,7 @@ _ts0_tmr_cb(void *_line)
 	}
 
 	line->ts0.prev_errmask = line->ts0.cur_errmask;
-	line->ts0.cur_errmask = 0;
+	line->ts0.cur_errmask &= ~E1L_TS0_RX_CRC4_ERR;
 	osmo_timer_schedule(&line->ts0.timer, 1, 0);
 }
 
