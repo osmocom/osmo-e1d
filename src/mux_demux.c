@@ -36,6 +36,7 @@
 #include <osmocom/core/stats.h>
 #include <osmocom/core/rate_ctr.h>
 #include <osmocom/e1d/proto.h>
+#include <osmocom/e1d/proto_srv.h>
 
 #include "e1d.h"
 #include "log.h"
@@ -380,8 +381,18 @@ _e1_line_demux_in_ts0(struct e1_line *line, const uint8_t *buf, int ftr, uint8_t
 		/* A bit is present in each odd frame */
 		if (frame_nr % 2) {
 			if (frame[0] & 0x20) {
-				line->ts0.cur_errmask |= E1L_TS0_RX_ALARM;
-				line_ctr_add(line, LINE_CTR_RX_REMOTE_A, 1);
+				if (!(line->ts0.cur_errmask & E1L_TS0_RX_ALARM)) {
+					line->ts0.cur_errmask |= E1L_TS0_RX_ALARM;
+					line_ctr_add(line, LINE_CTR_RX_REMOTE_A, 1);
+					osmo_e1dp_server_event(line->intf->e1d->srv, E1DP_EVT_RAI_ON,
+							       line->intf->id, line->id, 0, NULL, 0);
+				}
+			} else {
+				if ((line->ts0.cur_errmask & E1L_TS0_RX_ALARM)) {
+					line->ts0.cur_errmask &= ~E1L_TS0_RX_ALARM;
+					osmo_e1dp_server_event(line->intf->e1d->srv, E1DP_EVT_RAI_OFF,
+							       line->intf->id, line->id, 0, NULL, 0);
+				}
 			}
 		}
 
@@ -395,7 +406,7 @@ _e1_line_demux_in_ts0(struct e1_line *line, const uint8_t *buf, int ftr, uint8_t
 				line_ctr_add(line, LINE_CTR_RX_REMOTE_E, 1);
 			}
 		}
-		/* cur_errmask is being cleared once per second via line->ts0.timer */
+		/* CRC error in cur_errmask is being cleared once per second via line->ts0.timer */
 	}
 }
 
