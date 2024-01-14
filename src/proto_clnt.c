@@ -394,6 +394,34 @@ osmo_e1dp_client_line_config(struct osmo_e1dp_client *clnt,
 	return 0;
 }
 
+/*! Set Sa-bits of a specific E1 line in osmo-e1d.
+ *  \param[in] clnt Client previously returned from osmo_e1dp_client_create().
+ *  \param[in] intf E1 interface number to configure.
+ *  \param[in] line E1 line number (within interface) to configure.
+ *  \param[in] sa_bits Sa bits to set on line.
+ *  \returns zero in case of success; negative in case of error. */
+int
+osmo_e1dp_client_set_sa_bits(struct osmo_e1dp_client *clnt, uint8_t intf, uint8_t line, uint8_t sa_bits)
+{
+	struct msgb *msgb;
+	struct osmo_e1dp_msg_hdr hdr;
+	int rc;
+
+	memset(&hdr, 0x00, sizeof(struct osmo_e1dp_msg_hdr));
+	hdr.type = E1DP_CMD_SABITS;
+	hdr.intf = intf;
+	hdr.line = line;
+	hdr.ts = E1DP_INVALID;
+
+	rc = _e1dp_client_query_base(clnt, &hdr, &sa_bits, 1, &msgb, NULL);
+	if (rc)
+		return rc;
+
+	msgb_free(msgb);
+
+	return 0;
+}
+
 static int
 _client_ts_open(struct osmo_e1dp_client *clnt,
 	uint8_t intf, uint8_t line, uint8_t ts,

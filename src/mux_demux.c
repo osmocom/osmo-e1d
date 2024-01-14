@@ -149,11 +149,18 @@ _e1_ts_read(struct e1_ts *ts, uint8_t *buf, size_t len)
 static void
 _e1_line_mux_out_channelized(struct e1_line *line, uint8_t *buf, int fts)
 {
+	struct e1_ts *ts;
+
 	OSMO_ASSERT(line->mode == E1_LINE_MODE_CHANNELIZED);
 
-	/* Scan timeslots */
+	/* Fill timeslot 0 */
+	ts = &line->ts[0];
+	for (int i = 0; i < fts; i++)
+		buf[(i*32)] = line->ts0.tx_frame;
+
+	/* Scan timeslots 1..31 */
 	for (int tsn = 1; tsn < 32; tsn++) {
-		struct e1_ts *ts = &line->ts[tsn];
+		ts = &line->ts[tsn];
 		uint8_t buf_ts[fts];
 		int l;
 
