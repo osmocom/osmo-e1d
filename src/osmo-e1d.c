@@ -44,8 +44,8 @@
 #include <osmocom/vty/misc.h>
 #include <osmocom/vty/cpu_sched_vty.h>
 
-#include <osmocom/e1d/proto_srv.h>
 #include <osmocom/e1d/proto.h>
+#include <osmocom/e1d/proto_srv.h>
 
 #include "e1d.h"
 #include <osmocom/octoi/octoi.h>
@@ -221,6 +221,7 @@ int main(int argc, char *argv[])
 	/* server init */
 	srv = osmo_e1dp_server_create(g_e1d_ctx, E1DP_DEFAULT_SOCKET, e1d_ctl_handlers, e1d);
 	OSMO_ASSERT(srv);
+	e1d->srv = srv;
 
 	/* main loop */
 	while (!g_shutdown) {

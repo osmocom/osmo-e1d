@@ -193,9 +193,12 @@ struct e1_intf {
 	struct llist_head lines;
 };
 
+struct osmo_e1dp_server;
+
 struct e1_daemon {
 	void *ctx;
 	struct llist_head interfaces;
+	struct osmo_e1dp_server *srv;
 };
 
 extern const struct octoi_ops e1d_octoi_ops;

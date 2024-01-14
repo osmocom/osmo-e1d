@@ -64,18 +64,26 @@
 
 #include "log.h"
 
+typedef void (*osmo_e1dp_event_cb_t)(enum osmo_e1dp_msg_type, uint8_t, uint8_t, uint8_t, uint8_t *, int);
 
 /*! Internal representation of client program connected to the CTL socket */
 struct osmo_e1dp_client {
 	void *ctx;		/*!< talloc context */
 	struct osmo_fd ctl_fd;	/*!< osmo-fd wrapped unix domain (CTL) socket to @osmo-e1d@ */
+	osmo_e1dp_event_cb_t event_cb;
+				/*!< callback function for incoming events */
 };
 
 
 static int
 _e1dp_client_event(struct osmo_e1dp_client *clnt, struct msgb *msgb)
 {
-	/* FIXME */
+	struct osmo_e1dp_msg_hdr *hdr = msgb_l1(msgb);
+
+	if (!clnt->event_cb)
+		return -EINVAL;
+
+	clnt->event_cb(hdr->type, hdr->intf, hdr->line, hdr->ts, msgb_l2(msgb), msgb_l2len(msgb));
 	return 0;
 }
 
@@ -454,4 +462,13 @@ osmo_e1dp_client_ts_open_force(struct osmo_e1dp_client *clnt,
 	enum osmo_e1dp_ts_mode mode, uint16_t read_bufsize)
 {
 	return _client_ts_open(clnt, intf, line, ts, mode, read_bufsize, E1DP_TS_OPEN_F_FORCE);
+}
+
+/*! Register event handler for incoming event messages.
+ *  \param[in] clnt Client previously returned from osmo_e1dp_client_create(). */
+void
+osmo_e1dp_client_event_register(struct osmo_e1dp_client *clnt,
+	void (*cb)(enum osmo_e1dp_msg_type event, uint8_t intf, uint8_t line, uint8_t ts, uint8_t *data, int len))
+{
+	clnt->event_cb = cb;
 }

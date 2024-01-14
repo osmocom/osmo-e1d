@@ -260,3 +260,35 @@ osmo_e1dp_server_destroy(struct osmo_e1dp_server *srv)
 	osmo_fd_close(&srv->ctl_fd);
 	talloc_free(srv);
 }
+
+void
+osmo_e1dp_server_event(struct osmo_e1dp_server *srv, enum osmo_e1dp_msg_type event,
+		       uint8_t intf, uint8_t line, uint8_t ts, uint8_t *data, int len)
+{
+	struct osmo_e1dp_msg_hdr *hdr;
+	struct msgb *msgb;
+	struct osmo_e1dp_server_conn *conn;
+
+	/* Call handler */
+	msgb = msgb_alloc(E1DP_MAX_LEN, "e1d proto tx (event) message");
+
+	msgb->l1h = msgb_put(msgb, sizeof(struct osmo_e1dp_msg_hdr));
+	hdr = msgb_l1(msgb);
+	if (data && len) {
+		msgb->l2h = msgb_put(msgb, len);
+		memcpy(msgb->l2h, data, len);
+	}
+	hdr->magic = E1DP_MAGIC;
+	hdr->type = event;
+	hdr->len = msgb_length(msgb);
+	hdr->intf = intf;
+	hdr->line = line;
+	hdr->ts = ts;
+
+	/* Send event */
+	llist_for_each_entry(conn, &srv->conns, list)
+		osmo_e1dp_send(&conn->fd, msgb, -1);
+
+	/* Done */
+	msgb_free(msgb);
+}

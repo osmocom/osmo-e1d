@@ -46,3 +46,5 @@ struct osmo_e1dp_server_handler {
 struct osmo_e1dp_server *osmo_e1dp_server_create(void *ctx, const char *path,
 	struct osmo_e1dp_server_handler *handlers, void *handler_data);
 void osmo_e1dp_server_destroy(struct osmo_e1dp_server *srv);
+void osmo_e1dp_server_event(struct osmo_e1dp_server *srv, enum osmo_e1dp_msg_type event,
+			    uint8_t intf, uint8_t line, uint8_t ts, uint8_t *data, int len);
