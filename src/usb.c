@@ -33,6 +33,8 @@
 #include <osmocom/core/utils.h>
 #include <osmocom/core/bit32gen.h>
 #include <osmocom/usb/libusb.h>
+#include <osmocom/e1d/proto.h>
+#include <osmocom/e1d/proto_srv.h>
 
 #include <libusb.h>
 
@@ -396,6 +398,13 @@ static void rx_interrupt_errcnt(struct e1_line *line, const struct ice1usb_irq_e
 	if ((errcnt->flags & ICE1USB_ERR_F_ALIGN_ERR) != (last->flags & ICE1USB_ERR_F_ALIGN_ERR)) {
 		LOGPLI(line, DE1D, LOGL_ERROR, "ALIGNMENT %s\n",
 			errcnt->flags & ICE1USB_ERR_F_ALIGN_ERR ? "LOST" : "REGAINED");
+		if ((errcnt->flags & ICE1USB_ERR_F_ALIGN_ERR)) {
+			osmo_e1dp_server_event(line->intf->e1d->srv, E1DP_EVT_LOF_ON,
+					       line->intf->id, line->id, 0, NULL, 0);
+		} else {
+			osmo_e1dp_server_event(line->intf->e1d->srv, E1DP_EVT_LOF_OFF,
+					       line->intf->id, line->id, 0, NULL, 0);
+		}
 	}
 
 	if ((errcnt->flags & ICE1USB_ERR_F_LOS) != (last->flags & ICE1USB_ERR_F_LOS)) {
