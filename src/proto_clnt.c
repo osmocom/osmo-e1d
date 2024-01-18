@@ -190,10 +190,13 @@ _e1dp_client_query_base(struct osmo_e1dp_client *clnt,
 	}
 
 	rc = osmo_e1dp_send(&clnt->ctl_fd, msgb, -1);
-	if (rc < 0)
+	if (rc < 0) {
+		msgb_free(msgb);
 		return rc;
+	}
 
 	msgb_free(msgb);
+	msgb = NULL;
 
 	/* Response */
 	int flags = fcntl(clnt->ctl_fd.fd, F_GETFL, 0);
@@ -386,8 +389,10 @@ osmo_e1dp_client_line_config(struct osmo_e1dp_client *clnt,
 	if (rc)
 		return rc;
 
-	if (msgb_l2len(msgb) != sizeof(struct osmo_e1dp_line_info))
+	if (msgb_l2len(msgb) != sizeof(struct osmo_e1dp_line_info)) {
+		msgb_free(msgb);
 		return -EPIPE;
+	}
 
 	msgb_free(msgb);
 
@@ -416,6 +421,11 @@ osmo_e1dp_client_set_sa_bits(struct osmo_e1dp_client *clnt, uint8_t intf, uint8_
 	rc = _e1dp_client_query_base(clnt, &hdr, &sa_bits, 1, &msgb, NULL);
 	if (rc)
 		return rc;
+
+	if (msgb_l2len(msgb) != 0) {
+		msgb_free(msgb);
+		return -EPIPE;
+	}
 
 	msgb_free(msgb);
 
@@ -449,8 +459,10 @@ _client_ts_open(struct osmo_e1dp_client *clnt,
 	if (rc)
 		return rc;
 
-	if ((tsfd < 0) || (msgb_l2len(msgb) != sizeof(struct osmo_e1dp_ts_info)))
+	if ((tsfd < 0) || (msgb_l2len(msgb) != sizeof(struct osmo_e1dp_ts_info))) {
+		msgb_free(msgb);
 		return -EPIPE;
+	}
 
 	msgb_free(msgb);
 
