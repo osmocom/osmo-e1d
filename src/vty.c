@@ -168,6 +168,12 @@ const struct value_string e1_line_mode_names[] = {
 	{ 0, NULL }
 };
 
+const struct value_string e1_framing_mode_names[] = {
+	{ E1_FRAMING_MODE_CRC4,    "crc4"    },
+	{ E1_FRAMING_MODE_NO_CRC4, "no-crc4" },
+	{ 0, NULL }
+};
+
 static void vty_dump_line(struct vty *vty, const struct e1_line *line)
 {
 	unsigned int tn;
@@ -424,11 +430,46 @@ DEFUN(cfg_e1d_if_line_mode, cfg_e1d_if_line_mode_cmd,
 	return CMD_SUCCESS;
 }
 
+DEFUN(cfg_e1d_if_line_framing, cfg_e1d_if_line_framing_cmd,
+	"framing (no-crc4|crc4)",
+	NO_STR "Sets the E1 framing mode for both TX and RX\n")
+{
+	struct e1_line *line = vty->index;
+
+	if (line->intf->drv != E1_DRIVER_USB)
+		return CMD_WARNING;
+
+	if ((argc == 1) || (argv[0][0] == 't')) {
+		enum e1_framing_mode new_mode = get_string_value(e1_framing_mode_names, argv[argc-1]);
+		line->usb.framing.tx = new_mode;
+	}
+
+	if ((argc == 1) || (argv[0][0] == 'r')) {
+		enum e1_framing_mode new_mode = get_string_value(e1_framing_mode_names, argv[argc-1]);
+		line->usb.framing.rx = new_mode;
+	}
+
+	return CMD_SUCCESS;
+}
+
+DEFUN_CMD_ELEMENT(cfg_e1d_if_line_framing, cfg_e1d_if_line_framing_txrx_cmd,
+	"framing (tx|rx) (no-crc4|crc4)",
+	NO_STR "Sets the E1 framing mode for TX or RX independently\n", 0, 0)
+
 
 static int config_write_line(struct vty *vty, struct e1_line *line)
 {
 	vty_out(vty, "  line %u%s", line->id, VTY_NEWLINE);
 	vty_out(vty, "   mode %s%s", get_value_string(e1_line_mode_names, line->mode), VTY_NEWLINE);
+
+	if (line->intf->drv == E1_DRIVER_USB) {
+		if (line->usb.framing.tx !=  line->usb.framing.rx) {
+			vty_out(vty, "   framing tx %s%s", get_value_string(e1_framing_mode_names, line->usb.framing.tx), VTY_NEWLINE);
+			vty_out(vty, "   framing rx %s%s", get_value_string(e1_framing_mode_names, line->usb.framing.rx), VTY_NEWLINE);
+		} else {
+			vty_out(vty, "   framing %s%s", get_value_string(e1_framing_mode_names, line->usb.framing.tx), VTY_NEWLINE);
+		}
+	}
 
 	return 0;
 }
@@ -521,4 +562,6 @@ void e1d_vty_init(struct e1_daemon *e1d)
 
 	install_node(&line_node, NULL);
 	install_element(LINE_NODE, &cfg_e1d_if_line_mode_cmd);
+	install_element(LINE_NODE, &cfg_e1d_if_line_framing_cmd);
+	install_element(LINE_NODE, &cfg_e1d_if_line_framing_txrx_cmd);
 }

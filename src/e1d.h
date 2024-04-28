@@ -78,6 +78,11 @@ enum e1_ts_mode {
 };
 extern const struct value_string e1_ts_mode_names[];
 
+enum e1_framing_mode {
+	E1_FRAMING_MODE_CRC4 = 0,
+	E1_FRAMING_MODE_NO_CRC4,
+};
+
 struct e1_ts {
 	struct e1_line *line;
 	uint8_t id;
@@ -159,6 +164,14 @@ struct e1_line {
 		struct osmo_timer_list timer;
 		uint32_t rx_bytes;
 	} watchdog;
+
+	/* driver specific data */
+	struct {
+		struct {
+			enum e1_framing_mode tx;
+			enum e1_framing_mode rx;
+		} framing;
+	} usb;
 
 	void *e1gen_priv;
 };

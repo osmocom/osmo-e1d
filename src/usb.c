@@ -1036,14 +1036,29 @@ _e1_usb_open_device(struct e1_daemon *e1d, struct libusb_device *dev, bool is_tr
 			goto next_interface;
 		}
 
-		/* Create data flows and start the line */
+		/* Configure, create data flows and start the line */
 
 		/* all supported devices have an IN endpoint */
+		e1_usb_ctrl_set_rx_cfg(line,
+			(line->usb.framing.rx == E1_FRAMING_MODE_CRC4) ?
+				ICE1USB_RX_MODE_MULTIFRAME :
+				ICE1USB_RX_MODE_FRAME
+		);
+
 		line_data->flow_in  = e1uf_create(line, e1_usb_xfer_in,  line_data->ep_in,  4, line_data->pkt_size, 4);
 		e1uf_start(line_data->flow_in);
 
 		/* e1-tracer has no OUT or FEEDBACK endpoint */
 		if (!is_tracer) {
+			e1_usb_ctrl_set_tx_cfg(line,
+				(line->usb.framing.tx == E1_FRAMING_MODE_CRC4) ?
+					ICE1USB_TX_MODE_TS0_CRC4_E :
+					ICE1USB_TX_MODE_TS0,
+				ICE1USB_TX_TIME_SRC_LOCAL,
+				ICE1USB_TX_EXT_LOOPBACK_OFF,
+				0x00
+			);
+
 			line_data->flow_out = e1uf_create(line, e1_usb_xfer_out, line_data->ep_out, 4, line_data->pkt_size, 4);
 			e1uf_start(line_data->flow_out);
 			line_data->flow_fb  = e1uf_create(line, e1_usb_xfer_fb,  line_data->ep_fb,  2, 3, 1);
