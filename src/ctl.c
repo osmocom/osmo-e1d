@@ -452,11 +452,14 @@ _e1d_ctl_sabits(void *data, struct msgb *msgb, struct msgb *rmsgb, int *rfd)
 		return 0;
 	}
 
-	line->ts0.tx_frame = ((sa_bits & 0x80) >> 7) | /* Bit 7 -> Sa8 */
-			     ((sa_bits & 0x40) >> 5) | /* Bit 6 -> Sa7 */
-			     ((sa_bits & 0x01) << 2) | /* Bit 0 -> Sa6 */
-			     ((sa_bits & 0x20) >> 2) | /* Bit 5 -> Sa5 */
-			     (sa_bits & 0x10); /* Bit 4 -> Sa4 */
+	line->ts0.tx_frame = (
+		((sa_bits & 0x80) >> 7) | /* Bit 7 -> Sa8 */
+		((sa_bits & 0x40) >> 5) | /* Bit 6 -> Sa7 */
+		((sa_bits & 0x01) << 2) | /* Bit 0 -> Sa6 */
+		((sa_bits & 0x20) >> 2) | /* Bit 5 -> Sa5 */
+		(sa_bits & 0x10)        | /* Bit 4 -> Sa4 */
+		0xe0
+	);
 
 	return 0;
 }
