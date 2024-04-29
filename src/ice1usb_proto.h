@@ -16,7 +16,13 @@
 
 /*! returns a bit-mask of optional device capabilities (see enum e1usb_dev_capability) */
 #define ICE1USB_DEV_GET_CAPABILITIES	0x01
+
+/*! returns a string describing the firmware version */
 #define ICE1USB_DEV_GET_FW_BUILD	0x02
+
+/*! performs an I2C register access (read/write depends on direction) */
+#define ICE1USB_DEV_I2C_REG_ACCESS	0x10
+
 
 enum e1usb_dev_capability {
 	/*! Does this board have a GPS-DO */
@@ -137,6 +143,7 @@ enum ice1usb_irq_type {
 #define ICE1USB_ERR_F_ALIGN_ERR	0x01
 #define ICE1USB_ERR_F_LOS	0x02
 #define ICE1USB_ERR_F_RAI	0x04
+#define ICE1USB_ERR_F_AIS	0x08
 
 struct ice1usb_irq_err {
 	/* 16-bit little-endian counters */
