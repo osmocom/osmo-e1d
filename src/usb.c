@@ -410,8 +410,14 @@ static void rx_interrupt_errcnt(struct e1_line *line, const struct ice1usb_irq_e
 	if ((errcnt->flags & ICE1USB_ERR_F_LOS) != (last->flags & ICE1USB_ERR_F_LOS)) {
 		LOGPLI(line, DE1D, LOGL_ERROR, "Rx Clock %s\n",
 			errcnt->flags & ICE1USB_ERR_F_LOS ? "LOST" : "REGAINED");
-		if (errcnt->flags & ICE1USB_ERR_F_LOS)
+		if (errcnt->flags & ICE1USB_ERR_F_LOS) {
 			line_ctr_add(line, LINE_CTR_LOS, 1);
+			osmo_e1dp_server_event(line->intf->e1d->srv, E1DP_EVT_LOS_ON,
+					       line->intf->id, line->id, 0, NULL, 0);
+		} else {
+			osmo_e1dp_server_event(line->intf->e1d->srv, E1DP_EVT_LOS_OFF,
+					       line->intf->id, line->id, 0, NULL, 0);
+		}
 	}
 
 	if ((errcnt->flags & ICE1USB_ERR_F_RAI) != (last->flags & ICE1USB_ERR_F_RAI)) {
