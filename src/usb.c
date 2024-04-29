@@ -420,6 +420,18 @@ static void rx_interrupt_errcnt(struct e1_line *line, const struct ice1usb_irq_e
 		}
 	}
 
+	if ((errcnt->flags & ICE1USB_ERR_F_AIS) != (last->flags & ICE1USB_ERR_F_AIS)) {
+		LOGPLI(line, DE1D, LOGL_ERROR, "AIS (BLUE) %s\n",
+			errcnt->flags & ICE1USB_ERR_F_AIS ? "PRESENT" : "ABSENT");
+		if (errcnt->flags & ICE1USB_ERR_F_AIS) {
+			osmo_e1dp_server_event(line->intf->e1d->srv, E1DP_EVT_AIS_ON,
+					       line->intf->id, line->id, 0, NULL, 0);
+		} else {
+			osmo_e1dp_server_event(line->intf->e1d->srv, E1DP_EVT_AIS_OFF,
+					       line->intf->id, line->id, 0, NULL, 0);
+		}
+	}
+
 	if ((errcnt->flags & ICE1USB_ERR_F_RAI) != (last->flags & ICE1USB_ERR_F_RAI)) {
 		LOGPLI(line, DE1D, LOGL_ERROR, "Remote Alarm (YELLOW) %s\n",
 			errcnt->flags & ICE1USB_ERR_F_RAI ? "PRESENT" : "ABSENT");
