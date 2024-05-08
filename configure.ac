@@ -182,7 +182,6 @@ AC_OUTPUT(
 	Doxyfile
 	contrib/Makefile
 	contrib/systemd/Makefile
-	contrib/osmo-e1d.spec
 	doc/Makefile
 	doc/examples/Makefile
 	doc/manuals/Makefile
