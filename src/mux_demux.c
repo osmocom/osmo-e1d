@@ -55,8 +55,10 @@ _e1_tx_raw(struct e1_ts *ts, uint8_t *buf, int len)
 
 	/* If we're not started yet, we 'fake' data until the other side
 	 * send something */
-	if (l < 0 && errno == EAGAIN && !ts->raw.tx_started)
+	if (l < 0 && errno == EAGAIN && !ts->raw.tx_started) {
+		memset(buf, 0xFF, len);
 		return len;
+	}
 
 	ts->raw.tx_started = true;
 
