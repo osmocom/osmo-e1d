@@ -119,6 +119,7 @@ e1_ts_stop(struct e1_ts *ts)
 	ts->raw.rx_buf = NULL;
 	ts->raw.rx_buf_size = 0;
 	ts->raw.rx_buf_used = 0;
+	ts->raw.tx_started = false;
 }
 
 static void
