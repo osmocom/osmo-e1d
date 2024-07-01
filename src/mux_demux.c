@@ -48,19 +48,19 @@
 static int
 _e1_tx_raw(struct e1_ts *ts, uint8_t *buf, int len)
 {
-		int l;
+	int l;
 
-		l = read(ts->fd, buf, len);
-		/* FIXME: handle underflow */
+	l = read(ts->fd, buf, len);
+	/* FIXME: handle underflow */
 
-		/* If we're not started yet, we 'fake' data until the other side
-		 * send something */
-		if (l < 0 && errno == EAGAIN && !ts->raw.tx_started)
-			return len;
+	/* If we're not started yet, we 'fake' data until the other side
+	 * send something */
+	if (l < 0 && errno == EAGAIN && !ts->raw.tx_started)
+		return len;
 
-		ts->raw.tx_started = true;
+	ts->raw.tx_started = true;
 
-		return l;
+	return l;
 }
 
 static int
