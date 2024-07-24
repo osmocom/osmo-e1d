@@ -1,3 +1,42 @@
+osmo-e1d (0.7.0) unstable; urgency=medium
+
+  [ Andreas Eversberg ]
+  * Use uniform log format for default config files
+  * Add option to automatically reset RIFO on underrun/overflow
+  * Add new protocol command and events for Sa bits and line states
+  * Add functions for events from server to client
+  * Indicate framing alignment error as loss of framing signal
+  * Indicate remote alarm bit as remote alarm inidication
+  * Indicate change in received Sa bits
+  * Add command and client function to change transmitted Sa bits
+  * Prevent memory leaks / double free of msgb in proto_clnt.c
+
+  [ Harald Welte ]
+  * [cosmetic] e1oip.h: Update TODO comment (we have RTT, frame loss stats)
+  * usb: Pass not just the actual transfer length but also the buffer size
+  * usb: Deal with truncated ISO IN transfers
+  * Add funding link to github mirror
+  * README.md: Improved markdown formatting; more links
+
+  [ Sylvain Munaut ]
+  * iCE1usb: Add support to configure CRC4 mode for TX/RX
+  * Update ice1usb_proto.h
+  * iCE1usb: Transmit LOS events to clients
+  * iCE1usb: Transmit AIS events to clients
+  * ctl: When setting Sa bits, other bits must remain set to '1'
+
+  [ Oliver Smith ]
+  * contrib: remove rpm spec file
+  * gitignore: remove debian/libosmo-e1d
+
+  [ Mychaela N. Falconia ]
+  * configure.ac: lower libusb-1.0 requirement to 1.0.20
+  * e1_ts_stop: clear tx_started flag
+  * mux_demux.c cosmetic: fix indent level in _e1_tx_raw()
+  * mux from not-started raw TS: fill with 0xFF
+
+ -- Oliver Smith <osmith@sysmocom.de>  Wed, 24 Jul 2024 11:28:56 +0200
+
 osmo-e1d (0.6.0) unstable; urgency=medium
 
   [ Oliver Smith ]

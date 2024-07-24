@@ -10,9 +10,9 @@ Build-Depends: debhelper (>= 10),
                libtool,
                pkg-config,
                python3-minimal,
-               libosmocore-dev (>= 1.9.0),
+               libosmocore-dev (>= 1.10.0),
                libusb-1.0-0-dev,
-               osmo-gsm-manuals-dev (>= 1.4.0)
+               osmo-gsm-manuals-dev (>= 1.5.0)
 Standards-Version: 3.9.8
 Vcs-Git: https://gitea.osmocom.org/retronetworking/osmo-e1d
 Vcs-Browser: https://gitea.osmocom.org/retronetworking/osmo-e1d
@@ -24,7 +24,7 @@ Multi-Arch: foreign
 Depends: ${misc:Depends}, ${shlibs:Depends}
 Description: osmo-e1d: Osmocom's E1 interface daemon
 
-Package: libosmo-e1d1
+Package: libosmo-e1d3
 Section: libs
 Architecture: any
 Multi-Arch: same
@@ -37,11 +37,11 @@ Section: libdevel
 Architecture: any
 Multi-Arch: same
 Depends: ${misc:Depends}, ${shlibs:Depends},
-	 libosmo-e1d1 (= ${binary:Version}),
+	 libosmo-e1d3 (= ${binary:Version}),
 	 libosmocore-dev,
 Description: Development headers for the osmo-e1d library.
 
-Package: libosmo-octoi2
+Package: libosmo-octoi3
 Section: libs
 Architecture: any
 Multi-Arch: same
@@ -54,6 +54,6 @@ Section: libdevel
 Architecture: any
 Multi-Arch: same
 Depends: ${misc:Depends}, ${shlibs:Depends},
-	 libosmo-octoi2 (= ${binary:Version}),
+	 libosmo-octoi3 (= ${binary:Version}),
 	 libosmocore-dev,
 Description: Development headers for the Osmocom Community TDMoIP library.
