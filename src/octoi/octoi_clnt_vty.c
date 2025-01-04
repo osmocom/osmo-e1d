@@ -243,7 +243,8 @@ DEFUN(show_clnt, show_clnt_cmd,
 		struct octoi_sock *sock = clnt->sock;
 
 		octoi_vty_show_one_account(vty, "", clnt->cfg.account);
-		vty_show_octoi_sock(vty, sock);
+		if (sock)
+			vty_show_octoi_sock(vty, sock);
 	}
 
 	return CMD_SUCCESS;
