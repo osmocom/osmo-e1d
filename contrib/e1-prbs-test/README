@@ -1,5 +1,5 @@
-e1-prbs-test - Utility to test for bit errors on E1 lines using DAHDI
-======================================================================
+e1-prbs-test - Utility to test for bit errors on E1 lines
+=========================================================
 
 e1-prbs-test can be used to test for bit errors in E1 transmission
 lines. It consists of a sender and a receiver, which should be used
@@ -8,8 +8,9 @@ on either end of the E1 line.
 Transmitter and receiver can be on the same machine, or on different
 machines.
 
-The code currently works directly on DAHDI, so only DAHDI-supported E1
-cards are supported at this point.
+The code currently works directly on DAHDI or via osmo-e1d, so both
+DAHDI-supported E1 interfaces as well as osmo-e1d supported ones
+are supported at this point.
 
 The test works by sending timeslot-specific PRBS sequences of 512 bit
 (64byte) length on the transmit side, and by correlating to those PRBS
@@ -24,6 +25,9 @@ For the B-side, assuming you would want to use DAHDI span 2:
   e1-prbs-test /dev/dahdi/chan/002
 
 The test will run indefinitely.
+
+For using osmo-e1d, use "e1d:0:0" and "e1d:0:1" for interface 0 line 0 + 1
+instead of the /dev/dahdi/chan/xxx notation.
 
 If you'd like to get an interim report, send a SIGHUP to
 e1-prbs-test.
