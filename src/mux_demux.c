@@ -120,7 +120,7 @@ _e1_tx_hdlcfs(struct e1_ts *ts, uint8_t *buf, int len)
 
 /* read from a timeslot-FD (direction application -> hardware) */
 static int
-_e1_ts_read(struct e1_ts *ts, uint8_t *buf, size_t len)
+_e1_ts_read(struct e1_ts *ts, uint8_t *buf, size_t len, int frame_base)
 {
 	int l;
 
@@ -149,7 +149,7 @@ _e1_ts_read(struct e1_ts *ts, uint8_t *buf, size_t len)
 }
 
 static void
-_e1_line_mux_out_channelized(struct e1_line *line, uint8_t *buf, int fts)
+_e1_line_mux_out_channelized(struct e1_line *line, uint8_t *buf, int fts, int frame_base)
 {
 	struct e1_ts *ts;
 
@@ -169,7 +169,7 @@ _e1_line_mux_out_channelized(struct e1_line *line, uint8_t *buf, int fts)
 		if (ts->mode == E1_TS_MODE_OFF)
 			continue;
 
-		l = _e1_ts_read(ts, buf_ts, sizeof(buf_ts));
+		l = _e1_ts_read(ts, buf_ts, sizeof(buf_ts), frame_base);
 		if (l <= 0)
 			continue;
 
@@ -179,7 +179,7 @@ _e1_line_mux_out_channelized(struct e1_line *line, uint8_t *buf, int fts)
 }
 
 static void
-_e1_line_mux_out_superchan(struct e1_line *line, uint8_t *buf, int fts)
+_e1_line_mux_out_superchan(struct e1_line *line, uint8_t *buf, int fts, int frame_base)
 {
 	struct e1_ts *ts = &line->superchan;
 	uint8_t sc_buf[31*fts];
@@ -191,7 +191,7 @@ _e1_line_mux_out_superchan(struct e1_line *line, uint8_t *buf, int fts)
 		return;
 
 	/* first pull all we need out of the source */
-	l = _e1_ts_read(ts, sc_buf, sizeof(sc_buf));
+	l = _e1_ts_read(ts, sc_buf, sizeof(sc_buf), frame_base);
 	if (l <= 0)
 		return;
 
@@ -206,7 +206,7 @@ _e1_line_mux_out_superchan(struct e1_line *line, uint8_t *buf, int fts)
  *  \param[in] fts number of E1 frames (32 bytes each) to generate
  *  \return number of bytes written to buf */
 int
-e1_line_mux_out(struct e1_line *line, uint8_t *buf, int fts)
+e1_line_mux_out(struct e1_line *line, uint8_t *buf, int fts, int frame_base)
 {
 	int tsz;
 
@@ -216,10 +216,10 @@ e1_line_mux_out(struct e1_line *line, uint8_t *buf, int fts)
 
 	switch (line->mode) {
 	case E1_LINE_MODE_CHANNELIZED:
-		_e1_line_mux_out_channelized(line, buf, fts);
+		_e1_line_mux_out_channelized(line, buf, fts, frame_base);
 		break;
 	case E1_LINE_MODE_SUPERCHANNEL:
-		_e1_line_mux_out_superchan(line, buf, fts);
+		_e1_line_mux_out_superchan(line, buf, fts, frame_base);
 		break;
 	case E1_LINE_MODE_E1OIP:
 		e1oip_line_mux_out(line, buf, fts);
@@ -308,7 +308,7 @@ _e1_rx_hdlcfs(struct e1_ts *ts, const uint8_t *buf, int len)
 
 /* write data to a timeslot (hardware -> application direction) */
 static int
-_e1_ts_write(struct e1_ts *ts, const uint8_t *buf, size_t len)
+_e1_ts_write(struct e1_ts *ts, const uint8_t *buf, size_t len, int frame_base)
 {
 	int rv;
 
@@ -337,7 +337,7 @@ _e1_ts_write(struct e1_ts *ts, const uint8_t *buf, size_t len)
 }
 
 static int
-_e1_line_demux_in_channelized(struct e1_line *line, const uint8_t *buf, int ftr)
+_e1_line_demux_in_channelized(struct e1_line *line, const uint8_t *buf, int ftr, int frame_base)
 {
 	OSMO_ASSERT(line->mode == E1_LINE_MODE_CHANNELIZED);
 
@@ -351,14 +351,14 @@ _e1_line_demux_in_channelized(struct e1_line *line, const uint8_t *buf, int ftr)
 		for (int i = 0; i < ftr; i++)
 			buf_ts[i] = buf[tsn+(i*32)];
 
-		_e1_ts_write(ts, buf_ts, ftr);
+		_e1_ts_write(ts, buf_ts, ftr, frame_base);
 	}
 
 	return 0;
 }
 
 static int
-_e1_line_demux_in_superchan(struct e1_line *line, const uint8_t *buf, int ftr)
+_e1_line_demux_in_superchan(struct e1_line *line, const uint8_t *buf, int ftr, int frame_base)
 {
 	struct e1_ts *ts = &line->superchan;
 	uint8_t sc_buf[ftr*31];
@@ -373,7 +373,7 @@ _e1_line_demux_in_superchan(struct e1_line *line, const uint8_t *buf, int ftr)
 		memcpy(sc_buf + (i*31), buf + (i*32) + 1, 31);
 
 	/* then dispatch to appropriate action */
-	_e1_ts_write(ts, sc_buf, ftr*31);
+	_e1_ts_write(ts, sc_buf, ftr*31, frame_base);
 
 	return 0;
 }
@@ -458,9 +458,9 @@ e1_line_demux_in(struct e1_line *line, const uint8_t *buf, int size, int frame_b
 
 	switch (line->mode) {
 	case E1_LINE_MODE_CHANNELIZED:
-		return _e1_line_demux_in_channelized(line, buf, ftr);
+		return _e1_line_demux_in_channelized(line, buf, ftr, frame_base);
 	case E1_LINE_MODE_SUPERCHANNEL:
-		return _e1_line_demux_in_superchan(line, buf, ftr);
+		return _e1_line_demux_in_superchan(line, buf, ftr, frame_base);
 	case E1_LINE_MODE_E1OIP:
 		return e1oip_line_demux_in(line, buf, ftr);
 	default:

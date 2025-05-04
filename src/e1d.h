@@ -255,7 +255,7 @@ void
 e1_line_active(struct e1_line *line);
 
 int
-e1_line_mux_out(struct e1_line *line, uint8_t *buf, int fts);
+e1_line_mux_out(struct e1_line *line, uint8_t *buf, int fts, int frame_base);
 
 int
 e1_line_demux_in(struct e1_line *line, const uint8_t *buf, int size, int frame_base);

@@ -73,6 +73,9 @@ struct e1_usb_line_data {
 	struct e1_usb_flow *flow_out;
 	struct e1_usb_flow *flow_fb;
 
+	/* TX frame counting */
+	uint8_t frame_base;
+
 	/* Interrupt */
 	struct {
 		uint8_t buf[10];
@@ -187,9 +190,12 @@ e1_usb_xfer_out(struct e1_usb_flow *flow, uint8_t *buf, int len, size_t size)
 	if (ld->r_acc & 0x80000000)
 		ld->r_acc = 0;
 
-	memset(buf, 0xff, 4);
+	memset(buf, 0xff, 3);
+	// FIXME: must be handled in firmware too
+	buf[0] = ld->frame_base;
+	ld->frame_base += fts;
 
-	return e1_line_mux_out(line, buf+4, fts) + 4;
+	return e1_line_mux_out(line, buf+4, fts, buf[0] & 0xf) + 4;
 }
 
 static int

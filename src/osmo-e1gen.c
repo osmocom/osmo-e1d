@@ -141,7 +141,7 @@ int e1_line_demux_in(struct e1_line *line, const uint8_t *buf, int size,  int fr
  *  \param[in] buf caller-allocated output buffer for multiplexed data
  *  \param[in] fts number of E1 frames (32 bytes each) to generate
  *  \return number of bytes written to buf */
-int e1_line_mux_out(struct e1_line *line, uint8_t *buf, int fts)
+int e1_line_mux_out(struct e1_line *line, uint8_t *buf, int fts, int frame_base)
 {
 	struct e1gen_line_data *gld = ensure_gld(line);
 	int f;

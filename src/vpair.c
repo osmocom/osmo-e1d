@@ -129,14 +129,14 @@ ve1_timerfd_cb(struct osmo_fd *ofd, unsigned int what)
 		peer = ldata->peer;
 
 		/* generate data on current line */
-		rc = e1_line_mux_out(line, buf, frames_expired);
+		rc = e1_line_mux_out(line, buf, frames_expired, 0);
 		OSMO_ASSERT(rc >= 0);
 		/* write data to peer */
 		rc = e1_line_demux_in(peer, buf, rc, 0);
 		OSMO_ASSERT(rc >= 0);
 
 		/* generate data on peer line */
-		rc = e1_line_mux_out(peer, buf, frames_expired);
+		rc = e1_line_mux_out(peer, buf, frames_expired, 0);
 		OSMO_ASSERT(rc >= 0);
 		/* write data to current line */
 		rc = e1_line_demux_in(line, buf, rc, 0);
