@@ -432,6 +432,41 @@ osmo_e1dp_client_set_sa_bits(struct osmo_e1dp_client *clnt, uint8_t intf, uint8_
 	return 0;
 }
 
+/*! Set CAS bits of a specific time-slot on E1 line in osmo-e1d.
+ *  \param[in] clnt Client previously returned from osmo_e1dp_client_create().
+ *  \param[in] intf E1 interface number to configure.
+ *  \param[in] line E1 line number (within interface) to configure.
+ *  \param[in] time-slot number (within line) to configure.
+ *  \param[in] CAS bits associated to this time-slot.
+ *  \returns zero in case of success; negative in case of error. */
+int
+osmo_e1dp_client_set_cas(struct osmo_e1dp_client *clnt, uint8_t intf, uint8_t line, uint8_t ts,
+			 struct osmo_e1dp_cas_bits *cas)
+{
+	struct msgb *msgb;
+	struct osmo_e1dp_msg_hdr hdr;
+	int rc;
+
+	memset(&hdr, 0x00, sizeof(struct osmo_e1dp_msg_hdr));
+	hdr.type = E1DP_CMD_CAS;
+	hdr.intf = intf;
+	hdr.line = line;
+	hdr.ts = ts;
+
+	rc = _e1dp_client_query_base(clnt, &hdr, cas, sizeof(*cas), &msgb, NULL);
+	if (rc)
+		return rc;
+
+	if (msgb_l2len(msgb) != 0) {
+		msgb_free(msgb);
+		return -EPIPE;
+	}
+
+	msgb_free(msgb);
+
+	return 0;
+}
+
 static int
 _client_ts_open(struct osmo_e1dp_client *clnt,
 	uint8_t intf, uint8_t line, uint8_t ts,

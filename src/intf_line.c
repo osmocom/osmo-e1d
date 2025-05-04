@@ -279,6 +279,8 @@ e1_line_new(struct e1_intf *intf, int line_id, void *drv_data)
 		_ts_init(&line->ts[i], line, i);
 	_ts_init(&line->superchan, line, E1DP_TS_SUPERCHAN);
 
+	memset(line->cas.tx.buf, 0xff, sizeof(line->cas.tx.buf));
+
 	INIT_LLIST_HEAD(&line->list);
 
 	if (line_id == -1) {

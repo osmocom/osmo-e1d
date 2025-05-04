@@ -118,6 +118,24 @@ _e1_tx_hdlcfs(struct e1_ts *ts, uint8_t *buf, int len)
 	return len;
 }
 
+static int
+_e1_tx_cas(struct e1_line *line, uint8_t *buf, int len)
+{
+	int i;
+
+	for (i = 0; i < len; i++) {
+		if ((line->cas.tx.frame_count) == 0) {
+			buf[i] = 0x0b;
+		} else {
+			buf[i] = line->cas.tx.buf[(line->cas.tx.frame_count) - 1] << 4;
+			buf[i] |= line->cas.tx.buf[(line->cas.tx.frame_count) + 14];
+		}
+		line->cas.tx.frame_count = (line->cas.tx.frame_count + 1) & 0xf;
+	}
+
+	return len;
+}
+
 /* read from a timeslot-FD (direction application -> hardware) */
 static int
 _e1_ts_read(struct e1_ts *ts, uint8_t *buf, size_t len)
@@ -130,6 +148,9 @@ _e1_ts_read(struct e1_ts *ts, uint8_t *buf, size_t len)
 		break;
 	case E1_TS_MODE_HDLCFCS:
 		l = _e1_tx_hdlcfs(ts, buf, len);
+		break;
+	case E1_TS_MODE_CAS:
+		l = _e1_tx_cas(ts->line, buf, len);
 		break;
 	default:
 		OSMO_ASSERT(0);
@@ -306,6 +327,89 @@ _e1_rx_hdlcfs(struct e1_ts *ts, const uint8_t *buf, int len)
 	return len;
 }
 
+static int
+_e1_rx_cas(struct e1_line *line, const uint8_t *buf, int len)
+{
+	int rv = 1, i;
+
+	for (i = 0; i < len; i++) {
+		switch (line->cas.rx.state) {
+		case E1_CAS_STATE_UNSYNC:
+			/* Find sync mark '0000xxxx'. */
+			if (!line->cas.rx.sync_count) {
+				/* If we found our first sync mark, align with it. */
+				if ((buf[i] & 0xf0) == 0x00) {
+					line->cas.rx.sync_count = 1;
+					line->cas.rx.frame_count = 0;
+				}
+				break;
+			}
+			/* This is not a sync mark. */
+			if ((buf[i] & 0xf0) != 0x00) {
+				if (line->cas.rx.frame_count != 0)
+					break;
+				/* If we expect a sync mark, reset sync counter. */
+				line->cas.rx.sync_count = 0;
+				break;
+			}
+			/* This is a sync mark. */
+			if (line->cas.rx.frame_count != 0) {
+				/* We got a sync mark at different frame count, align again. */
+				line->cas.rx.sync_count = 1;
+				line->cas.rx.frame_count = 0;
+				break;
+			}
+			/* Count until the sync is valid. */
+			if (++line->cas.rx.sync_count < E1_CAS_SYNC_VALID)
+				break;
+			line->cas.rx.state = E1_CAS_STATE_SYNC;
+			LOGPLI(line, DE1D, LOGL_INFO, "CAS frame now in sync.\n");
+			/* FALLTHRU */
+		case E1_CAS_STATE_SYNC:
+			/* Check if we are still in sync. */
+			if (line->cas.rx.frame_count == 0) {
+				if ((buf[i] & 0xf0) == 0x00) {
+					/* Set valid-counter to upper limit. */
+					line->cas.rx.sync_count = E1_CAS_SYNC_VALID;
+				} else {
+					/* Count down until sync expires. */
+					if (--line->cas.rx.sync_count == 0) {
+						LOGPLI(line, DE1D, LOGL_INFO, "CAS frame sync lost.\n");
+						line->cas.rx.sync_count = 0;
+						line->cas.rx.state = E1_CAS_STATE_UNSYNC;
+						break;
+					}
+				}
+				break;
+			}
+			/* Skip frame, if sync was not found for this frame. */
+			if (line->cas.rx.sync_count < E1_CAS_SYNC_VALID)
+				break;
+			/* Store received subframe. */
+			if (!line->cas.rx.buf_valid[line->cas.rx.frame_count - 1] ||
+			    line->cas.rx.buf[line->cas.rx.frame_count - 1] != (buf[i] >> 4)) {
+				struct osmo_e1dp_cas_bits cas;
+				cas.bits = line->cas.rx.buf[line->cas.rx.frame_count - 1] = (buf[i] >> 4);
+				line->cas.rx.buf_valid[line->cas.rx.frame_count - 1] = true;
+				osmo_e1dp_server_event(line->intf->e1d->srv, E1DP_EVT_CAS, line->intf->id, line->id,
+						       line->cas.rx.frame_count - 1 + 1, (uint8_t *)&cas, sizeof(cas));
+			}
+			if (!line->cas.rx.buf_valid[line->cas.rx.frame_count + 14] ||
+			    line->cas.rx.buf[line->cas.rx.frame_count + 14] != (buf[i] & 0x0f)) {
+				struct osmo_e1dp_cas_bits cas;
+				cas.bits = line->cas.rx.buf[line->cas.rx.frame_count + 14] = (buf[i] & 0x0f);
+				line->cas.rx.buf_valid[line->cas.rx.frame_count + 14] = true;
+				osmo_e1dp_server_event(line->intf->e1d->srv, E1DP_EVT_CAS, line->intf->id, line->id,
+						       line->cas.rx.frame_count - 1 + 17, (uint8_t *)&cas, sizeof(cas));
+			}
+			break;
+		}
+		line->cas.rx.frame_count = (line->cas.rx.frame_count + 1) % 16;
+	}
+
+	return (rv <= 0) ? rv : i;
+}
+
 /* write data to a timeslot (hardware -> application direction) */
 static int
 _e1_ts_write(struct e1_ts *ts, const uint8_t *buf, size_t len)
@@ -318,6 +422,9 @@ _e1_ts_write(struct e1_ts *ts, const uint8_t *buf, size_t len)
 		break;
 	case E1_TS_MODE_HDLCFCS:
 		rv = _e1_rx_hdlcfs(ts, buf, len);
+		break;
+	case E1_TS_MODE_CAS:
+		rv = _e1_rx_cas(ts->line, buf, len);
 		break;
 	default:
 		OSMO_ASSERT(0);

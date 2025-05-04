@@ -60,6 +60,10 @@ enum osmo_e1dp_msg_type {
 	 * filter: intf (required), line (required), ts n/a; in: uint8_t; */
 	E1DP_CMD_SABITS		= 0x05,
 
+	/*! Send CAS bits to line.
+	 * filter: intf (required), line (required), ts (required), in: uint8_t; */
+	E1DP_CMD_CAS		= 0x06,
+
 	/*! Received signal loss from interface. */
 	E1DP_EVT_LOS_ON		= 0x40,
 
@@ -83,6 +87,10 @@ enum osmo_e1dp_msg_type {
 
 	/*! Ceased frame loss from interface. */
 	E1DP_EVT_LOF_OFF	= 0x47,
+
+	/*! Received CAS bits from interface.
+	 * out: uint8_t; */
+	E1DP_EVT_CAS		= 0x7e,
 
 	/*! Received Sa bits from interface.
 	 * out: uint8_t; */
@@ -180,6 +188,12 @@ struct osmo_e1dp_ts_info {
 	uint8_t id;				/*< E1 timeslot number */
 	struct osmo_e1dp_ts_config cfg;		/*< E1 timeslot configuration */
 	uint8_t status;				/*< TBD */
+} __attribute__((packed));
+
+/*! Information about CAS bits */
+struct osmo_e1dp_cas_bits {
+	uint8_t bits;				/*< CAS value */
+	uint8_t query_rx;			/*< set to 1, to query RX CAS information */
 } __attribute__((packed));
 
 

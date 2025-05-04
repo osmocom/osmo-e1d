@@ -75,12 +75,18 @@ enum e1_ts_mode {
 	E1_TS_MODE_OFF = 0,
 	E1_TS_MODE_RAW,
 	E1_TS_MODE_HDLCFCS,
+	E1_TS_MODE_CAS,
 };
 extern const struct value_string e1_ts_mode_names[];
 
 enum e1_framing_mode {
 	E1_FRAMING_MODE_CRC4 = 0,
 	E1_FRAMING_MODE_NO_CRC4,
+};
+
+enum e1_cas_state {
+	E1_CAS_STATE_UNSYNC = 0,
+	E1_CAS_STATE_SYNC,
 };
 
 struct e1_ts {
@@ -125,6 +131,21 @@ enum e1_line_mode {
 
 #define E1L_TS0_RX_CRC4_ERR	0x01
 #define E1L_TS0_RX_ALARM	0x02
+
+#define E1_CAS_SYNC_VALID	4
+
+struct e1_cas_tx {
+	uint8_t frame_count;
+	uint8_t buf[30];
+};
+
+struct e1_cas_rx {
+	enum e1_cas_state state;
+	uint8_t frame_count;
+	uint8_t sync_count;
+	uint8_t buf[30];
+	bool	buf_valid[30];
+};
 
 struct e1_line {
 	struct llist_head list;
@@ -172,6 +193,12 @@ struct e1_line {
 			enum e1_framing_mode rx;
 		} framing;
 	} usb;
+
+	/* CAS handling */
+	struct {
+		struct e1_cas_tx tx;
+		struct e1_cas_rx rx;
+	} cas;
 
 	void *e1gen_priv;
 };
