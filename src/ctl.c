@@ -92,6 +92,9 @@ _e1d_fill_ts_info(struct osmo_e1dp_ts_info *ti, struct e1_ts *ts)
 	case E1_TS_MODE_HDLCFCS:
 		ti->cfg.mode = E1DP_TSMODE_HDLCFCS;
 		break;
+	case E1_TS_MODE_CAS:
+		ti->cfg.mode = E1DP_TSMODE_CAS;
+		break;
 	case E1_TS_MODE_OFF:
 		ti->cfg.mode = E1DP_TSMODE_OFF;
 		break;
@@ -141,6 +144,7 @@ _e1d_ts_start(struct e1_ts *ts, enum e1_ts_mode mode, uint16_t bufsize)
 
 	switch (mode) {
 	case E1_TS_MODE_HDLCFCS:
+	case E1_TS_MODE_CAS:
 		sock_type = SOCK_SEQPACKET;
 		break;
 	case E1_TS_MODE_RAW:
@@ -161,6 +165,12 @@ _e1d_ts_start(struct e1_ts *ts, enum e1_ts_mode mode, uint16_t bufsize)
 	if (mode == E1_TS_MODE_HDLCFCS) {
 		osmo_isdnhdlc_out_init(&ts->hdlc.tx, OSMO_HDLC_F_BITREVERSE);
 		osmo_isdnhdlc_rcv_init(&ts->hdlc.rx, OSMO_HDLC_F_BITREVERSE);
+	}
+
+	if (mode == E1_TS_MODE_CAS) {
+		memset(&ts->cas.tx, 0, sizeof(ts->cas.tx));
+		memset(ts->cas.tx.buf, 0xff, sizeof(ts->cas.tx.buf));
+		memset(&ts->cas.rx, 0, sizeof(ts->cas.rx));
 	}
 
 	int flags = fcntl(ts->fd, F_GETFL);
@@ -386,6 +396,9 @@ _e1d_ctl_ts_open(void *data, struct msgb *msgb, struct msgb *rmsgb, int *rfd)
 		break;
 	case E1DP_TSMODE_HDLCFCS:
 		mode = E1_TS_MODE_HDLCFCS;
+		break;
+	case E1DP_TSMODE_CAS:
+		mode = E1_TS_MODE_CAS;
 		break;
 	default:
 		LOGPTS(ts, DE1D, LOGL_NOTICE, "Client request for unknown mode %u\n", cfg->mode);

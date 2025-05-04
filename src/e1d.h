@@ -75,12 +75,33 @@ enum e1_ts_mode {
 	E1_TS_MODE_OFF = 0,
 	E1_TS_MODE_RAW,
 	E1_TS_MODE_HDLCFCS,
+	E1_TS_MODE_CAS,
 };
 extern const struct value_string e1_ts_mode_names[];
 
 enum e1_framing_mode {
 	E1_FRAMING_MODE_CRC4 = 0,
 	E1_FRAMING_MODE_NO_CRC4,
+};
+
+enum e1_cas_mode {
+	E1_CAS_MODE_UNSYNC = 0,
+	E1_CAS_MODE_SYNC,
+};
+
+#define E1_CAS_SYNC_VALID	4
+
+struct e1_cas_tx {
+	uint8_t frame_count;
+	uint8_t buf[30];
+};
+
+struct e1_cas_rx {
+	enum e1_cas_mode mode;
+	uint8_t frame_count;
+	uint8_t sync_count;
+	uint8_t buf[30];
+	bool	new_data;
 };
 
 struct e1_ts {
@@ -100,6 +121,12 @@ struct e1_ts {
 		int tx_ofs;
 		int tx_len;
 	} hdlc;
+
+	/* CAS handling */
+	struct {
+		struct e1_cas_tx tx;
+		struct e1_cas_rx rx;
+	} cas;
 
 	/* RAW handling */
 	struct {

@@ -65,6 +65,7 @@ const struct value_string osmo_e1dp_ts_mode_names[] = {
 	{ E1DP_TSMODE_OFF,	"OFF" },
 	{ E1DP_TSMODE_RAW,	"RAW" },
 	{ E1DP_TSMODE_HDLCFCS,	"HDLC-FCS" },
+	{ E1DP_TSMODE_CAS,	"CAS" },
 	{ 0, NULL }
 };
 

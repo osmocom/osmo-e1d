@@ -118,6 +118,45 @@ _e1_tx_hdlcfs(struct e1_ts *ts, uint8_t *buf, int len)
 	return len;
 }
 
+static int
+_e1_tx_cas(struct e1_ts *ts, uint8_t *buf, int len, int frame_base)
+{
+	int rv, i;
+
+	/* Get most recent update of all the signaling bits. */
+	while ((rv = recv(ts->fd, ts->cas.tx.buf, sizeof(ts->cas.tx.buf), MSG_TRUNC)) > 0) {
+		if (rv > (int)sizeof(ts->cas.tx.buf)) {
+			LOGPTS(ts, DXFR, LOGL_ERROR, "Truncated message: Client tried to "
+				"send %d bytes but our buffer is limited to %zu\n",
+				rv, sizeof(ts->cas.tx.buf));
+			rv = sizeof(ts->cas.tx.buf);
+		} else if (rv > 0) {
+			LOGPTS(ts, DXFR, LOGL_DEBUG, "TX CAS Message: %s\n",
+				osmo_hexdump(ts->cas.tx.buf, rv));
+			for (i = 0; i < rv; i++) {
+				if ((ts->cas.tx.buf[i] & 0xf) == 0x0) {
+					LOGPTS(ts, DXFR, LOGL_ERROR,
+					       "TX CAS ERROR: Channel %d imitates frame alignment.\n", i + 1);
+				}
+			}
+		}
+	}
+	if ((rv < 0 && errno != EAGAIN) || rv == 0)
+		return rv;
+
+	for (i = 0; i < len; i++) {
+		if ((frame_base & 0xf) == 0) {
+			buf[i] = 0x0b;
+		} else {
+			buf[i] = ts->cas.tx.buf[(frame_base & 0xf) - 1] << 4;
+			buf[i] |= ts->cas.tx.buf[(frame_base & 0xf) + 14];
+		}
+		frame_base++;
+	}
+
+	return i;
+}
+
 /* read from a timeslot-FD (direction application -> hardware) */
 static int
 _e1_ts_read(struct e1_ts *ts, uint8_t *buf, size_t len, int frame_base)
@@ -130,6 +169,9 @@ _e1_ts_read(struct e1_ts *ts, uint8_t *buf, size_t len, int frame_base)
 		break;
 	case E1_TS_MODE_HDLCFCS:
 		l = _e1_tx_hdlcfs(ts, buf, len);
+		break;
+	case E1_TS_MODE_CAS:
+		l = _e1_tx_cas(ts, buf, len, frame_base);
 		break;
 	default:
 		OSMO_ASSERT(0);
@@ -306,6 +348,90 @@ _e1_rx_hdlcfs(struct e1_ts *ts, const uint8_t *buf, int len)
 	return len;
 }
 
+static int
+_e1_rx_cas(struct e1_ts *ts, const uint8_t *buf, int len, int frame_base)
+{
+	int rv = 1, i;
+
+	for (i = 0; i < len; i++) {
+		switch (ts->cas.rx.mode) {
+		case E1_CAS_MODE_UNSYNC:
+			/* Find sync mark '0000xxxx'. */
+			if (!ts->cas.rx.sync_count) {
+				/* If we found our first sync mark, align with it. */
+				if ((buf[i] & 0xf0) == 0x00) {
+					ts->cas.rx.sync_count = 1;
+					ts->cas.rx.frame_count = 0;
+				}
+				break;
+			}
+			/* This is not a sync mark. */
+			if ((buf[i] & 0xf0) != 0x00) {
+				/* if we expect a sync mark, but don't get it. */
+				if (ts->cas.rx.frame_count != 0)
+					break;
+				ts->cas.rx.sync_count = 0;
+			}
+			/* This is a sync mark. */
+			if (ts->cas.rx.frame_count != 0) {
+				/* We got a sync mark at different frame count, align again. */
+				ts->cas.rx.sync_count = 1;
+				ts->cas.rx.frame_count = 0;
+				break;
+			}
+			/* Count until the sync is valid. */
+			if (++ts->cas.rx.sync_count < E1_CAS_SYNC_VALID)
+				break;
+			ts->cas.rx.mode = E1_CAS_MODE_SYNC;
+			LOGPTS(ts, DE1D, LOGL_INFO, "CAS frame now in sync. (aliged at TS0 frame %d)\n",
+			       (frame_base + i) % 16);
+			/* FALLTHRU */
+		case E1_CAS_MODE_SYNC:
+			/* Check if we are still in sync. */
+			if (ts->cas.rx.frame_count == 0) {
+				if ((buf[i] & 0xf0) == 0x00) {
+					/* Set valid-counter to upper limit. */
+					ts->cas.rx.sync_count = E1_CAS_SYNC_VALID;
+				} else {
+					/* Count down until sync expires. */
+					if (--ts->cas.rx.sync_count == 0) {
+						LOGPTS(ts, DE1D, LOGL_INFO, "CAS frame sync lost.\n");
+						ts->cas.rx.sync_count = 0;
+						ts->cas.rx.mode = E1_CAS_MODE_UNSYNC;
+						break;
+					}
+				}
+				break;
+			}
+			/* Skip frame, if sync was not found for this frame. */
+			if (ts->cas.rx.sync_count < E1_CAS_SYNC_VALID)
+				break;
+			/* Store received subframe. */
+			if (ts->cas.rx.buf[ts->cas.rx.frame_count - 1] != (buf[i] >> 4)) {
+				ts->cas.rx.buf[ts->cas.rx.frame_count - 1] = (buf[i] >> 4);
+				ts->cas.rx.new_data = true;
+			}
+			if (ts->cas.rx.buf[ts->cas.rx.frame_count + 14] != (buf[i] & 0x0f)) {
+				ts->cas.rx.buf[ts->cas.rx.frame_count + 14] = (buf[i] & 0x0f);
+				ts->cas.rx.new_data = true;
+			}
+			/* Forward mulitframe change to application. */
+			if (ts->cas.rx.frame_count == 15) {
+				rv = write(ts->fd, ts->cas.rx.buf, sizeof(ts->cas.rx.buf));
+				if (ts->cas.rx.new_data) {
+					LOGPTS(ts, DXFR, LOGL_DEBUG, "RX CAS Message: %s\n",
+						osmo_hexdump(ts->cas.rx.buf, sizeof(ts->cas.rx.buf)));
+					ts->cas.rx.new_data = false;
+				}
+			}
+			break;
+		}
+		ts->cas.rx.frame_count = (ts->cas.rx.frame_count + 1) % 16;
+	}
+
+	return (rv <= 0) ? rv : i;
+}
+
 /* write data to a timeslot (hardware -> application direction) */
 static int
 _e1_ts_write(struct e1_ts *ts, const uint8_t *buf, size_t len, int frame_base)
@@ -318,6 +444,9 @@ _e1_ts_write(struct e1_ts *ts, const uint8_t *buf, size_t len, int frame_base)
 		break;
 	case E1_TS_MODE_HDLCFCS:
 		rv = _e1_rx_hdlcfs(ts, buf, len);
+		break;
+	case E1_TS_MODE_CAS:
+		rv = _e1_rx_cas(ts, buf, len, frame_base);
 		break;
 	default:
 		OSMO_ASSERT(0);

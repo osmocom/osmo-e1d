@@ -118,6 +118,8 @@ enum osmo_e1dp_ts_mode {
 	E1DP_TSMODE_RAW		= 0x10,
 	/*! Timeslot is in HLDC-FCS mode; e1d will run software HDLC processor. */
 	E1DP_TSMODE_HDLCFCS	= 0x11,
+	/*! Timeslot is in CAS mode; e1d will run software CAS processor. */
+	E1DP_TSMODE_CAS		= 0x12,
 };
 
 /*! Flag that can be used as osmo_e1dp_ts_config.flags to force opening a TS. */

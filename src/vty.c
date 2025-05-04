@@ -158,6 +158,7 @@ const struct value_string e1_ts_mode_names[] = {
 	{ E1_TS_MODE_OFF,	"off" },
 	{ E1_TS_MODE_RAW,	"raw" },
 	{ E1_TS_MODE_HDLCFCS,	"hdlc-fcs" },
+	{ E1_TS_MODE_CAS,	"cas" },
 	{ 0, NULL }
 };
 
