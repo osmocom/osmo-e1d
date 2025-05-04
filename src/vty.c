@@ -158,6 +158,7 @@ const struct value_string e1_ts_mode_names[] = {
 	{ E1_TS_MODE_OFF,	"off" },
 	{ E1_TS_MODE_RAW,	"raw" },
 	{ E1_TS_MODE_HDLCFCS,	"hdlc-fcs" },
+	{ E1_TS_MODE_CAS,	"cas" },
 	{ 0, NULL }
 };
 
@@ -430,6 +431,29 @@ DEFUN(cfg_e1d_if_line_mode, cfg_e1d_if_line_mode_cmd,
 	return CMD_SUCCESS;
 }
 
+DEFUN(cfg_e1d_if_cas, cfg_e1d_if_line_cas_cmd,
+	"cas",
+	"Enable CAS signaling\n")
+{
+	struct e1_line *line = vty->index;
+	if (line->ts[16].mode != E1_TS_MODE_OFF && line->ts[16].mode != E1_TS_MODE_CAS) {
+		vty_out(vty, "%% Cannot set CAS signaling, timeslot 16 is already in use%s", VTY_NEWLINE);
+		return CMD_WARNING;
+	}
+	line->ts[16].mode = E1_TS_MODE_CAS;
+	return CMD_SUCCESS;
+}
+
+DEFUN(cfg_e1d_if_no_cas, cfg_e1d_if_line_no_cas_cmd,
+	"no cas",
+	NO_STR "Disable CAS signaling\n")
+{
+	struct e1_line *line = vty->index;
+	if (line->ts[16].mode == E1_TS_MODE_CAS)
+		line->ts[16].mode = E1_TS_MODE_OFF;
+	return CMD_SUCCESS;
+}
+
 DEFUN(cfg_e1d_if_line_framing, cfg_e1d_if_line_framing_cmd,
 	"framing (no-crc4|crc4)",
 	NO_STR "Sets the E1 framing mode for both TX and RX\n")
@@ -461,6 +485,8 @@ static int config_write_line(struct vty *vty, struct e1_line *line)
 {
 	vty_out(vty, "  line %u%s", line->id, VTY_NEWLINE);
 	vty_out(vty, "   mode %s%s", get_value_string(e1_line_mode_names, line->mode), VTY_NEWLINE);
+	if (line->ts[16].mode == E1_TS_MODE_CAS)
+		vty_out(vty, "   cas%s", VTY_NEWLINE);
 
 	if (line->intf->drv == E1_DRIVER_USB) {
 		if (line->usb.framing.tx !=  line->usb.framing.rx) {
@@ -562,6 +588,8 @@ void e1d_vty_init(struct e1_daemon *e1d)
 
 	install_node(&line_node, NULL);
 	install_element(LINE_NODE, &cfg_e1d_if_line_mode_cmd);
+	install_element(LINE_NODE, &cfg_e1d_if_line_cas_cmd);
+	install_element(LINE_NODE, &cfg_e1d_if_line_no_cas_cmd);
 	install_element(LINE_NODE, &cfg_e1d_if_line_framing_cmd);
 	install_element(LINE_NODE, &cfg_e1d_if_line_framing_txrx_cmd);
 }

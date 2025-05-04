@@ -379,6 +379,11 @@ _e1d_ctl_ts_open(void *data, struct msgb *msgb, struct msgb *rmsgb, int *rfd)
 		return 0;
 	}
 
+	if (line->ts[16].mode == E1_TS_MODE_CAS && hdr->ts == 16) {
+		LOGPLI(line, DE1D, LOGL_NOTICE, "Client request for timeslot %u in CAS mode\n", hdr->ts);
+		return 0;
+	}
+
 	/* Select mode */
 	switch (cfg->mode) {
 	case E1DP_TSMODE_RAW:
@@ -427,6 +432,46 @@ _e1d_ctl_ts_open(void *data, struct msgb *msgb, struct msgb *rmsgb, int *rfd)
 	ti->id = hdr->ts;
 	ti->cfg.mode = cfg->mode;
 	ti->status = 0xa5;
+
+	return 0;
+}
+
+static int
+_e1d_ctl_cas(void *data, struct msgb *msgb, struct msgb *rmsgb, int *rfd)
+{
+	struct e1_daemon *e1d = (struct e1_daemon *)data;
+	struct osmo_e1dp_msg_hdr *hdr = msgb_l1(msgb);
+	struct osmo_e1dp_cas_bits *cas = msgb_l2(msgb);
+	struct e1_intf *intf = NULL;
+	struct e1_line *line = NULL;
+
+	/* Process query and find timeslot */
+	intf = e1d_find_intf(e1d, hdr->intf);
+	if (!intf) {
+		LOGP(DE1D, LOGL_NOTICE, "Client request for non-existant Interface %u\n", hdr->intf);
+		return 0;
+	}
+
+	line = e1_intf_find_line(intf, hdr->line);
+	if (!line) {
+		LOGPIF(intf, DE1D, LOGL_NOTICE, "Client request for non-existant line %u\n", hdr->line);
+		return 0;
+	}
+
+	if (hdr->ts < 1 || hdr->ts == 16 || hdr->ts > 31) {
+		LOGPIF(intf, DE1D, LOGL_NOTICE, "Client request for invalid ts %u of line %u\n", hdr->ts, hdr->line);
+		return 0;
+	}
+
+	if (line->ts[16].mode != E1_TS_MODE_CAS) {
+		LOGPIF(intf, DE1D, LOGL_NOTICE, "Client request for CAS control on non CAS line %u\n", hdr->line);
+		return 0;
+	}
+
+	line->cas.tx.buf[hdr->ts - 1 - (hdr->ts >= 17)] = cas->bits;
+	/* Trigger CAS update. */
+	if (cas->query_rx)
+		line->cas.rx.buf_valid[hdr->ts - 1 - (hdr->ts >= 17)] = false;
 
 	return 0;
 }
@@ -496,6 +541,12 @@ struct osmo_e1dp_server_handler e1d_ctl_handlers[] = {
 		.flags = E1DP_SF_INTF_REQ | E1DP_SF_LINE_REQ | E1DP_SF_TS_REQ,
 		.payload_len = sizeof(struct osmo_e1dp_ts_config),
 		.fn = _e1d_ctl_ts_open,
+	},
+	{
+		.type = E1DP_CMD_CAS,
+		.flags = E1DP_SF_INTF_REQ | E1DP_SF_LINE_REQ | E1DP_SF_TS_REQ,
+		.payload_len = sizeof(struct osmo_e1dp_cas_bits),
+		.fn = _e1d_ctl_cas,
 	},
 	{
 		.type = E1DP_CMD_SABITS,
