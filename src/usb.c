@@ -160,7 +160,7 @@ e1_usb_xfer_in(struct e1_usb_flow *flow, uint8_t *buf, int len, size_t size)
 			len = size;
 	}
 
-	return e1_line_demux_in(flow->line, buf + 4, len - 4, buf[3] & 0xf);
+	return e1_line_demux_in(flow->line, buf + 4, len - 4, buf[0] & 0xf);
 }
 
 static int
