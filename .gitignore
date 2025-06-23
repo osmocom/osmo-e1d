@@ -52,3 +52,5 @@ tests/testsuite
 tests/testsuite.log
 tests/testsuite.dir
 tests/*/*_test
+
+include/osmocom/*/version.h
