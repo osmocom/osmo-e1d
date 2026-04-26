@@ -101,7 +101,8 @@ struct e1_ts {
 		struct osmo_isdnhdlc_vars tx;
 		struct osmo_isdnhdlc_vars rx;
 
-		uint8_t rx_buf[E1DP_MAX_SIZE_HDLC];
+		/* extra 2 bytes needed for FCS */
+		uint8_t rx_buf[E1DP_MAX_SIZE_HDLC + 2];
 		uint8_t tx_buf[E1DP_MAX_SIZE_HDLC];
 		int tx_ofs;
 		int tx_len;
