@@ -1,3 +1,13 @@
+osmo-e1d (0.8.0) unstable; urgency=medium
+
+  [ Andreas Eversberg ]
+  * Add Channel-Associated Signalling (CAS) support
+
+  [ Mychaela N. Falconia ]
+  * HDLC timeslots: fix Rx of maximum-sized frames
+
+ -- Pau Espin Pedrol <pespin@sysmocom.de>  Thu, 20 Aug 2026 10:29:38 +0200
+
 osmo-e1d (0.7.2) unstable; urgency=medium
 
   [ Harald Welte ]
