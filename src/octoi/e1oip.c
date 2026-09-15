@@ -194,7 +194,7 @@ int e1oip_rcvmsg_tdm_data(struct e1oip_line *iline, struct msgb *msg)
 	uint32_t ts_mask;
 	uint8_t idx2ts[BYTES_PER_FRAME];
 	unsigned int n_frames;
-	uint8_t frame_buf[BYTES_PER_FRAME];
+	uint8_t frame_buf[BYTES_PER_FRAME] = { 0 };
 	unsigned int num_ts;
 	uint16_t exp_next_seq = iline->e1t.next_fn32 & 0xffff;
 	struct timespec ts;
@@ -260,7 +260,6 @@ int e1oip_rcvmsg_tdm_data(struct e1oip_line *iline, struct msgb *msg)
 			n_frames = msg->l3h[0];
 	}
 
-	memcpy(frame_buf, iline->e1t.last_frame, BYTES_PER_FRAME);
 	for (unsigned int i = 0; i < n_frames; i++) {
 		int rc;
 		for (unsigned int j = 0; j < num_ts; j++) {
@@ -268,7 +267,7 @@ int e1oip_rcvmsg_tdm_data(struct e1oip_line *iline, struct msgb *msg)
 			frame_buf[ts_nr] = e1th->data[i*num_ts + j];
 		}
 		/* FIXME: what to do about TS0? */
-		rc = frame_rifo_in(&iline->e1t.rifo, frame_buf, fn32+i);
+		rc = frame_rifo_in(&iline->e1t.rifo, frame_buf, ts_mask, fn32+i);
 		if (rc < 0)
 			iline_ctr_add(iline, LINE_CTR_E1oIP_E1T_OVERFLOW, 1);
 		/* Continue the for loop, if buffer reset is not configured. */
@@ -292,7 +291,6 @@ int e1oip_rcvmsg_tdm_data(struct e1oip_line *iline, struct msgb *msg)
 	}
 
 	/* update local state */
-	memcpy(iline->e1t.last_frame, frame_buf, BYTES_PER_FRAME);
 	if (update_next)
 		iline->e1t.next_fn32 = fn32 + n_frames;
 
@@ -352,7 +350,6 @@ void e1oip_line_reset(struct e1oip_line *iline)
 	iline->e1o.next_seq = 0;
 
 	frame_rifo_init(&iline->e1t.rifo, 0);
-	memset(&iline->e1t.last_frame, 0xff, sizeof(iline->e1t.last_frame));
 	iline->e1t.next_fn32 = 0;
 	iline->e1t.primed_rx_tdm = false;
 	iline->e1t.delay = 0;

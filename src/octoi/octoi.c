@@ -137,9 +137,8 @@ void octoi_peer_e1t_out(struct octoi_peer *peer, uint8_t *buf, int fts)
 		uint8_t *cur = buf + BYTES_PER_FRAME*i;
 		rc = frame_rifo_out(&iline->e1t.rifo, cur);
 		if (rc == -1) {
+			/* substituted with last received frame */
 			iline_ctr_add(iline, LINE_CTR_E1oIP_SUBSTITUTED, 1);
-			/* substitute with last received frame */
-			memcpy(cur, iline->e1t.last_frame, BYTES_PER_FRAME);
 		} else if (rc == -2) {
 			iline_ctr_add(iline, LINE_CTR_E1oIP_UNDERRUN, 1);
 			/* substitute with all-FF frame */

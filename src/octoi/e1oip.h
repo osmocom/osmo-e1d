@@ -70,7 +70,6 @@ struct e1oip_line {
 	/* E1 terminated side (E1<-IP) */
 	struct {
 		struct frame_rifo rifo;
-		uint8_t last_frame[BYTES_PER_FRAME];	/* last frame on the E1 side */
 		uint32_t next_fn32;			/* next expected frame number */
 		bool primed_rx_tdm;			/* Was RX RIFO primed */
 		int32_t delay, delay_cnt;		/* Delay counter to calculate average delay */

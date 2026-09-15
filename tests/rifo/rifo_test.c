@@ -28,9 +28,18 @@ static void rifo_init(struct frame_rifo *rifo)
 	rifo->last_in_fn  = init_next_out_fn - 1;
 }
 
+static void rifo_in_mask(struct frame_rifo *rifo, uint8_t *frame, uint32_t ts_mask, uint32_t fn)
+{
+	int rc = frame_rifo_in(rifo, frame, ts_mask, fn);
+	unsigned int depth = frame_rifo_depth(rifo);
+	printf("RIFO_IN(%s, mask=0x%08x, start fn + %s%d)=%d [depth=%s%d, frames=%u]\n",
+	       osmo_hexdump_nospc(frame, BYTES_PER_FRAME), ts_mask, FN_PRINT(fn), rc,
+	       ABS_DEPTH_PRINT(depth), frame_rifo_frames(rifo));
+}
+
 static void rifo_in(struct frame_rifo *rifo, uint8_t *frame, uint32_t fn)
 {
-	int rc = frame_rifo_in(rifo, frame, fn);
+	int rc = frame_rifo_in(rifo, frame, 0xffffffff, fn);
 	unsigned int depth = frame_rifo_depth(rifo);
 	printf("RIFO_IN(%s, start fn + %s%d)=%d [depth=%s%d, frames=%u]\n",
 	       osmo_hexdump_nospc(frame, BYTES_PER_FRAME), FN_PRINT(fn), rc,
@@ -86,6 +95,59 @@ static void reordered_in(void)
 
 	for (int i = 0; i < 10; i++) {
 		uint8_t frame[32];
+		memset(frame, 0xff, sizeof(frame));
+		rifo_out(&rifo, frame);
+	}
+}
+
+static void tail_reordered_in(void)
+{
+	struct frame_rifo rifo;
+	rifo_init(&rifo);
+
+	printf("\nTEST: %s, starting at FN: %u\n", __func__, init_next_out_fn);
+
+	const uint8_t in[] = { 0, 1, 2, 3, 4, 5, 6, 7, 9, 8 };
+	for (int i = 0; i < sizeof(in); i++) {
+		uint8_t frame[32];
+		memset(frame, in[i], sizeof(frame));
+		rifo_in(&rifo, frame, init_next_out_fn + in[i]);
+	}
+
+	for (int i = 0; i < 10; i++) {
+		uint8_t frame[32];
+		memset(frame, 0xff, sizeof(frame));
+		rifo_out(&rifo, frame);
+	}
+}
+
+static void reordered_delta_in(void)
+{
+	struct frame_rifo rifo;
+	uint8_t frame[32];
+	rifo_init(&rifo);
+
+	printf("\nTEST: %s, starting at FN: %u\n", __func__, init_next_out_fn);
+
+	/* Packet A: frame 0, all timeslots */
+	memset(frame, 0, sizeof(frame));
+	frame[1] = 0x11;
+	frame[2] = 0x22;
+	rifo_in_mask(&rifo, frame, 0xffffffff, init_next_out_fn + 0);
+
+	/* Packet C (frame 3 and 4): only ts2 present -- delivered early */
+	memset(frame, 0, sizeof(frame));
+	frame[2] = 0x44;
+	rifo_in_mask(&rifo, frame, 1U << 2, init_next_out_fn + 3);
+	rifo_in_mask(&rifo, frame, 1U << 2, init_next_out_fn + 4);
+
+	/* Packet B (frame 1 and 2): only ts1 present -- delivered late */
+	memset(frame, 0, sizeof(frame));
+	frame[1] = 0x33;
+	rifo_in_mask(&rifo, frame, 1U << 1, init_next_out_fn + 1);
+	rifo_in_mask(&rifo, frame, 1U << 1, init_next_out_fn + 2);
+
+	for (int i = 0; i < 5; i++) {
 		memset(frame, 0xff, sizeof(frame));
 		rifo_out(&rifo, frame);
 	}
@@ -156,7 +218,7 @@ static void bound_check(void)
 
 	// Put 1 frame and get it
 	memset(frame, 0xa5, sizeof(frame));
-	frame_rifo_in(&rifo, frame, init_next_out_fn);
+	frame_rifo_in(&rifo, frame, 0xffffffff, init_next_out_fn);
 	frame_rifo_out(&rifo, frame);
 
 	// Put 11 frames at absolute frame numbers FRAMES_PER_FIFO -
@@ -191,6 +253,8 @@ void run_all_tests(void)
 	missing_frames(0);
 	missing_frames(1);
 	reordered_in();
+	tail_reordered_in();
+	reordered_delta_in();
 	correct_order();
 	too_old_frames();
 	bound_check();

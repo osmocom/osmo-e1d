@@ -89,6 +89,8 @@ static bool bucket_bit_get(struct frame_rifo *rifo, uint32_t bucket_nr)
 void frame_rifo_init(struct frame_rifo *rifo, uint32_t fn)
 {
 	memset(rifo->buf, 0xff, sizeof(rifo->buf));
+	memset(rifo->rx_mask, 0, sizeof(rifo->rx_mask));
+	memset(rifo->last_out, 0xff, sizeof(rifo->last_out));
 	rifo->next_out = rifo->buf;
 	rifo->next_out_fn = fn;
 	rifo->last_in_fn = fn - 1;
@@ -99,10 +101,11 @@ void frame_rifo_init(struct frame_rifo *rifo, uint32_t fn)
 
 /*! put one received frame into the RIFO at a given specified frame number.
  *  \param rifo The RIFO to which we want to put (append) multiple frames
- *  \param frame Pointer to memory containing the frame data
+ *  \param frame Pointer to memory containing partial/compressed frame data
+ *  \param ts_mask Bit-mask of timeslots that carry data
  *  \param fn Absolute frame number at which to insert the frame.
  *  \returns 0 on success; -1 on error (overflow) */
-int frame_rifo_in(struct frame_rifo *rifo, const uint8_t *frame, uint32_t fn)
+int frame_rifo_in(struct frame_rifo *rifo, const uint8_t *frame, uint32_t ts_mask, uint32_t fn)
 {
 	uint32_t bucket;
 	uint8_t *dst;
@@ -116,14 +119,18 @@ int frame_rifo_in(struct frame_rifo *rifo, const uint8_t *frame, uint32_t fn)
 	dst = rifo->buf + bucket * BYTES_PER_FRAME;
 	OSMO_ASSERT(dst + BYTES_PER_FRAME <= RIFO_BUF_END(rifo));
 	memcpy(dst, frame, BYTES_PER_FRAME);
+	rifo->rx_mask[bucket] = ts_mask;
 	bucket_bit_set(rifo, bucket);
-	rifo->last_in_fn = fn;
+
+	if ((int32_t)(fn - rifo->last_in_fn) > 0)
+		rifo->last_in_fn = fn;
 
 	return 0;
 }
 
 
-/*! pull one frames out of the RIFO.
+/*! pull one frame out of the RIFO.
+ *
  *  \param rifo The RIFO from which we want to pull frames
  *  \param out Caller-allocated output buffer
  *  \returns 0 on success; -1 if no frame available; -2 if RIFO depth == 0 */
@@ -139,10 +146,21 @@ int frame_rifo_out(struct frame_rifo *rifo, uint8_t *out)
 		 * somewhere.  */
 		rc = -2;
 	} else if (!bucket_bit) {
-		/* caller is supposed to copy/duplicate previous frame */
+		/* frame was lost / has not arrived: repeat the last full frame */
 		rc = -1;
+		memcpy(out, rifo->last_out, BYTES_PER_FRAME);
 	} else {
-		memcpy(out, rifo->next_out, BYTES_PER_FRAME);
+		/* unpack, take the new timeslots from this frame,
+		 * keep all others from the last_out frame. */
+		const uint8_t *raw = rifo->next_out;
+		uint32_t ts_mask = rifo->rx_mask[next_out_bucket];
+		unsigned int ts;
+
+		for (ts = 0; ts < BYTES_PER_FRAME; ts++) {
+			if (ts_mask & (1U << ts))
+				rifo->last_out[ts] = raw[ts];
+		}
+		memcpy(out, rifo->last_out, BYTES_PER_FRAME);
 		bucket_bit_clear(rifo, next_out_bucket);
 	}
 

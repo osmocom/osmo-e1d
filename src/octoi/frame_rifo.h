@@ -6,6 +6,15 @@ struct frame_rifo {
 	uint8_t *next_out;	/* where to read next output from FIFO */
 
 	uint8_t buf[BYTES_PER_FRAME * FRAMES_PER_FIFO];
+				/* compressed timeslot values per frame. Only the
+				   timeslots in rx_mask[] carry data. */
+
+	uint32_t rx_mask[FRAMES_PER_FIFO];
+				/* bit-mask of timeslots for this frame. Timeslots not
+				   set here are unchanged from the last frame. */
+
+	uint8_t last_out[BYTES_PER_FRAME];
+				/* last full output frame. serves as the base for the next frame. */
 
 	uint32_t last_in_fn;	/* frame number of most recently inserted frame */
 	uint32_t next_out_fn;	/* frame number of next output frame */
@@ -45,7 +54,7 @@ static inline unsigned int frame_rifo_frames(struct frame_rifo *rifo)
 }
 
 /* put a received frame into the FIFO */
-int frame_rifo_in(struct frame_rifo *rifo, const uint8_t *frame, uint32_t fn);
+int frame_rifo_in(struct frame_rifo *rifo, const uint8_t *frame, uint32_t ts_mask, uint32_t fn);
 
 /* pull one frame out of the FIFO */
 int frame_rifo_out(struct frame_rifo *rifo, uint8_t *out);
