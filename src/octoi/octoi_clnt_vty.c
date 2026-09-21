@@ -76,13 +76,13 @@ struct octoi_client *octoi_client_find(const char *ip, uint16_t port)
  ***********************************************************************/
 
 static struct cmd_node clnt_node = {
-	(enum node_type) OCTOI_CLNT_NODE,
+	(enum node_type) L_OCTOI_CLNT_NODE,
 	"%s(config-octoi-client)# ",
 	1,
 };
 
 static struct cmd_node clnt_account_node = {
-	(enum node_type) OCTOI_CLNT_ACCOUNT_NODE,
+	(enum node_type) L_OCTOI_CLNT_ACCOUNT_NODE,
 	"%s(config-octoi-client-account)# ",
 	1,
 };
@@ -104,7 +104,7 @@ DEFUN(cfg_client, cfg_client_cmd,
 		llist_add_tail(&clnt->list, &g_octoi->clients);
 	}
 
-	vty->node = OCTOI_CLNT_NODE;
+	vty->node = L_OCTOI_CLNT_NODE;
 	vty->index = clnt;
 
 	return CMD_SUCCESS;
@@ -227,7 +227,7 @@ DEFUN(cfg_clnt_account, cfg_clnt_account_cmd,
 	} else
 		osmo_talloc_replace_string(ac, &ac->user_id, user_id);
 
-	vty->node = OCTOI_CLNT_ACCOUNT_NODE;
+	vty->node = L_OCTOI_CLNT_ACCOUNT_NODE;
 	vty->index = ac;
 
 	return CMD_SUCCESS;
@@ -277,23 +277,23 @@ void octoi_client_vty_init(void)
 	install_element_ve(&show_clnt_cmd);
 
 	install_node(&clnt_account_node, NULL);
-	install_element(OCTOI_CLNT_ACCOUNT_NODE, &cfg_account_ice1_serno_cmd);
-	install_element(OCTOI_CLNT_ACCOUNT_NODE, &cfg_account_ice1_line_cmd);
-	install_element(OCTOI_CLNT_ACCOUNT_NODE, &cfg_account_mode_cmd);
-	install_element(OCTOI_CLNT_ACCOUNT_NODE, &cfg_account_batching_factor_cmd);
-	install_element(OCTOI_CLNT_ACCOUNT_NODE, &cfg_account_force_all_ts_cmd);
-	install_element(OCTOI_CLNT_ACCOUNT_NODE, &cfg_account_no_force_all_ts_cmd);
-	install_element(OCTOI_CLNT_ACCOUNT_NODE, &cfg_account_prefill_frame_count_cmd);
-	install_element(OCTOI_CLNT_ACCOUNT_NODE, &cfg_account_buffer_reset_cmd);
+	install_element(L_OCTOI_CLNT_ACCOUNT_NODE, &cfg_account_ice1_serno_cmd);
+	install_element(L_OCTOI_CLNT_ACCOUNT_NODE, &cfg_account_ice1_line_cmd);
+	install_element(L_OCTOI_CLNT_ACCOUNT_NODE, &cfg_account_mode_cmd);
+	install_element(L_OCTOI_CLNT_ACCOUNT_NODE, &cfg_account_batching_factor_cmd);
+	install_element(L_OCTOI_CLNT_ACCOUNT_NODE, &cfg_account_force_all_ts_cmd);
+	install_element(L_OCTOI_CLNT_ACCOUNT_NODE, &cfg_account_no_force_all_ts_cmd);
+	install_element(L_OCTOI_CLNT_ACCOUNT_NODE, &cfg_account_prefill_frame_count_cmd);
+	install_element(L_OCTOI_CLNT_ACCOUNT_NODE, &cfg_account_buffer_reset_cmd);
 #ifdef HAVE_DAHDI_TRUNKDEV
-	install_element(OCTOI_CLNT_ACCOUNT_NODE, &cfg_account_trunkdev_name_cmd);
-	install_element(OCTOI_CLNT_ACCOUNT_NODE, &cfg_account_trunkdev_line_cmd);
+	install_element(L_OCTOI_CLNT_ACCOUNT_NODE, &cfg_account_trunkdev_name_cmd);
+	install_element(L_OCTOI_CLNT_ACCOUNT_NODE, &cfg_account_trunkdev_line_cmd);
 #endif /* HAVE_DAHDI_TRUNKDEV */
 
 	install_node(&clnt_node, config_write_octoi_clnt);
 	install_element(CONFIG_NODE, &cfg_client_cmd);
-	install_element(OCTOI_CLNT_NODE, &cfg_clnt_local_cmd);
-	install_element(OCTOI_CLNT_NODE, &cfg_clnt_dscp_cmd);
-	install_element(OCTOI_CLNT_NODE, &cfg_clnt_prio_cmd);
-	install_element(OCTOI_CLNT_NODE, &cfg_clnt_account_cmd);
+	install_element(L_OCTOI_CLNT_NODE, &cfg_clnt_local_cmd);
+	install_element(L_OCTOI_CLNT_NODE, &cfg_clnt_dscp_cmd);
+	install_element(L_OCTOI_CLNT_NODE, &cfg_clnt_prio_cmd);
+	install_element(L_OCTOI_CLNT_NODE, &cfg_clnt_account_cmd);
 }

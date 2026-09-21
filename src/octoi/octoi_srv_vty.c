@@ -123,13 +123,13 @@ static struct octoi_server *octoi_server_alloc(void *ctx)
  ***********************************************************************/
 
 static struct cmd_node srv_node = {
-	(enum node_type) OCTOI_SRV_NODE,
+	(enum node_type) L_OCTOI_SRV_NODE,
 	"%s(config-octoi-server)# ",
 	1,
 };
 
 static struct cmd_node account_node = {
-	(enum node_type) OCTOI_ACCOUNT_NODE,
+	(enum node_type) L_OCTOI_ACCOUNT_NODE,
 	"%s(config-octoi-server-account)# ",
 	1,
 };
@@ -144,7 +144,7 @@ DEFUN(cfg_server, cfg_server_cmd,
 		srv = g_octoi->server = octoi_server_alloc(g_octoi);
 	OSMO_ASSERT(srv);
 
-	vty->node = OCTOI_SRV_NODE;
+	vty->node = L_OCTOI_SRV_NODE;
 	vty->index = srv;
 
 	return CMD_SUCCESS;
@@ -264,7 +264,7 @@ DEFUN(cfg_srv_account, cfg_srv_account_cmd,
 	if (!ac)
 		return CMD_WARNING;
 
-	vty->node = OCTOI_ACCOUNT_NODE;
+	vty->node = L_OCTOI_ACCOUNT_NODE;
 	vty->index = ac;
 
 	return CMD_SUCCESS;
@@ -566,26 +566,26 @@ void octoi_server_vty_init(void)
 	install_element_ve(&show_server_cmd);
 
 	install_node(&account_node, NULL);
-	install_element(OCTOI_ACCOUNT_NODE, &cfg_account_mode_cmd);
-	install_element(OCTOI_ACCOUNT_NODE, &cfg_account_ice1_serno_cmd);
-	install_element(OCTOI_ACCOUNT_NODE, &cfg_account_ice1_line_cmd);
-	install_element(OCTOI_ACCOUNT_NODE, &cfg_account_redir_cmd);
-	install_element(OCTOI_ACCOUNT_NODE, &cfg_account_batching_factor_cmd);
-	install_element(OCTOI_ACCOUNT_NODE, &cfg_account_force_all_ts_cmd);
-	install_element(OCTOI_ACCOUNT_NODE, &cfg_account_no_force_all_ts_cmd);
-	install_element(OCTOI_ACCOUNT_NODE, &cfg_account_prefill_frame_count_cmd);
-	install_element(OCTOI_ACCOUNT_NODE, &cfg_account_buffer_reset_cmd);
+	install_element(L_OCTOI_ACCOUNT_NODE, &cfg_account_mode_cmd);
+	install_element(L_OCTOI_ACCOUNT_NODE, &cfg_account_ice1_serno_cmd);
+	install_element(L_OCTOI_ACCOUNT_NODE, &cfg_account_ice1_line_cmd);
+	install_element(L_OCTOI_ACCOUNT_NODE, &cfg_account_redir_cmd);
+	install_element(L_OCTOI_ACCOUNT_NODE, &cfg_account_batching_factor_cmd);
+	install_element(L_OCTOI_ACCOUNT_NODE, &cfg_account_force_all_ts_cmd);
+	install_element(L_OCTOI_ACCOUNT_NODE, &cfg_account_no_force_all_ts_cmd);
+	install_element(L_OCTOI_ACCOUNT_NODE, &cfg_account_prefill_frame_count_cmd);
+	install_element(L_OCTOI_ACCOUNT_NODE, &cfg_account_buffer_reset_cmd);
 #ifdef HAVE_DAHDI_TRUNKDEV
-	install_element(OCTOI_ACCOUNT_NODE, &cfg_account_trunkdev_name_cmd);
-	install_element(OCTOI_ACCOUNT_NODE, &cfg_account_trunkdev_line_cmd);
+	install_element(L_OCTOI_ACCOUNT_NODE, &cfg_account_trunkdev_name_cmd);
+	install_element(L_OCTOI_ACCOUNT_NODE, &cfg_account_trunkdev_line_cmd);
 #endif /* HAVE_DAHDI_TRUNKDEV */
 
 	install_node(&srv_node, config_write_octoi_srv);
 	install_element(CONFIG_NODE, &cfg_server_cmd);
 	//install_element(CONFIG_NODE, &cfg_no_server_cmd);
-	install_element(OCTOI_SRV_NODE, &cfg_srv_local_cmd);
-	install_element(OCTOI_SRV_NODE, &cfg_srv_dscp_cmd);
-	install_element(OCTOI_SRV_NODE, &cfg_srv_prio_cmd);
-	install_element(OCTOI_SRV_NODE, &cfg_srv_account_cmd);
+	install_element(L_OCTOI_SRV_NODE, &cfg_srv_local_cmd);
+	install_element(L_OCTOI_SRV_NODE, &cfg_srv_dscp_cmd);
+	install_element(L_OCTOI_SRV_NODE, &cfg_srv_prio_cmd);
+	install_element(L_OCTOI_SRV_NODE, &cfg_srv_account_cmd);
 	//install_element(CONFIG_SRV_NODE, &cfg_srv_no_account_cmd);
 }

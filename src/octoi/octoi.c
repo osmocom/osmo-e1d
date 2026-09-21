@@ -46,16 +46,16 @@ int octoi_vty_go_parent(struct vty *vty)
 	struct octoi_client *clnt;
 
 	switch (vty->node) {
-	case OCTOI_ACCOUNT_NODE:
-		vty->node = OCTOI_SRV_NODE;
+	case L_OCTOI_ACCOUNT_NODE:
+		vty->node = L_OCTOI_SRV_NODE;
 		vty->index = g_octoi->server;
 		break;
-	case OCTOI_CLNT_ACCOUNT_NODE:
+	case L_OCTOI_CLNT_ACCOUNT_NODE:
 		acc = vty->index;
-		vty->node = OCTOI_CLNT_NODE;
+		vty->node = L_OCTOI_CLNT_NODE;
 		vty->index = client4account(acc);
 		break;
-	case OCTOI_CLNT_NODE:
+	case L_OCTOI_CLNT_NODE:
 		clnt = vty->index;
 		/* check if we have a (new?) line for this client */
 		if (g_octoi->ops->client_updated)
